@@ -106,9 +106,12 @@ export default function ChatBot() {
           text-cream
           shadow-lg hover:shadow-xl
           transition-all duration-300
-          ${isOpen ? "scale-0 opacity-0" : "scale-100 opacity-100"}
+          active:scale-95
+          focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-cream
+          ${isOpen ? "scale-0 opacity-0 pointer-events-none" : "scale-100 opacity-100"}
         `}
         aria-label="Open chat with TU"
+        aria-expanded={isOpen}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -141,7 +144,7 @@ export default function ChatBot() {
         {/* Header */}
         <div className="bg-charcoal px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 border border-rose-soft/60 rounded-b-full flex items-center justify-center">
+            <div className="w-10 h-10 border border-rose-soft/60 flex items-center justify-center">
               <span className="font-body text-sm font-semibold text-rose-soft">
                 TU
               </span>
@@ -155,7 +158,7 @@ export default function ChatBot() {
           </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="text-cream/60 hover:text-cream transition-colors p-1"
+            className="text-cream/60 hover:text-cream transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:scale-95 focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal"
             aria-label="Close chat"
           >
             <svg
@@ -198,7 +201,7 @@ export default function ChatBot() {
                     <button
                       key={i}
                       onClick={() => handleStarterClick(starter)}
-                      className="font-body text-xs text-rose-deep border border-rose-soft/30 px-3 py-1.5 hover:bg-rose-soft/10 transition-colors text-left"
+                      className="font-body text-xs text-rose-deep border border-rose-soft/30 px-3 py-2.5 min-h-[44px] hover:bg-rose-soft/10 active:bg-rose-soft/20 transition-colors text-left focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1"
                     >
                       {starter}
                     </button>
@@ -242,15 +245,15 @@ export default function ChatBot() {
               <div className="bg-charcoal/5 p-3 flex items-center gap-2">
                 <div className="flex gap-1">
                   <span
-                    className="w-2 h-2 bg-rose-soft rounded-full animate-bounce"
+                    className="w-2 h-2 bg-rose-soft animate-bounce"
                     style={{ animationDelay: "0ms" }}
                   />
                   <span
-                    className="w-2 h-2 bg-rose-soft rounded-full animate-bounce"
+                    className="w-2 h-2 bg-rose-soft animate-bounce"
                     style={{ animationDelay: "150ms" }}
                   />
                   <span
-                    className="w-2 h-2 bg-rose-soft rounded-full animate-bounce"
+                    className="w-2 h-2 bg-rose-soft animate-bounce"
                     style={{ animationDelay: "300ms" }}
                   />
                 </div>
@@ -296,8 +299,11 @@ export default function ChatBot() {
                 bg-rose-deep hover:bg-rose-soft
                 text-cream
                 px-4 py-3
+                min-w-[48px] min-h-[48px]
                 transition-colors
                 disabled:opacity-50 disabled:cursor-not-allowed
+                active:scale-95
+                focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2
               "
               aria-label="Send message"
             >

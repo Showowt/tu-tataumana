@@ -25,11 +25,12 @@ export default function WhatsAppButton({
       {/* Tooltip */}
       <div
         className={`
-          font-body text-sm bg-white px-4 py-2 shadow-lg
+          font-body text-sm bg-cream text-charcoal px-4 py-2 shadow-lg
           transition-all duration-300
           ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none"}
         `}
-        style={{ color: "#2C2C2C" }}
+        role="tooltip"
+        id="whatsapp-tooltip"
       >
         Chat with us
       </div>
@@ -41,6 +42,8 @@ export default function WhatsAppButton({
         rel="noopener noreferrer"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        onFocus={() => setIsHovered(true)}
+        onBlur={() => setIsHovered(false)}
         className="
           whatsapp-float
           flex items-center justify-center
@@ -50,8 +53,11 @@ export default function WhatsAppButton({
           shadow-lg hover:shadow-xl
           transition-all duration-300
           hover:scale-110
+          active:scale-95
+          focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#25D366]
         "
         aria-label="Contact us on WhatsApp"
+        aria-describedby="whatsapp-tooltip"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

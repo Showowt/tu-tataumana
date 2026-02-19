@@ -9,6 +9,8 @@ interface MoonData {
   illumination: number;
   message: string;
   messageEs: string;
+  daysUntilNext: number;
+  nextPhase: string;
 }
 
 /**
@@ -31,6 +33,22 @@ function getMoonPhase(): MoonData {
   // Phase is 0-1, representing the lunar cycle
   const phaseValue = Math.floor(phase * 8);
 
+  // Calculate days until next phase
+  const phaseLength = 29.53058867 / 8;
+  const daysIntoCurrentPhase = (phase * 8 - phaseValue) * phaseLength;
+  const daysUntilNext = Math.ceil(phaseLength - daysIntoCurrentPhase);
+
+  const phaseNames = [
+    "New Moon",
+    "Waxing Crescent",
+    "First Quarter",
+    "Waxing Gibbous",
+    "Full Moon",
+    "Waning Gibbous",
+    "Last Quarter",
+    "Waning Crescent",
+  ];
+
   const phases: MoonData[] = [
     {
       phase: "New Moon",
@@ -39,6 +57,8 @@ function getMoonPhase(): MoonData {
       illumination: 0,
       message: "Perfect for setting intentions and new beginnings",
       messageEs: "Ideal para establecer intenciones y nuevos comienzos",
+      daysUntilNext,
+      nextPhase: phaseNames[(phaseValue + 1) % 8],
     },
     {
       phase: "Waxing Crescent",
@@ -47,6 +67,8 @@ function getMoonPhase(): MoonData {
       illumination: 12,
       message: "Time to nurture your intentions with action",
       messageEs: "Momento de nutrir tus intenciones con acción",
+      daysUntilNext,
+      nextPhase: phaseNames[(phaseValue + 1) % 8],
     },
     {
       phase: "First Quarter",
@@ -55,6 +77,8 @@ function getMoonPhase(): MoonData {
       illumination: 50,
       message: "Face challenges with determination",
       messageEs: "Enfrenta los desafíos con determinación",
+      daysUntilNext,
+      nextPhase: phaseNames[(phaseValue + 1) % 8],
     },
     {
       phase: "Waxing Gibbous",
@@ -63,6 +87,8 @@ function getMoonPhase(): MoonData {
       illumination: 75,
       message: "Refine and adjust your path",
       messageEs: "Refina y ajusta tu camino",
+      daysUntilNext,
+      nextPhase: phaseNames[(phaseValue + 1) % 8],
     },
     {
       phase: "Full Moon",
@@ -71,6 +97,8 @@ function getMoonPhase(): MoonData {
       illumination: 100,
       message: "Celebrate and release what no longer serves you",
       messageEs: "Celebra y libera lo que ya no te sirve",
+      daysUntilNext,
+      nextPhase: phaseNames[(phaseValue + 1) % 8],
     },
     {
       phase: "Waning Gibbous",
@@ -79,6 +107,8 @@ function getMoonPhase(): MoonData {
       illumination: 75,
       message: "Share your wisdom and gratitude",
       messageEs: "Comparte tu sabiduría y gratitud",
+      daysUntilNext,
+      nextPhase: phaseNames[(phaseValue + 1) % 8],
     },
     {
       phase: "Last Quarter",
@@ -87,6 +117,8 @@ function getMoonPhase(): MoonData {
       illumination: 50,
       message: "Reflect and release old patterns",
       messageEs: "Reflexiona y libera viejos patrones",
+      daysUntilNext,
+      nextPhase: phaseNames[(phaseValue + 1) % 8],
     },
     {
       phase: "Waning Crescent",
@@ -95,6 +127,8 @@ function getMoonPhase(): MoonData {
       illumination: 12,
       message: "Rest, restore, and prepare for renewal",
       messageEs: "Descansa, restaura y prepárate para la renovación",
+      daysUntilNext,
+      nextPhase: phaseNames[(phaseValue + 1) % 8],
     },
   ];
 
@@ -168,6 +202,14 @@ export default function MoonPhase() {
         <p className="font-body text-rose-soft/60 text-xs mt-1">
           {moon.messageEs}
         </p>
+
+        {/* Next phase indicator */}
+        <div className="mt-4 pt-3 border-t border-rose-soft/10">
+          <p className="font-body text-[9px] text-cream/40">
+            {moon.nextPhase} in ~{moon.daysUntilNext} day
+            {moon.daysUntilNext !== 1 ? "s" : ""}
+          </p>
+        </div>
       </div>
     </div>
   );

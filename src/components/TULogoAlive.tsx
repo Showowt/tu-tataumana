@@ -51,10 +51,10 @@ const TULogoAlive = ({
     },
     {
       name: "White",
-      stroke: "#FAFAF8",
-      text: "#FAFAF8",
+      stroke: "#FAF8F5",
+      text: "#FAF8F5",
       bg: "transparent",
-      glow: "rgba(250,250,248,0.2)",
+      glow: "rgba(250,248,245,0.2)",
       accent: "#D4A5A5",
     },
     {
@@ -284,7 +284,7 @@ const TULogoAlive = ({
             width: p.size,
             height: p.size,
             background:
-              variant === 0 ? "#D4A5A5" : variant === 1 ? "#FAF8F5" : "#B87777",
+              variant === 0 ? "#D4A5A5" : variant === 1 ? "#FAF8F5" : "#B87777", // Rose Soft, Cream, Rose Deep
             opacity: p.life * 0.5,
           }}
         />
@@ -325,7 +325,7 @@ const TULogoAlive = ({
           }}
         >
           <p
-            className="font-body font-extralight"
+            className="font-body font-light"
             style={{
               fontSize: 14 * scale,
               letterSpacing: "0.35em",

@@ -84,6 +84,10 @@ export default function ConsoleEasterEgg() {
         console.log("%cTU.gratitude()  → Gratitude prompt", "color: #D4A5A5");
         console.log("%cTU.mantra()     → Receive a mantra", "color: #D4A5A5");
         console.log("%cTU.chakra()     → Chakra reading", "color: #D4A5A5");
+        console.log(
+          "\n%c💡 TIP: Look for the 🧘 button in the bottom-left corner for visual breathing guidance!",
+          "color: #43A047; font-style: italic",
+        );
 
         return "🌸 Choose your practice...";
       },

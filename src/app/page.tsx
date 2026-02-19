@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 
 // Signature components (client-only)
@@ -32,6 +32,25 @@ const KonamiEasterEgg = dynamic(() => import("@/components/KonamiEasterEgg"), {
   ssr: false,
 });
 const ChatBot = dynamic(() => import("@/components/ChatBot"), {
+  ssr: false,
+});
+const ScrollProgress = dynamic(() => import("@/components/ScrollProgress"), {
+  ssr: false,
+});
+const BreathingGuide = dynamic(() => import("@/components/BreathingGuide"), {
+  ssr: false,
+});
+const CursorTrail = dynamic(() => import("@/components/CursorTrail"), {
+  ssr: false,
+});
+// Cinematic Enhancement Components
+const CinematicLoader = dynamic(() => import("@/components/CinematicLoader"), {
+  ssr: false,
+});
+const MagneticButton = dynamic(() => import("@/components/MagneticButton"), {
+  ssr: false,
+});
+const LotusSpinner = dynamic(() => import("@/components/LotusSpinner"), {
   ssr: false,
 });
 
@@ -272,10 +291,21 @@ export default function Home() {
   );
   const [bookingStep, setBookingStep] = useState(0);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [contentReady, setContentReady] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Handle cinematic loader completion
+  const handleLoaderComplete = useCallback(() => {
+    setIsLoading(false);
+    // Small delay before revealing content for smooth transition
+    setTimeout(() => setContentReady(true), 100);
+  }, []);
 
   // Intersection observer for reveal animations
   useEffect(() => {
+    if (!contentReady) return;
+
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -292,7 +322,7 @@ export default function Home() {
     });
 
     return () => observerRef.current?.disconnect();
-  }, []);
+  }, [contentReady]);
 
   // Auto-rotate testimonials
   useEffect(() => {
@@ -308,6 +338,11 @@ export default function Home() {
 
   return (
     <div className="relative bg-cream min-h-screen">
+      {/* Cinematic Page Load Sequence */}
+      {isLoading && (
+        <CinematicLoader onComplete={handleLoaderComplete} minDuration={2800} />
+      )}
+
       {/* Signature Experience Components */}
       <AuroraGlow />
       <KonamiEasterEgg />
@@ -315,6 +350,9 @@ export default function Home() {
       <ConsoleEasterEgg />
       <WhatsAppButton />
       <ChatBot />
+      <ScrollProgress />
+      <BreathingGuide />
+      <CursorTrail />
 
       {/* ═══════════════════════════════════════════════════════════════════
           NAVIGATION — Refined minimal with animated logo
@@ -351,10 +389,10 @@ export default function Home() {
               <a
                 key={item.label}
                 href={item.href}
-                className="font-body text-[11px] tracking-[0.15em] text-cream/60 hover:text-rose-soft transition-colors relative group py-2"
+                className="font-body text-[11px] tracking-[0.15em] text-cream/60 hover:text-rose-soft focus-visible:text-rose-soft transition-colors relative group py-2 outline-none"
               >
                 {item.label.toUpperCase()}
-                <span className="absolute -bottom-1 left-0 w-0 h-px bg-rose-soft transition-all duration-300 group-hover:w-full" />
+                <span className="absolute -bottom-1 left-0 w-0 h-px bg-rose-soft transition-all duration-300 group-hover:w-full group-focus-visible:w-full" />
               </a>
             ))}
           </div>
@@ -365,7 +403,7 @@ export default function Home() {
             </div>
             <a
               href="#book"
-              className="font-body text-[10px] md:text-[11px] tracking-[0.1em] bg-rose-deep hover:bg-rose-soft text-cream px-5 md:px-6 py-3 transition-all duration-300 min-h-[44px] flex items-center active:scale-[0.98]"
+              className="font-body text-[10px] md:text-[11px] tracking-[0.1em] bg-rose-deep hover:bg-rose-soft text-cream px-5 md:px-6 py-3 transition-all duration-300 min-h-[44px] flex items-center active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal"
             >
               RESERVE
             </a>
@@ -438,9 +476,10 @@ export default function Home() {
               className="flex flex-col sm:flex-row gap-4 opacity-0 justify-center lg:justify-start"
               style={{ animation: "fadeInUp 0.8s ease-out 0.9s forwards" }}
             >
-              <a
+              <MagneticButton
                 href="#book"
-                className="inline-flex items-center justify-center gap-3 font-body text-[11px] md:text-[12px] tracking-[0.15em] bg-rose-soft text-charcoal px-8 py-5 md:py-4 hover:bg-gold transition-all duration-500 min-h-[56px] active:scale-[0.98]"
+                variant="primary"
+                className="text-[11px] md:text-[12px]"
               >
                 BOOK AN EXPERIENCE
                 <svg
@@ -456,13 +495,14 @@ export default function Home() {
                     d="M17 8l4 4m0 0l-4 4m4-4H3"
                   />
                 </svg>
-              </a>
-              <a
+              </MagneticButton>
+              <MagneticButton
                 href="#services"
-                className="inline-flex items-center justify-center font-body text-[11px] md:text-[12px] tracking-[0.15em] border border-cream/20 text-cream/70 px-8 py-5 md:py-4 hover:border-rose-soft hover:text-rose-soft transition-all duration-300 min-h-[56px] active:scale-[0.98]"
+                variant="secondary"
+                className="text-[11px] md:text-[12px]"
               >
                 EXPLORE
-              </a>
+              </MagneticButton>
             </div>
           </div>
 
@@ -480,12 +520,21 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Scroll indicator */}
+        {/* Cinematic Scroll indicator */}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3">
           <span className="font-body text-[9px] tracking-[0.3em] text-cream/30 rotate-90 origin-center translate-y-8">
             SCROLL
           </span>
-          <div className="w-px h-12 bg-gradient-to-b from-transparent via-rose-soft/50 to-transparent" />
+          <div className="relative">
+            <div className="w-px h-16 bg-gradient-to-b from-transparent via-rose-soft/30 to-transparent" />
+            {/* Animated scroll dot */}
+            <div
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-3 bg-gradient-to-b from-rose-soft to-gold rounded-full"
+              style={{
+                animation: "scrollPulse 2s ease-in-out infinite",
+              }}
+            />
+          </div>
         </div>
       </section>
 
@@ -703,9 +752,12 @@ export default function Home() {
                       / {service.duration}
                     </span>
                   </div>
-                  <button className="font-body text-[10px] tracking-[0.1em] text-rose-soft border border-rose-soft/30 px-4 py-3 min-h-[44px] transition-all group-hover:bg-rose-soft group-hover:text-charcoal group-hover:border-rose-soft active:scale-[0.98]">
+                  <a
+                    href="#book"
+                    className="font-body text-[10px] tracking-[0.1em] text-rose-soft border border-rose-soft/30 px-4 py-3 min-h-[44px] transition-all hover:bg-rose-soft hover:text-charcoal hover:border-rose-soft group-hover:bg-rose-soft group-hover:text-charcoal group-hover:border-rose-soft active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal inline-flex items-center justify-center"
+                  >
                     RESERVE
-                  </button>
+                  </a>
                 </div>
               </div>
             ))}
@@ -778,7 +830,9 @@ export default function Home() {
               <button
                 key={i}
                 onClick={() => setActiveTestimonial(i)}
-                className={`transition-all duration-300 ${
+                aria-label={`View testimonial ${i + 1} of ${testimonials.length}`}
+                aria-current={i === activeTestimonial ? "true" : "false"}
+                className={`transition-all duration-300 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-cream-warm ${
                   i === activeTestimonial
                     ? "w-8 h-1 bg-rose-deep"
                     : "w-3 h-1 bg-charcoal/20 hover:bg-charcoal/40"
@@ -889,7 +943,7 @@ export default function Home() {
                 </div>
 
                 <div className="px-8 md:px-10 pb-8 md:pb-10">
-                  <button className="w-full font-body text-[11px] tracking-[0.15em] bg-rose-deep hover:bg-rose-soft text-cream py-4 transition-all duration-300">
+                  <button className="w-full font-body text-[11px] tracking-[0.15em] bg-rose-deep hover:bg-rose-soft text-cream py-4 min-h-[56px] transition-all duration-300 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal">
                     JOIN THE WAITLIST
                   </button>
                 </div>
@@ -954,7 +1008,7 @@ export default function Home() {
             </div>
           </div>
 
-          <button className="font-body text-[11px] tracking-[0.15em] border border-rose-soft text-rose-soft hover:bg-rose-soft hover:text-charcoal px-10 py-4 transition-all duration-300">
+          <button className="font-body text-[11px] tracking-[0.15em] border border-rose-soft text-rose-soft hover:bg-rose-soft hover:text-charcoal px-10 py-4 min-h-[56px] transition-all duration-300 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal">
             COMING SOON — JOIN WAITLIST
           </button>
         </div>
@@ -1020,9 +1074,9 @@ export default function Home() {
           </div>
 
           {/* Form container - mobile optimized */}
-          <div className="bg-white border border-charcoal/5 p-5 md:p-8 lg:p-12">
+          <div className="bg-white border border-charcoal/5 p-5 md:p-8 lg:p-12 overflow-hidden">
             {bookingStep === 0 && (
-              <div>
+              <div className="animate-fadeIn">
                 <p className="font-body text-[11px] text-charcoal/50 mb-6 md:mb-8">
                   Select your experience:
                 </p>
@@ -1057,7 +1111,7 @@ export default function Home() {
             )}
 
             {bookingStep === 1 && (
-              <div>
+              <div className="animate-fadeIn">
                 <h3 className="font-display text-xl md:text-2xl text-charcoal mb-6 md:mb-8 text-center">
                   Select Date & Time
                 </h3>
@@ -1089,7 +1143,7 @@ export default function Home() {
                 </div>
                 <button
                   onClick={() => setBookingStep(0)}
-                  className="font-body text-[11px] text-charcoal/40 hover:text-charcoal transition-colors py-3 min-h-[44px]"
+                  className="font-body text-[11px] text-charcoal/40 hover:text-charcoal transition-colors py-3 min-h-[44px] focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
                 >
                   ← Back
                 </button>
@@ -1097,7 +1151,7 @@ export default function Home() {
             )}
 
             {bookingStep === 2 && (
-              <div>
+              <div className="animate-fadeIn">
                 <h3 className="font-display text-xl md:text-2xl text-charcoal mb-6 md:mb-8 text-center">
                   Your Details
                 </h3>
@@ -1106,10 +1160,27 @@ export default function Home() {
                     <div key={i} className="mb-5">
                       <label className="font-body text-[10px] tracking-[0.1em] text-charcoal/50 block mb-2">
                         {field.toUpperCase()}
+                        {!field.includes("optional") && (
+                          <span className="text-rose-deep ml-1">*</span>
+                        )}
                       </label>
                       <input
-                        type={field === "Email" ? "email" : "text"}
-                        className="w-full font-display text-base md:text-lg border-b border-charcoal/20 py-4 outline-none focus:border-rose-deep transition-colors bg-transparent"
+                        type={
+                          field === "Email"
+                            ? "email"
+                            : field === "WhatsApp"
+                              ? "tel"
+                              : "text"
+                        }
+                        required={!field.includes("optional")}
+                        placeholder={
+                          field === "WhatsApp"
+                            ? "+57 300 123 4567"
+                            : field === "Email"
+                              ? "you@example.com"
+                              : ""
+                        }
+                        className="w-full font-display text-base md:text-lg border-b-2 border-charcoal/20 py-4 outline-none focus:border-rose-deep hover:border-charcoal/40 transition-colors bg-transparent placeholder:text-charcoal/20"
                         autoComplete={
                           field === "Email"
                             ? "email"
@@ -1126,13 +1197,13 @@ export default function Home() {
                 <div className="flex gap-4 mt-8">
                   <button
                     onClick={() => setBookingStep(1)}
-                    className="font-body text-[11px] text-charcoal/40 hover:text-charcoal transition-colors py-3 min-h-[44px]"
+                    className="font-body text-[11px] text-charcoal/40 hover:text-charcoal transition-colors py-3 min-h-[44px] focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
                   >
                     ← Back
                   </button>
                   <button
                     onClick={() => setBookingStep(3)}
-                    className="flex-1 font-body text-[11px] tracking-[0.15em] bg-rose-deep hover:bg-rose-soft text-cream py-4 transition-all min-h-[56px] active:scale-[0.98]"
+                    className="flex-1 font-body text-[11px] tracking-[0.15em] bg-rose-deep hover:bg-rose-soft text-cream py-4 transition-all min-h-[56px] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
                   >
                     CONTINUE
                   </button>
@@ -1141,7 +1212,7 @@ export default function Home() {
             )}
 
             {bookingStep === 3 && (
-              <div className="text-center py-8">
+              <div className="text-center py-8 animate-fadeIn">
                 <div className="w-16 h-16 bg-gold/10 flex items-center justify-center mx-auto mb-8">
                   <svg
                     className="w-8 h-8 text-gold"
@@ -1168,7 +1239,7 @@ export default function Home() {
                 </p>
                 <button
                   onClick={() => setBookingStep(0)}
-                  className="font-body text-[10px] tracking-[0.1em] text-charcoal/40 border border-charcoal/20 px-6 py-3 mt-8 hover:border-charcoal hover:text-charcoal transition-all"
+                  className="font-body text-[10px] tracking-[0.1em] text-charcoal/40 border border-charcoal/20 px-6 py-3 mt-8 min-h-[44px] hover:border-charcoal hover:text-charcoal transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
                 >
                   BOOK ANOTHER
                 </button>
@@ -1266,28 +1337,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
-      {/* Animation keyframes */}
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(24px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-      `}</style>
     </div>
   );
 }
