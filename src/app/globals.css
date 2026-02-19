@@ -1,0 +1,498 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TU. BY TATA UMAÑA — LUXURY WELLNESS DESIGN SYSTEM
+   MachineMind Genesis Build | Blue Ocean Experience
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@theme inline {
+  /* Brand Colors */
+  --color-rose-deep: #B87777;
+  --color-rose-soft: #D4A5A5;
+  --color-rose-muted: #C59090;
+  --color-charcoal: #2C2C2C;
+  --color-charcoal-light: #3D3D3D;
+  --color-cream: #FAF8F5;
+  --color-cream-warm: #F3EDE6;
+  --color-gold: #C9A96E;
+  --color-gold-light: #D4B97F;
+
+  /* Chakra Colors */
+  --color-chakra-root: #C62828;
+  --color-chakra-sacral: #EF6C00;
+  --color-chakra-solar: #FBC02D;
+  --color-chakra-heart: #43A047;
+  --color-chakra-throat: #0288D1;
+  --color-chakra-third: #5E35B1;
+  --color-chakra-crown: #8E24AA;
+
+  /* Typography */
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Outfit', system-ui, sans-serif;
+}
+
+/* BASE */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+body {
+  font-family: var(--font-display);
+  background: var(--color-cream);
+  color: var(--color-charcoal);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIGNATURE: BREATHING ANIMATION
+   The page subtly expands/contracts like meditation breath
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.003); opacity: 0.98; }
+}
+
+.breathing-container {
+  animation: breathe 8s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIGNATURE: AURORA GLOW
+   Ethereal glow that follows cursor
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.aurora-glow {
+  position: fixed;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(212, 165, 165, 0.06) 0%,
+    rgba(201, 169, 110, 0.03) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 1;
+  transition: transform 0.2s ease-out;
+  filter: blur(60px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIGNATURE: SOUND WAVE VISUALIZER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes soundWave {
+  0%, 100% { height: 15%; }
+  25% { height: 55%; }
+  50% { height: 35%; }
+  75% { height: 75%; }
+}
+
+.sound-bar {
+  width: 3px;
+  min-height: 4px;
+  background: linear-gradient(to top, var(--color-rose-soft), var(--color-gold));
+  border-radius: 2px;
+  animation: soundWave 1.4s ease-in-out infinite;
+}
+
+.sound-bar:nth-child(1) { animation-delay: 0s; }
+.sound-bar:nth-child(2) { animation-delay: 0.08s; }
+.sound-bar:nth-child(3) { animation-delay: 0.16s; }
+.sound-bar:nth-child(4) { animation-delay: 0.24s; }
+.sound-bar:nth-child(5) { animation-delay: 0.32s; }
+.sound-bar:nth-child(6) { animation-delay: 0.4s; }
+.sound-bar:nth-child(7) { animation-delay: 0.48s; }
+.sound-bar:nth-child(8) { animation-delay: 0.56s; }
+.sound-bar:nth-child(9) { animation-delay: 0.64s; }
+.sound-bar:nth-child(10) { animation-delay: 0.72s; }
+.sound-bar:nth-child(11) { animation-delay: 0.8s; }
+.sound-bar:nth-child(12) { animation-delay: 0.88s; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIGNATURE: CHAKRA NAVIGATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.chakra-nav {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chakra-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+}
+
+.chakra-dot::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  opacity: 0;
+  transition: all 0.4s;
+}
+
+.chakra-dot:hover::before,
+.chakra-dot.active::before {
+  opacity: 0.4;
+  animation: chakraPulse 2s ease-in-out infinite;
+}
+
+.chakra-dot:hover,
+.chakra-dot.active {
+  transform: scale(1.4);
+}
+
+@keyframes chakraPulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(2); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIGNATURE: MOON GLOW
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes moonGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(201, 169, 110, 0.4)); }
+  50% { filter: drop-shadow(0 0 20px rgba(201, 169, 110, 0.7)); }
+}
+
+.moon-glow {
+  animation: moonGlow 4s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLASS MORPHISM
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.glass-dark {
+  backdrop-filter: blur(20px);
+  background: rgba(44, 44, 44, 0.88);
+  border: 1px solid rgba(212, 165, 165, 0.12);
+}
+
+.glass-light {
+  backdrop-filter: blur(16px);
+  background: rgba(250, 248, 245, 0.92);
+  border: 1px solid rgba(232, 226, 218, 0.6);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SHIMMER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 33%, rgba(255,255,255,0.06) 50%, transparent 67%);
+  background-size: 300% 100%;
+  animation: shimmer 5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOVER EFFECTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.hover-lift {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s;
+}
+
+.hover-lift:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 24px 48px rgba(184, 119, 119, 0.15);
+}
+
+.hover-glow {
+  transition: box-shadow 0.4s;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 40px rgba(212, 165, 165, 0.25);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TYPOGRAPHY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.tracking-luxe {
+  letter-spacing: 0.25em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCROLL REVEAL
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.9s ease-out, transform 0.9s ease-out;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-delay-1 { transition-delay: 0.15s; }
+.reveal-delay-2 { transition-delay: 0.3s; }
+.reveal-delay-3 { transition-delay: 0.45s; }
+.reveal-delay-4 { transition-delay: 0.6s; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FLOAT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+.floating { animation: float 6s ease-in-out infinite; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOTUS SPINNER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes lotusBloom {
+  0% { transform: scale(0.85) rotate(0deg); opacity: 0.6; }
+  50% { transform: scale(1.15) rotate(180deg); opacity: 1; }
+  100% { transform: scale(0.85) rotate(360deg); opacity: 0.6; }
+}
+
+.lotus-spinner { animation: lotusBloom 3s ease-in-out infinite; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO GRADIENT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.hero-gradient {
+  background: linear-gradient(180deg,
+    var(--color-charcoal) 0%,
+    #3A2D2D 35%,
+    #483838 65%,
+    var(--color-charcoal) 100%
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SACRED GEOMETRY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sacred-dots {
+  background-image: radial-gradient(circle, rgba(212, 165, 165, 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BOOKING PROGRESS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.booking-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #E0D8D0;
+}
+
+.booking-dot.active {
+  width: 32px;
+  border-radius: 6px;
+  background: var(--color-rose-deep);
+}
+
+.booking-dot.complete {
+  background: var(--color-gold);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRESS LOGOS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.press-logo {
+  filter: grayscale(100%) brightness(0.6);
+  transition: all 0.4s ease;
+  cursor: pointer;
+}
+
+.press-logo:hover {
+  filter: grayscale(0%) brightness(1);
+  transform: scale(1.05);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SELECTION & SCROLLBAR
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+::selection {
+  background: var(--color-rose-soft);
+  color: var(--color-charcoal);
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--color-cream); }
+::-webkit-scrollbar-thumb { background: var(--color-rose-soft); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-rose-deep); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FOCUS STATES (A11y)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ENERGY LINE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.energy-line {
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, var(--color-rose-soft), var(--color-gold), var(--color-rose-soft), transparent);
+  opacity: 0.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .breathing-container { animation: none; }
+  .aurora-glow { display: none; }
+  .chakra-nav { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WHATSAPP FLOAT BUTTON
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes whatsappPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(37, 211, 102, 0); }
+}
+
+.whatsapp-float {
+  animation: whatsappPulse 2.5s infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LINE CLAMP UTILITY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ENHANCED MICRO-INTERACTIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Smooth underline animation for nav links */
+a[href^="#"] {
+  position: relative;
+}
+
+/* Input focus enhancement */
+input:focus {
+  background: transparent !important;
+}
+
+/* Button press effect */
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Card hover glow */
+.hover-glow-rose:hover {
+  box-shadow: 0 0 40px rgba(184, 119, 119, 0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CUSTOM CURSOR (Optional luxury touch)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (hover: hover) {
+  body {
+    cursor: default;
+  }
+
+  a, button {
+    cursor: pointer;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TEXT RENDERING OPTIMIZATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.font-display {
+  font-family: var(--font-display);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-body {
+  font-family: var(--font-body);
+  text-rendering: optimizeLegibility;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ASPECT RATIO FALLBACK
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.aspect-square {
+  aspect-ratio: 1 / 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SERVICE CARD FEATURED STATE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.lg\:row-span-2 {
+  grid-row: span 2 / span 2;
+}
