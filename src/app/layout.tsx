@@ -23,6 +23,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://tu-tataumana.vercel.app"),
   title: "TU. by Tata Umaña | Wellness Curator · Cartagena, Colombia",
   description:
     "23 years of yoga, Reiki, Ayurveda, sound healing & ceremonial practice — distilled into transformative experiences that reconnect you with what matters most. Featured in Vogue, Forbes, Caribbean Journal. Lead instructor at Casa Carolina.",
@@ -46,19 +47,11 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     alternateLocale: "es_CO",
-    url: "https://tataumana.com",
+    url: "https://tu-tataumana.vercel.app",
     siteName: "TU. by Tata Umaña",
     title: "TU. by Tata Umaña | Come Home to Yourself",
     description:
       "Transformative wellness experiences in Cartagena, Colombia. Yoga, sound healing, Reiki, ceremonies & retreats with Vogue-featured practitioner Tata Umaña.",
-    images: [
-      {
-        url: "/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "TU. by Tata Umaña — Wellness Curator in Cartagena",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
