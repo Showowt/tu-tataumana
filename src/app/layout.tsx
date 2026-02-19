@@ -52,12 +52,23 @@ export const metadata: Metadata = {
     title: "TU. by Tata Umaña | Come Home to Yourself",
     description:
       "Transformative wellness experiences in Cartagena, Colombia. Yoga, sound healing, Reiki, ceremonies & retreats with Vogue-featured practitioner Tata Umaña.",
+    images: [
+      {
+        url: "https://tu-tataumana.vercel.app/opengraph-image",
+        secureUrl: "https://tu-tataumana.vercel.app/opengraph-image",
+        width: 1200,
+        height: 630,
+        type: "image/png",
+        alt: "TU. by Tata Umaña — Wellness Curator · Cartagena, Colombia",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "TU. by Tata Umaña | Wellness Curator · Cartagena",
     description:
       "Transformative wellness experiences. Yoga, sound healing, Reiki & retreats with Vogue-featured practitioner.",
+    images: ["https://tu-tataumana.vercel.app/twitter-image"],
   },
   robots: {
     index: true,
