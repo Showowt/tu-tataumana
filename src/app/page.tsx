@@ -217,11 +217,32 @@ const services = [
 ];
 
 const credentials = [
-  { label: "Practice", value: "23+ Years" },
-  { label: "Reiki", value: "Master Level" },
-  { label: "Education", value: "Master's in Luxury Goods" },
-  { label: "Certifications", value: "IET, NLP, Ayurveda" },
-  { label: "Role", value: "Lead Instructor, Casa Carolina" },
+  { label: "Practice", value: "23+", suffix: "Years", icon: "✦" },
+  { label: "Reiki", value: "Master", suffix: "Level", icon: "◈" },
+  {
+    label: "Education",
+    value: "Master's",
+    suffix: "in Luxury Goods",
+    icon: "◇",
+  },
+  {
+    label: "Certifications",
+    value: "IET, NLP",
+    suffix: "& Ayurveda",
+    icon: "❋",
+  },
+  {
+    label: "Role",
+    value: "Lead",
+    suffix: "Instructor, Casa Carolina",
+    icon: "◎",
+  },
+];
+
+const pressLogos = [
+  { name: "VOGUE", style: "italic" },
+  { name: "FORBES", style: "normal" },
+  { name: "DINERS", style: "italic" },
 ];
 
 const testimonials = [
@@ -298,20 +319,23 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════════════════════════
           NAVIGATION — Refined minimal with animated logo
           ═══════════════════════════════════════════════════════════════════ */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-5 md:px-12">
-        <div className="glass-dark max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          <a href="#hero" className="flex items-center gap-4 group">
+      <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-3 md:px-6 md:py-5 lg:px-12">
+        <div className="glass-dark max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
+          <a
+            href="#hero"
+            className="flex items-center gap-3 md:gap-4 group min-h-[44px]"
+          >
             <TULogoAlive
-              size={40}
+              size={36}
               variant="rose"
               showText={false}
               interactive={false}
             />
             <div className="hidden sm:block">
-              <span className="font-body text-[11px] tracking-[0.3em] text-rose-soft block">
+              <span className="font-body text-[10px] md:text-[11px] tracking-[0.3em] text-rose-soft block">
                 TATA UMAÑA
               </span>
-              <span className="font-body text-[9px] tracking-[0.2em] text-cream/40">
+              <span className="font-body text-[8px] md:text-[9px] tracking-[0.2em] text-cream/40">
                 WELLNESS CURATOR
               </span>
             </div>
@@ -327,7 +351,7 @@ export default function Home() {
               <a
                 key={item.label}
                 href={item.href}
-                className="font-body text-[11px] tracking-[0.15em] text-cream/60 hover:text-rose-soft transition-colors relative group"
+                className="font-body text-[11px] tracking-[0.15em] text-cream/60 hover:text-rose-soft transition-colors relative group py-2"
               >
                 {item.label.toUpperCase()}
                 <span className="absolute -bottom-1 left-0 w-0 h-px bg-rose-soft transition-all duration-300 group-hover:w-full" />
@@ -335,11 +359,13 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="flex items-center gap-6">
-            <MoonPhase />
+          <div className="flex items-center gap-4 md:gap-6">
+            <div className="hidden sm:block">
+              <MoonPhase />
+            </div>
             <a
               href="#book"
-              className="font-body text-[11px] tracking-[0.1em] bg-rose-deep hover:bg-rose-soft text-cream px-6 py-3 transition-all duration-300"
+              className="font-body text-[10px] md:text-[11px] tracking-[0.1em] bg-rose-deep hover:bg-rose-soft text-cream px-5 md:px-6 py-3 transition-all duration-300 min-h-[44px] flex items-center active:scale-[0.98]"
             >
               RESERVE
             </a>
@@ -369,9 +395,9 @@ export default function Home() {
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-rose-deep/5 to-transparent" />
 
         {/* Main content - asymmetric grid */}
-        <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 grid lg:grid-cols-12 gap-8 lg:gap-4 items-center min-h-screen py-32">
+        <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 grid lg:grid-cols-12 gap-8 lg:gap-4 items-center min-h-screen pt-24 pb-20 md:py-32">
           {/* Left: Typography */}
-          <div className="lg:col-span-6 lg:col-start-1">
+          <div className="lg:col-span-6 lg:col-start-1 order-2 lg:order-1 text-center lg:text-left">
             <p
               className="font-body text-[10px] tracking-[0.4em] text-gold mb-8 opacity-0"
               style={{ animation: "fadeInUp 0.8s ease-out 0.2s forwards" }}
@@ -389,13 +415,14 @@ export default function Home() {
             </h1>
 
             <div
-              className="flex items-center gap-4 mb-10 opacity-0"
+              className="flex items-center justify-center lg:justify-start gap-4 mb-10 opacity-0"
               style={{ animation: "fadeInUp 0.8s ease-out 0.6s forwards" }}
             >
-              <div className="w-16 h-px bg-gradient-to-r from-gold to-transparent" />
+              <div className="w-12 md:w-16 h-px bg-gradient-to-r from-gold to-transparent" />
               <span className="font-body text-[10px] tracking-[0.2em] text-cream/40">
                 23 YEARS OF PRACTICE
               </span>
+              <div className="w-12 md:w-16 h-px bg-gradient-to-l from-gold to-transparent lg:hidden" />
             </div>
 
             <p
@@ -408,12 +435,12 @@ export default function Home() {
             </p>
 
             <div
-              className="flex flex-col sm:flex-row gap-4 opacity-0"
+              className="flex flex-col sm:flex-row gap-4 opacity-0 justify-center lg:justify-start"
               style={{ animation: "fadeInUp 0.8s ease-out 0.9s forwards" }}
             >
               <a
                 href="#book"
-                className="inline-flex items-center justify-center gap-3 font-body text-[11px] tracking-[0.15em] bg-rose-soft text-charcoal px-8 py-4 hover:bg-gold transition-all duration-500"
+                className="inline-flex items-center justify-center gap-3 font-body text-[11px] md:text-[12px] tracking-[0.15em] bg-rose-soft text-charcoal px-8 py-5 md:py-4 hover:bg-gold transition-all duration-500 min-h-[56px] active:scale-[0.98]"
               >
                 BOOK AN EXPERIENCE
                 <svg
@@ -432,19 +459,24 @@ export default function Home() {
               </a>
               <a
                 href="#services"
-                className="inline-flex items-center justify-center font-body text-[11px] tracking-[0.15em] border border-cream/20 text-cream/70 px-8 py-4 hover:border-rose-soft hover:text-rose-soft transition-all duration-300"
+                className="inline-flex items-center justify-center font-body text-[11px] md:text-[12px] tracking-[0.15em] border border-cream/20 text-cream/70 px-8 py-5 md:py-4 hover:border-rose-soft hover:text-rose-soft transition-all duration-300 min-h-[56px] active:scale-[0.98]"
               >
                 EXPLORE
               </a>
             </div>
           </div>
 
-          {/* Right: Animated Logo */}
+          {/* Right: Animated Logo - Hidden on mobile, shown at top on tablet+ */}
           <div
-            className="lg:col-span-5 lg:col-start-8 flex justify-center lg:justify-end opacity-0"
+            className="lg:col-span-5 lg:col-start-8 flex justify-center lg:justify-end opacity-0 order-1 lg:order-2"
             style={{ animation: "fadeIn 1.2s ease-out 0.5s forwards" }}
           >
-            <TULogoAlive size={280} variant="rose" showText={true} />
+            <div className="hidden md:block">
+              <TULogoAlive size={280} variant="rose" showText={true} />
+            </div>
+            <div className="md:hidden">
+              <TULogoAlive size={180} variant="rose" showText={false} />
+            </div>
           </div>
         </div>
 
@@ -511,44 +543,90 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right column - credentials */}
+            {/* Right column - credentials - WHERE SOUL LIVES */}
             <div className="lg:col-span-5">
-              <div className="bg-charcoal p-10 lg:p-12">
-                <p className="font-body text-[10px] tracking-[0.3em] text-gold mb-10">
-                  CREDENTIALS
-                </p>
+              <div className="credentials-card relative bg-charcoal p-8 md:p-10 lg:p-12 overflow-hidden">
+                {/* Ambient glow */}
+                <div className="absolute -top-20 -right-20 w-40 h-40 bg-rose-deep/20 rounded-full blur-3xl animate-pulse" />
+                <div
+                  className="absolute -bottom-10 -left-10 w-32 h-32 bg-gold/10 rounded-full blur-2xl"
+                  style={{ animation: "pulse 4s ease-in-out infinite 1s" }}
+                />
 
-                <div className="space-y-8">
+                {/* Header with breathing animation */}
+                <div className="relative flex items-center gap-3 mb-10">
+                  <div className="w-2 h-2 bg-gold rounded-full animate-pulse" />
+                  <p className="font-body text-[10px] tracking-[0.3em] text-gold">
+                    CREDENTIALS
+                  </p>
+                  <div className="flex-1 h-px bg-gradient-to-r from-gold/50 to-transparent" />
+                </div>
+
+                {/* Credentials with staggered reveal and hover effects */}
+                <div className="relative space-y-6">
                   {credentials.map((cred, i) => (
                     <div
                       key={i}
-                      className="flex justify-between items-baseline border-b border-white/10 pb-4"
+                      className="group credential-item relative flex items-start gap-4 p-4 -mx-4 rounded-sm transition-all duration-500 hover:bg-white/5 cursor-default"
+                      style={{
+                        animationDelay: `${i * 0.1}s`,
+                      }}
                     >
-                      <span className="font-body text-[11px] tracking-[0.1em] text-cream/50">
-                        {cred.label.toUpperCase()}
+                      {/* Icon with glow */}
+                      <span
+                        className="text-rose-soft text-lg mt-0.5 transition-all duration-300 group-hover:text-gold group-hover:scale-110"
+                        style={{ textShadow: "0 0 20px rgba(212,165,165,0.5)" }}
+                      >
+                        {cred.icon}
                       </span>
-                      <span className="font-display text-lg text-cream">
-                        {cred.value}
-                      </span>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <span className="font-body text-[9px] tracking-[0.2em] text-cream/40 block mb-1">
+                          {cred.label.toUpperCase()}
+                        </span>
+                        <div className="flex flex-wrap items-baseline gap-x-2">
+                          <span className="font-display text-2xl md:text-3xl text-cream transition-colors group-hover:text-rose-soft">
+                            {cred.value}
+                          </span>
+                          <span className="font-display text-sm text-cream/50">
+                            {cred.suffix}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Hover line indicator */}
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-0 bg-gold transition-all duration-300 group-hover:h-full rounded-full" />
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-12 pt-8 border-t border-white/10">
-                  <p className="font-body text-[9px] tracking-[0.2em] text-cream/30 mb-6">
-                    RECOGNITION
+                {/* Recognition - Press logos with premium feel */}
+                <div className="relative mt-10 pt-8 border-t border-white/10">
+                  <p className="font-body text-[9px] tracking-[0.3em] text-cream/30 mb-8 text-center">
+                    AS FEATURED IN
                   </p>
-                  <div className="flex flex-wrap gap-6">
-                    {["VOGUE", "FORBES", "DINERS"].map((pub) => (
-                      <span
-                        key={pub}
-                        className="font-display text-sm italic text-cream/40 hover:text-gold transition-colors cursor-default"
-                      >
-                        {pub}
-                      </span>
+                  <div className="flex justify-center items-center gap-8 md:gap-12">
+                    {pressLogos.map((pub, i) => (
+                      <div key={pub.name} className="group relative">
+                        <span
+                          className={`font-display text-lg md:text-xl text-cream/30 transition-all duration-500 group-hover:text-gold group-hover:scale-105 inline-block ${pub.style === "italic" ? "italic" : ""}`}
+                          style={{
+                            letterSpacing: "0.1em",
+                          }}
+                        >
+                          {pub.name}
+                        </span>
+                        {/* Underline glow on hover */}
+                        <div className="absolute -bottom-2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                      </div>
                     ))}
                   </div>
                 </div>
+
+                {/* Decorative corner elements */}
+                <div className="absolute top-4 right-4 w-8 h-8 border-t border-r border-gold/20" />
+                <div className="absolute bottom-4 left-4 w-8 h-8 border-b border-l border-gold/20" />
               </div>
             </div>
           </div>
@@ -561,7 +639,7 @@ export default function Home() {
       <section
         id="services"
         data-reveal
-        className={`py-32 md:py-40 px-6 bg-charcoal transition-all duration-1000 ${
+        className={`py-20 md:py-32 lg:py-40 px-4 md:px-6 bg-charcoal transition-all duration-1000 ${
           isVisible("services")
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-12"
@@ -569,7 +647,7 @@ export default function Home() {
       >
         <div className="max-w-7xl mx-auto">
           {/* Section header */}
-          <div className="flex items-center justify-between mb-16">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10 md:mb-16">
             <div className="flex items-center gap-4">
               <span className="font-body text-[10px] tracking-[0.3em] text-gold">
                 02
@@ -579,36 +657,36 @@ export default function Home() {
                 OFFERINGS
               </span>
             </div>
-            <h2 className="font-display text-3xl md:text-4xl text-cream font-light hidden md:block">
+            <h2 className="font-display text-2xl md:text-3xl lg:text-4xl text-cream font-light">
               Your Journey
             </h2>
           </div>
 
-          {/* Services grid - varied sizes */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-1">
+          {/* Services grid - mobile optimized */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-1">
             {services.map((service, i) => (
               <div
                 key={i}
-                className={`group relative bg-charcoal-light/30 border border-white/5 p-8 lg:p-10 transition-all duration-500 hover:bg-charcoal-light/50 hover:border-rose-soft/20 ${
+                className={`group relative bg-charcoal-light/30 border border-white/5 p-6 md:p-8 lg:p-10 transition-all duration-500 hover:bg-charcoal-light/50 hover:border-rose-soft/20 active:bg-charcoal-light/60 ${
                   service.featured ? "lg:row-span-2" : ""
                 }`}
               >
                 {/* Icon */}
                 <ServiceIcon
                   type={service.icon}
-                  className="w-12 h-12 text-rose-soft mb-6 transition-colors group-hover:text-gold"
+                  className="w-10 h-10 md:w-12 md:h-12 text-rose-soft mb-4 md:mb-6 transition-colors group-hover:text-gold"
                 />
 
                 {/* Content */}
-                <h3 className="font-display text-2xl text-cream mb-2">
+                <h3 className="font-display text-xl md:text-2xl text-cream mb-2">
                   {service.name}
                 </h3>
-                <p className="font-body text-[10px] tracking-[0.15em] text-rose-muted mb-6">
+                <p className="font-body text-[9px] md:text-[10px] tracking-[0.15em] text-rose-muted mb-4 md:mb-6">
                   {service.nameEs.toUpperCase()}
                 </p>
 
                 <p
-                  className={`font-display text-sm text-cream/50 leading-relaxed mb-8 ${
+                  className={`font-display text-sm text-cream/50 leading-relaxed mb-6 md:mb-8 ${
                     service.featured ? "" : "line-clamp-3"
                   }`}
                 >
@@ -616,7 +694,7 @@ export default function Home() {
                 </p>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between mt-auto pt-6 border-t border-white/5">
+                <div className="flex items-center justify-between mt-auto pt-4 md:pt-6 border-t border-white/5">
                   <div>
                     <span className="font-body text-gold text-sm">
                       {service.price}
@@ -625,7 +703,7 @@ export default function Home() {
                       / {service.duration}
                     </span>
                   </div>
-                  <button className="font-body text-[10px] tracking-[0.1em] text-rose-soft border border-rose-soft/30 px-4 py-2 transition-all group-hover:bg-rose-soft group-hover:text-charcoal group-hover:border-rose-soft">
+                  <button className="font-body text-[10px] tracking-[0.1em] text-rose-soft border border-rose-soft/30 px-4 py-3 min-h-[44px] transition-all group-hover:bg-rose-soft group-hover:text-charcoal group-hover:border-rose-soft active:scale-[0.98]">
                     RESERVE
                   </button>
                 </div>
@@ -888,14 +966,14 @@ export default function Home() {
       <section
         id="book"
         data-reveal
-        className={`py-32 md:py-40 px-6 bg-cream transition-all duration-1000 ${
+        className={`py-20 md:py-32 lg:py-40 px-4 md:px-6 bg-cream transition-all duration-1000 ${
           isVisible("book")
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-12"
         }`}
       >
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-center justify-center gap-4 mb-16">
+          <div className="flex items-center justify-center gap-4 mb-10 md:mb-16">
             <span className="font-body text-[10px] tracking-[0.3em] text-rose-deep">
               06
             </span>
@@ -905,16 +983,19 @@ export default function Home() {
             </span>
           </div>
 
-          <h2 className="font-display text-4xl md:text-5xl text-charcoal font-light mb-16 text-center">
+          <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-charcoal font-light mb-10 md:mb-16 text-center">
             Reserve Your Experience
           </h2>
 
-          {/* Progress steps */}
-          <div className="flex items-center justify-center gap-2 mb-16">
+          {/* Progress steps - mobile optimized */}
+          <div className="flex items-center justify-center gap-1 md:gap-2 mb-10 md:mb-16 overflow-x-auto">
             {bookingSteps.map((step, i) => (
-              <div key={i} className="flex items-center gap-2">
+              <div
+                key={i}
+                className="flex items-center gap-1 md:gap-2 flex-shrink-0"
+              >
                 <div
-                  className={`flex items-center justify-center w-8 h-8 font-body text-xs transition-all duration-300 ${
+                  className={`flex items-center justify-center w-10 h-10 md:w-8 md:h-8 font-body text-xs transition-all duration-300 ${
                     i < bookingStep
                       ? "bg-gold text-charcoal"
                       : i === bookingStep
@@ -925,40 +1006,40 @@ export default function Home() {
                   {i + 1}
                 </div>
                 <span
-                  className={`font-body text-[10px] tracking-[0.1em] hidden sm:block ${
+                  className={`font-body text-[9px] md:text-[10px] tracking-[0.1em] hidden sm:block ${
                     i <= bookingStep ? "text-charcoal" : "text-charcoal/30"
                   }`}
                 >
                   {step.toUpperCase()}
                 </span>
                 {i < bookingSteps.length - 1 && (
-                  <div className="w-8 md:w-16 h-px bg-charcoal/10 mx-2" />
+                  <div className="w-4 md:w-16 h-px bg-charcoal/10 mx-1 md:mx-2" />
                 )}
               </div>
             ))}
           </div>
 
-          {/* Form container */}
-          <div className="bg-white border border-charcoal/5 p-8 md:p-12">
+          {/* Form container - mobile optimized */}
+          <div className="bg-white border border-charcoal/5 p-5 md:p-8 lg:p-12">
             {bookingStep === 0 && (
               <div>
-                <p className="font-body text-[11px] text-charcoal/50 mb-8">
+                <p className="font-body text-[11px] text-charcoal/50 mb-6 md:mb-8">
                   Select your experience:
                 </p>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {services.map((s, i) => (
                     <button
                       key={i}
                       onClick={() => setBookingStep(1)}
-                      className="w-full flex items-center justify-between p-5 border border-charcoal/10 hover:border-rose-soft hover:bg-rose-soft/5 transition-all duration-300 text-left group"
+                      className="w-full flex items-center justify-between p-4 md:p-5 border border-charcoal/10 hover:border-rose-soft hover:bg-rose-soft/5 transition-all duration-300 text-left group min-h-[72px] active:bg-rose-soft/10 active:scale-[0.99]"
                     >
-                      <div className="flex items-center gap-5">
+                      <div className="flex items-center gap-4 md:gap-5">
                         <ServiceIcon
                           type={s.icon}
-                          className="w-8 h-8 text-charcoal/40 group-hover:text-rose-deep transition-colors"
+                          className="w-8 h-8 text-charcoal/40 group-hover:text-rose-deep transition-colors flex-shrink-0"
                         />
                         <div>
-                          <span className="font-display text-lg text-charcoal block">
+                          <span className="font-display text-base md:text-lg text-charcoal block">
                             {s.name}
                           </span>
                           <span className="font-body text-[10px] text-charcoal/40">
@@ -966,7 +1047,7 @@ export default function Home() {
                           </span>
                         </div>
                       </div>
-                      <span className="font-body text-sm text-gold">
+                      <span className="font-body text-sm text-gold flex-shrink-0 ml-2">
                         {s.price}
                       </span>
                     </button>
@@ -977,14 +1058,14 @@ export default function Home() {
 
             {bookingStep === 1 && (
               <div>
-                <h3 className="font-display text-2xl text-charcoal mb-8 text-center">
+                <h3 className="font-display text-xl md:text-2xl text-charcoal mb-6 md:mb-8 text-center">
                   Select Date & Time
                 </h3>
-                <div className="grid grid-cols-7 gap-2 mb-8">
+                <div className="grid grid-cols-7 gap-1 md:gap-2 mb-6 md:mb-8">
                   {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
                     <span
                       key={i}
-                      className="font-body text-[10px] text-charcoal/40 text-center"
+                      className="font-body text-[10px] text-charcoal/40 text-center py-2"
                     >
                       {d}
                     </span>
@@ -994,12 +1075,12 @@ export default function Home() {
                       key={i}
                       onClick={() => i > 5 && setBookingStep(2)}
                       disabled={i <= 5}
-                      className={`aspect-square font-body text-sm flex items-center justify-center transition-all ${
+                      className={`aspect-square font-body text-sm flex items-center justify-center transition-all min-h-[44px] active:scale-95 ${
                         i <= 5
                           ? "text-charcoal/20 cursor-not-allowed"
                           : i === 14
                             ? "bg-rose-deep text-cream"
-                            : "text-charcoal hover:bg-charcoal/5"
+                            : "text-charcoal hover:bg-charcoal/5 active:bg-charcoal/10"
                       }`}
                     >
                       {i + 1}
@@ -1008,7 +1089,7 @@ export default function Home() {
                 </div>
                 <button
                   onClick={() => setBookingStep(0)}
-                  className="font-body text-[10px] text-charcoal/40 hover:text-charcoal transition-colors"
+                  className="font-body text-[11px] text-charcoal/40 hover:text-charcoal transition-colors py-3 min-h-[44px]"
                 >
                   ← Back
                 </button>
@@ -1017,7 +1098,7 @@ export default function Home() {
 
             {bookingStep === 2 && (
               <div>
-                <h3 className="font-display text-2xl text-charcoal mb-8 text-center">
+                <h3 className="font-display text-xl md:text-2xl text-charcoal mb-6 md:mb-8 text-center">
                   Your Details
                 </h3>
                 {["Full Name", "Email", "WhatsApp", "Notes (optional)"].map(
@@ -1028,7 +1109,16 @@ export default function Home() {
                       </label>
                       <input
                         type={field === "Email" ? "email" : "text"}
-                        className="w-full font-display text-lg border-b border-charcoal/20 py-3 outline-none focus:border-rose-deep transition-colors bg-transparent"
+                        className="w-full font-display text-base md:text-lg border-b border-charcoal/20 py-4 outline-none focus:border-rose-deep transition-colors bg-transparent"
+                        autoComplete={
+                          field === "Email"
+                            ? "email"
+                            : field === "Full Name"
+                              ? "name"
+                              : field === "WhatsApp"
+                                ? "tel"
+                                : "off"
+                        }
                       />
                     </div>
                   ),
@@ -1036,13 +1126,13 @@ export default function Home() {
                 <div className="flex gap-4 mt-8">
                   <button
                     onClick={() => setBookingStep(1)}
-                    className="font-body text-[10px] text-charcoal/40 hover:text-charcoal transition-colors"
+                    className="font-body text-[11px] text-charcoal/40 hover:text-charcoal transition-colors py-3 min-h-[44px]"
                   >
                     ← Back
                   </button>
                   <button
                     onClick={() => setBookingStep(3)}
-                    className="flex-1 font-body text-[11px] tracking-[0.15em] bg-rose-deep hover:bg-rose-soft text-cream py-4 transition-all"
+                    className="flex-1 font-body text-[11px] tracking-[0.15em] bg-rose-deep hover:bg-rose-soft text-cream py-4 transition-all min-h-[56px] active:scale-[0.98]"
                   >
                     CONTINUE
                   </button>
