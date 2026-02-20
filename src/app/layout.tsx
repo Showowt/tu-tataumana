@@ -43,6 +43,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Tata Umaña" }],
   creator: "MachineMind Consulting",
+  applicationName: "TU. by Tata Umaña",
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -69,14 +70,23 @@ export const metadata: Metadata = {
     description:
       "Transformative wellness experiences. Yoga, sound healing, Reiki & retreats with Vogue-featured practitioner.",
     images: ["https://tu-tataumana.vercel.app/twitter-image"],
+    creator: "@tataumana",
   },
   robots: {
     index: true,
     follow: true,
   },
   icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: [
+      { url: "/icon", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [{ url: "/apple-icon", sizes: "180x180", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "TU. by Tata Umaña",
+    statusBarStyle: "black-translucent",
   },
 };
 
