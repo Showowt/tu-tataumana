@@ -1,6 +1,16 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
+
+const TULogoAlive = dynamic(() => import("@/components/TULogoAlive"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-10 h-10 border border-rose-soft/60 flex items-center justify-center">
+      <span className="font-body text-sm font-semibold text-rose-soft">TU</span>
+    </div>
+  ),
+});
 
 interface Message {
   role: "user" | "assistant";
@@ -144,10 +154,13 @@ export default function ChatBot() {
         {/* Header */}
         <div className="bg-charcoal px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 border border-rose-soft/60 flex items-center justify-center">
-              <span className="font-body text-sm font-semibold text-rose-soft">
-                TU
-              </span>
+            <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
+              <TULogoAlive
+                size={48}
+                variant="rose"
+                showText={false}
+                interactive={false}
+              />
             </div>
             <div>
               <h3 className="font-display text-cream text-lg">TU</h3>
