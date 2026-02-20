@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-const TULogoAlive = dynamic(() => import("@/components/TULogoAlive"), {
+const TULogoAliveNew = dynamic(() => import("@/components/TULogoAliveNew"), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full flex items-center justify-center">
@@ -173,7 +173,7 @@ export default function ChatBot() {
           aria-label="Chat with YOU - your wellness guide"
         >
           <div className="pointer-events-none">
-            <TULogoAlive
+            <TULogoAliveNew
               size={56}
               variant="rose"
               showText={false}
@@ -200,7 +200,7 @@ export default function ChatBot() {
         <div className="bg-charcoal px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
-              <TULogoAlive
+              <TULogoAliveNew
                 size={52}
                 variant="rose"
                 showText={false}

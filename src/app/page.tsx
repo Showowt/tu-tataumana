@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 
 // Signature components (client-only)
-const TULogoAlive = dynamic(() => import("@/components/TULogoAlive"), {
+const TULogoAliveNew = dynamic(() => import("@/components/TULogoAliveNew"), {
   ssr: false,
 });
 const AuroraGlow = dynamic(() => import("@/components/AuroraGlow"), {
@@ -53,6 +53,10 @@ const MagneticButton = dynamic(() => import("@/components/MagneticButton"), {
 const LotusSpinner = dynamic(() => import("@/components/LotusSpinner"), {
   ssr: false,
 });
+const JustbYogaAcademy = dynamic(
+  () => import("@/components/JustbYogaAcademy"),
+  { ssr: false },
+);
 
 // Custom service icons - elegant SVG symbols instead of emojis
 const ServiceIcon = ({
@@ -363,7 +367,7 @@ export default function Home() {
             href="#hero"
             className="flex items-center gap-3 md:gap-4 group min-h-[44px]"
           >
-            <TULogoAlive
+            <TULogoAliveNew
               size={36}
               variant="rose"
               showText={false}
@@ -512,10 +516,10 @@ export default function Home() {
             style={{ animation: "fadeIn 1.2s ease-out 0.5s forwards" }}
           >
             <div className="hidden md:block">
-              <TULogoAlive size={280} variant="rose" showText={true} />
+              <TULogoAliveNew size={280} variant="rose" showText={true} />
             </div>
             <div className="md:hidden">
-              <TULogoAlive size={180} variant="rose" showText={false} />
+              <TULogoAliveNew size={180} variant="rose" showText={false} />
             </div>
           </div>
         </div>
@@ -1015,6 +1019,11 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
+          JUSTBYOGA ACADEMY — Daily yoga class booking
+          ═══════════════════════════════════════════════════════════════════ */}
+      <JustbYogaAcademy />
+
+      {/* ═══════════════════════════════════════════════════════════════════
           BOOKING — Refined multi-step form
           ═══════════════════════════════════════════════════════════════════ */}
       <section
@@ -1257,7 +1266,7 @@ export default function Home() {
           <div className="grid md:grid-cols-12 gap-12 md:gap-8 mb-16">
             {/* Logo & tagline */}
             <div className="md:col-span-4">
-              <TULogoAlive
+              <TULogoAliveNew
                 size={80}
                 variant="rose"
                 showText={false}

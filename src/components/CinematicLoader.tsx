@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import TULogoAlive from "./TULogoAlive";
+import TULogoAliveNew from "./TULogoAliveNew";
 
 interface CinematicLoaderProps {
   onComplete: () => void;
@@ -214,7 +214,7 @@ export default function CinematicLoader({
               : "opacity-100 scale-100"
         }`}
       >
-        <TULogoAlive
+        <TULogoAliveNew
           size={200}
           variant="rose"
           showText={true}
