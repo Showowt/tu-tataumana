@@ -168,15 +168,18 @@ export default function ChatBot() {
             active:scale-95
             focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-cream
             overflow-hidden
+            cursor-pointer
           "
           aria-label="Chat with YOU - your wellness guide"
         >
-          <TULogoAlive
-            size={56}
-            variant="rose"
-            showText={false}
-            interactive={false}
-          />
+          <div className="pointer-events-none">
+            <TULogoAlive
+              size={56}
+              variant="rose"
+              showText={false}
+              interactive={false}
+            />
+          </div>
         </button>
       </div>
 
