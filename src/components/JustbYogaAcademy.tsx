@@ -501,6 +501,50 @@ function BookingForm({
   );
 }
 
+// Payment method configuration
+const PAYMENT_METHODS = [
+  {
+    id: "nequi",
+    name: "Nequi",
+    nameEs: "Nequi",
+    icon: "📱",
+    number: "3185083035",
+    description: "Send to this Nequi number",
+    descriptionEs: "Envía a este número Nequi",
+    type: "copy" as const,
+  },
+  {
+    id: "bancolombia",
+    name: "Bancolombia",
+    nameEs: "Bancolombia",
+    icon: "🏦",
+    number: "207-859047-00",
+    description: "Savings Account / Cuenta de Ahorros",
+    descriptionEs: "Cuenta de Ahorros",
+    type: "copy" as const,
+  },
+  {
+    id: "zelle",
+    name: "Zelle / PayPal",
+    nameEs: "Zelle / PayPal",
+    icon: "💳",
+    number: "+1 9174538307",
+    description: "Send to this phone number",
+    descriptionEs: "Envía a este número de teléfono",
+    type: "copy" as const,
+  },
+  {
+    id: "wompi",
+    name: "Pay Online",
+    nameEs: "Pagar en Línea",
+    icon: "🔒",
+    url: "https://checkout.wompi.co/l/h3WPfP",
+    description: "Secure card payment with Wompi",
+    descriptionEs: "Pago seguro con tarjeta vía Wompi",
+    type: "link" as const,
+  },
+];
+
 interface PaymentCheckoutProps {
   bookingData: BookingData;
   onComplete: () => void;
@@ -512,16 +556,48 @@ function PaymentCheckout({
   onComplete,
   onBack,
 }: PaymentCheckoutProps) {
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
 
-  const handlePayment = () => {
-    setIsProcessing(true);
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsProcessing(false);
-      onComplete();
-    }, 2000);
+  const handleCopy = async (text: string, methodId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(methodId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopiedId(methodId);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
   };
+
+  const handleWompiClick = () => {
+    const wompiMethod = PAYMENT_METHODS.find((m) => m.id === "wompi");
+    if (wompiMethod && "url" in wompiMethod) {
+      window.open(wompiMethod.url, "_blank", "noopener,noreferrer");
+      setSelectedMethod("wompi");
+    }
+  };
+
+  const handleConfirmPayment = () => {
+    setIsConfirming(true);
+    // Brief delay then complete
+    setTimeout(() => {
+      setIsConfirming(false);
+      onComplete();
+    }, 1500);
+  };
+
+  const selectedPaymentMethod = PAYMENT_METHODS.find(
+    (m) => m.id === selectedMethod,
+  );
 
   return (
     <div className="animate-fadeIn">
@@ -537,7 +613,7 @@ function PaymentCheckout({
       {/* Booking Summary */}
       <div className="bg-cream-warm/50 p-6 mb-8">
         <h4 className="font-body text-[10px] tracking-[0.1em] text-charcoal/50 mb-4">
-          BOOKING SUMMARY
+          BOOKING SUMMARY / RESUMEN DE RESERVA
         </h4>
 
         <div className="space-y-3 mb-6">
@@ -576,7 +652,7 @@ function PaymentCheckout({
         <div className="border-t border-charcoal/10 pt-4">
           <div className="flex justify-between items-center">
             <span className="font-body text-xs tracking-[0.1em] text-charcoal/50">
-              TOTAL
+              TOTAL A PAGAR
             </span>
             <span className="font-display text-2xl text-gold">
               {bookingData.selectedClass &&
@@ -589,36 +665,156 @@ function PaymentCheckout({
       {/* Payment Methods */}
       <div className="mb-8">
         <h4 className="font-body text-[10px] tracking-[0.1em] text-charcoal/50 mb-4">
-          PAYMENT METHOD
+          SELECT PAYMENT METHOD / MÉTODO DE PAGO
         </h4>
 
-        <div className="grid grid-cols-2 gap-3">
-          <button className="p-4 border border-rose-deep bg-rose-soft/10 text-center transition-all">
-            <span className="font-body text-xs text-charcoal">Credit Card</span>
-          </button>
-          <button className="p-4 border border-charcoal/10 hover:border-charcoal/30 text-center transition-all">
-            <span className="font-body text-xs text-charcoal/70">
-              Bank Transfer
-            </span>
-          </button>
+        <div className="space-y-3">
+          {PAYMENT_METHODS.map((method) => (
+            <div
+              key={method.id}
+              className={`border transition-all duration-300 ${
+                selectedMethod === method.id
+                  ? "border-rose-deep bg-rose-soft/10"
+                  : "border-charcoal/10 hover:border-charcoal/30"
+              }`}
+            >
+              <button
+                onClick={() => {
+                  if (method.type === "link") {
+                    handleWompiClick();
+                  } else {
+                    setSelectedMethod(method.id);
+                  }
+                }}
+                className="w-full p-4 text-left flex items-center gap-4 min-h-[72px]"
+              >
+                <span className="text-2xl">{method.icon}</span>
+                <div className="flex-1">
+                  <p className="font-display text-sm text-charcoal">
+                    {method.name}
+                  </p>
+                  <p className="font-body text-[10px] text-charcoal/50">
+                    {method.description}
+                  </p>
+                </div>
+                {method.type === "link" && (
+                  <svg
+                    className="w-4 h-4 text-charcoal/40"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                )}
+              </button>
+
+              {/* Expanded Payment Details */}
+              {selectedMethod === method.id && method.type === "copy" && (
+                <div className="px-4 pb-4 pt-0 border-t border-charcoal/5">
+                  <div className="bg-charcoal/5 p-4 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-body text-[9px] text-charcoal/50 mb-1">
+                        {method.id === "bancolombia"
+                          ? "ACCOUNT NUMBER / NÚMERO DE CUENTA"
+                          : "PHONE NUMBER / NÚMERO"}
+                      </p>
+                      <p className="font-display text-lg text-charcoal tracking-wide">
+                        {"number" in method && method.number}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() =>
+                        "number" in method &&
+                        handleCopy(method.number, method.id)
+                      }
+                      className={`px-4 py-2 min-h-[44px] font-body text-[10px] tracking-[0.1em] transition-all ${
+                        copiedId === method.id
+                          ? "bg-gold text-charcoal"
+                          : "bg-charcoal text-cream hover:bg-charcoal/80"
+                      }`}
+                    >
+                      {copiedId === method.id ? "COPIED ✓" : "COPY"}
+                    </button>
+                  </div>
+
+                  <p className="font-body text-[10px] text-charcoal/50 mt-3 leading-relaxed">
+                    {method.id === "nequi" && (
+                      <>
+                        Send{" "}
+                        <strong className="text-gold">
+                          {bookingData.selectedClass &&
+                            formatPrice(bookingData.selectedClass.price)}
+                        </strong>{" "}
+                        to this Nequi number. Include your name in the
+                        description.
+                        <br />
+                        <span className="text-charcoal/40">
+                          Envía el monto a este Nequi. Incluye tu nombre en la
+                          descripción.
+                        </span>
+                      </>
+                    )}
+                    {method.id === "bancolombia" && (
+                      <>
+                        Transfer{" "}
+                        <strong className="text-gold">
+                          {bookingData.selectedClass &&
+                            formatPrice(bookingData.selectedClass.price)}
+                        </strong>{" "}
+                        to this savings account. Include your name as reference.
+                        <br />
+                        <span className="text-charcoal/40">
+                          Transfiere a esta cuenta de ahorros. Incluye tu nombre
+                          como referencia.
+                        </span>
+                      </>
+                    )}
+                    {method.id === "zelle" && (
+                      <>
+                        Send{" "}
+                        <strong className="text-gold">
+                          {bookingData.selectedClass &&
+                            formatPrice(bookingData.selectedClass.price)}
+                        </strong>{" "}
+                        via Zelle or PayPal to this number. Include your email
+                        in notes.
+                        <br />
+                        <span className="text-charcoal/40">
+                          Envía vía Zelle o PayPal a este número. Incluye tu
+                          correo en las notas.
+                        </span>
+                      </>
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
+      {/* Action Buttons */}
       <div className="flex gap-4">
         <button
           type="button"
           onClick={onBack}
           className="font-body text-[11px] text-charcoal/40 hover:text-charcoal transition-colors py-3 min-h-[44px]"
-          disabled={isProcessing}
+          disabled={isConfirming}
         >
           ← Back
         </button>
         <button
-          onClick={handlePayment}
-          disabled={isProcessing}
+          onClick={handleConfirmPayment}
+          disabled={!selectedMethod || isConfirming}
           className="flex-1 font-body text-[11px] tracking-[0.15em] bg-gold hover:bg-gold-light text-charcoal py-4 transition-all min-h-[56px] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isProcessing ? (
+          {isConfirming ? (
             <span className="flex items-center justify-center gap-2">
               <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                 <circle
@@ -636,18 +832,38 @@ function PaymentCheckout({
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              PROCESSING...
+              CONFIRMING...
             </span>
+          ) : selectedMethod === "wompi" ? (
+            "I COMPLETED PAYMENT / YA PAGUÉ"
+          ) : selectedMethod ? (
+            "I SENT PAYMENT / YA ENVIÉ EL PAGO"
           ) : (
-            "PAY NOW"
+            "SELECT A PAYMENT METHOD"
           )}
         </button>
       </div>
 
+      {/* Help Text */}
+      {selectedMethod && selectedMethod !== "wompi" && (
+        <p className="font-body text-[10px] text-charcoal/50 text-center mt-6 leading-relaxed">
+          After sending payment, click the button above. You&apos;ll receive
+          WhatsApp confirmation within 30 minutes.
+          <br />
+          <span className="text-charcoal/40">
+            Después de enviar el pago, haz clic en el botón. Recibirás
+            confirmación por WhatsApp en 30 minutos.
+          </span>
+        </p>
+      )}
+
       {/* Security Note */}
-      <p className="font-body text-[9px] text-charcoal/40 text-center mt-6">
-        Secure payment powered by Wompi. Your data is encrypted and protected.
-      </p>
+      <div className="mt-6 pt-6 border-t border-charcoal/5 text-center">
+        <p className="font-body text-[9px] text-charcoal/40">
+          🔒 Your booking is protected. Contact Tata via WhatsApp for any
+          questions.
+        </p>
+      </div>
     </div>
   );
 }
