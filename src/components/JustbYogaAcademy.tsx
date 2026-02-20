@@ -1018,21 +1018,21 @@ export default function JustbYogaAcademy() {
         {/* Section Header */}
         <div className="flex items-center justify-center gap-4 mb-10 md:mb-16">
           <span className="font-body text-[10px] tracking-[0.3em] text-rose-deep">
-            07
+            06
           </span>
           <div className="w-12 h-px bg-rose-deep/30" />
           <span className="font-body text-[10px] tracking-[0.3em] text-rose-deep">
-            JUSTBYOGA BY TUISYOU
+            BOOK
           </span>
         </div>
 
         {/* Title */}
         <div className="text-center mb-12 md:mb-16">
           <h2 className="font-display text-4xl md:text-5xl lg:text-6xl text-charcoal font-light mb-4">
-            JustbYoga Academy
+            Reserve Your Experience
           </h2>
           <p className="font-display text-lg md:text-xl text-charcoal/50 italic">
-            Your Daily Practice Awaits
+            JustbYoga by TUisYOU
           </p>
           <p className="font-body text-sm text-charcoal/40 mt-2">
             Tu práctica diaria te espera
