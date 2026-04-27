@@ -211,6 +211,37 @@ body {
   filter: brightness(0.97) contrast(1.03) saturate(1.08);
 }
 
+/* Schedule section — cinematic video frame */
+.schedule-video-frame {
+  position: relative;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06),
+    0 40px 80px rgba(0,0,0,0.4),
+    0 0 120px rgba(184,119,119,0.06);
+}
+
+.schedule-day-card {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.5s,
+              background-color 0.5s;
+}
+
+.schedule-day-card:hover {
+  transform: translateY(-2px);
+}
+
+.schedule-promo-card {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.5s,
+              background-color 0.5s,
+              box-shadow 0.5s;
+}
+
+.schedule-promo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(201,169,110,0.06);
+}
+
 /* Reduce motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

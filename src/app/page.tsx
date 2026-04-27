@@ -543,46 +543,122 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ━━━ WEEKLY SCHEDULE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="py-24 md:py-32 bg-cream">
-        <div className="max-w-4xl mx-auto px-6">
+      {/* ━━━ WEEKLY SCHEDULE — Cinematic Dark Section ━━━━━━━━━━━━━━━━━━━━━ */}
+      <section className="relative py-24 md:py-32 bg-charcoal overflow-hidden">
+        {/* Background video */}
+        <div className="absolute inset-0">
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            className="w-full h-full object-cover"
+            style={{ opacity: 0.15, filter: "brightness(0.8) saturate(1.2)" }}
+          >
+            <source src="/class-video.mp4" type="video/mp4" />
+          </video>
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to bottom, rgba(44,44,44,0.85) 0%, rgba(44,44,44,0.7) 40%, rgba(44,44,44,0.85) 100%)",
+            }}
+          />
+        </div>
+
+        {/* Subtle rose glow accents */}
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse, rgba(184,119,119,0.12) 0%, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse, rgba(201,169,110,0.08) 0%, transparent 70%)",
+          }}
+        />
+
+        <div className="relative max-w-5xl mx-auto px-6">
+          {/* Header with cinematic feel */}
           <div className="text-center mb-16">
-            <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
-              JUST BYOGA BY TU
+            <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.4em] text-gold mb-4">
+              JUST B YOGA BY TU
             </p>
             <h2
-              className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-charcoal"
+              className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-white"
               style={{
-                fontSize: "clamp(2rem, 4vw, 3rem)",
+                fontSize: "clamp(2.5rem, 5vw, 4rem)",
                 fontWeight: 300,
+                lineHeight: 1.1,
               }}
             >
-              Weekly Schedule
+              Your Weekly
+              <br />
+              <span className="text-rose-soft italic">Transformation</span>
             </h2>
-            <p className="fade-in fade-in-delay-2 font-[family-name:var(--font-body)] text-sm text-charcoal/40 mt-4">
-              Tap any class to book your spot instantly
+            <p className="fade-in fade-in-delay-2 font-[family-name:var(--font-body)] text-sm text-white/40 mt-6 max-w-md mx-auto">
+              Seven days of intention. Tap any class to reserve your mat.
             </p>
           </div>
 
-          <div className="space-y-3">
+          {/* Featured video showcase */}
+          <div className="fade-in fade-in-delay-2 mb-14 relative">
+            <div className="schedule-video-frame rounded-3xl overflow-hidden" style={{ aspectRatio: "16/7" }}>
+              <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full h-full object-cover"
+                style={{ filter: "brightness(0.95) contrast(1.05) saturate(1.1)" }}
+              >
+                <source src="/class-video.mp4" type="video/mp4" />
+              </video>
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: "linear-gradient(to top, rgba(44,44,44,0.6) 0%, transparent 40%)",
+                }}
+              />
+              <div className="absolute bottom-6 left-8 right-8 flex items-end justify-between">
+                <div>
+                  <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-white/50">
+                    CASA CAROLINA &middot; CARTAGENA
+                  </p>
+                  <p className="font-[family-name:var(--font-display)] text-white text-2xl mt-1">
+                    Where the Practice Lives
+                  </p>
+                </div>
+                <button
+                  onClick={() => openBooking()}
+                  className="hidden sm:block px-6 py-2.5 rounded-full border border-white/20 text-white font-[family-name:var(--font-body)] text-xs tracking-[0.2em] hover:bg-white hover:text-charcoal transition-all duration-500"
+                >
+                  BOOK NOW
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Schedule grid — dark glass cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {weeklySchedule.map((day, dayIdx) => (
               <div
                 key={day.day}
                 className={`fade-in fade-in-delay-${Math.min(dayIdx + 1, 5)}`}
               >
-                <div className="bg-white rounded-2xl overflow-hidden border border-charcoal/5">
-                  {/* Day header */}
-                  <div className="px-6 py-4 border-b border-charcoal/5 flex items-center gap-4">
-                    <span className="font-[family-name:var(--font-body)] text-[11px] tracking-[0.25em] text-rose/70 w-10">
+                <div className="schedule-day-card rounded-2xl overflow-hidden border border-white/[0.06] bg-white/[0.04] backdrop-blur-sm hover:border-rose/20 transition-all duration-500">
+                  <div className="px-5 py-3 border-b border-white/[0.06] flex items-center gap-3">
+                    <span className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-gold w-10">
                       {day.dayShort}
                     </span>
-                    <span className="font-[family-name:var(--font-display)] text-lg text-charcoal">
+                    <span className="font-[family-name:var(--font-display)] text-lg text-white/90">
                       {day.day}
                     </span>
                   </div>
-
-                  {/* Classes */}
-                  <div className="divide-y divide-charcoal/[0.03]">
+                  <div className="divide-y divide-white/[0.04]">
                     {day.classes.map((cls, clsIdx) => (
                       <button
                         key={`${day.day}-${clsIdx}`}
@@ -593,28 +669,24 @@ export default function Home() {
                             cls.time
                           )
                         }
-                        className="w-full px-6 py-4 flex items-center justify-between group hover:bg-rose/[0.02] transition-colors"
+                        className="w-full px-5 py-3.5 flex items-center justify-between group hover:bg-white/[0.04] transition-all duration-300"
                       >
-                        <div className="flex items-center gap-5">
-                          <span className="font-[family-name:var(--font-body)] text-sm text-charcoal/35 w-20 text-left tabular-nums">
+                        <div className="flex items-center gap-4">
+                          <span className="font-[family-name:var(--font-body)] text-sm text-white/25 w-[72px] text-left tabular-nums">
                             {cls.time}
                           </span>
-                          <span className="font-[family-name:var(--font-display)] text-base text-charcoal group-hover:text-rose transition-colors">
+                          <span className="font-[family-name:var(--font-display)] text-[15px] text-white/70 group-hover:text-rose-soft transition-colors duration-300">
                             {cls.name}
                           </span>
                         </div>
                         <svg
-                          className="w-4 h-4 text-charcoal/0 group-hover:text-rose/50 transition-all group-hover:translate-x-0.5"
+                          className="w-3.5 h-3.5 text-white/0 group-hover:text-gold/60 transition-all duration-300 group-hover:translate-x-0.5"
                           fill="none"
                           viewBox="0 0 24 24"
                           strokeWidth={1.5}
                           stroke="currentColor"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                          />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                         </svg>
                       </button>
                     ))}
@@ -624,73 +696,61 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Promos */}
-          <div className="fade-in mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white rounded-2xl border border-rose/10 p-6 text-center">
-              <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-rose/60 mb-2">
-                WALK-IN CLASS
-              </p>
-              <p className="font-[family-name:var(--font-display)] text-3xl text-charcoal">
-                $80K
-              </p>
-              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 mt-1">
-                COP &middot; Single class
-              </p>
-            </div>
-            <div className="bg-white rounded-2xl border border-rose/10 p-6 text-center">
-              <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-rose/60 mb-2">
-                PROMO 2x1
-              </p>
-              <p className="font-[family-name:var(--font-display)] text-3xl text-charcoal">
-                $80K
-              </p>
-              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 mt-1">
-                COP &middot; Bring a friend
-              </p>
-            </div>
+          {/* Pricing cards — glowing glass */}
+          <div className="fade-in mt-12 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "WALK-IN", price: "$80K", sub: "Single class" },
+              { label: "2x1 PROMO", price: "$80K", sub: "Bring a friend" },
+              { label: "INTRO PACK", price: "$160K", sub: "4 classes" },
+              { label: "LIFE PACK", price: "$1.05M", sub: "Unlimited" },
+            ].map((promo) => (
+              <div
+                key={promo.label}
+                className="schedule-promo-card rounded-2xl border border-gold/10 bg-white/[0.03] p-5 text-center hover:border-gold/30 hover:bg-white/[0.06] transition-all duration-500"
+              >
+                <p className="font-[family-name:var(--font-body)] text-[9px] tracking-[0.3em] text-gold/70 mb-2">
+                  {promo.label}
+                </p>
+                <p className="font-[family-name:var(--font-display)] text-2xl md:text-3xl text-white">
+                  {promo.price}
+                </p>
+                <p className="font-[family-name:var(--font-body)] text-xs text-white/30 mt-1">
+                  COP &middot; {promo.sub}
+                </p>
+              </div>
+            ))}
           </div>
 
-          <div className="fade-in mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-2xl border border-rose/10 p-6 text-center">
-              <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-rose/60 mb-2">
-                TU INTRO PACK
-              </p>
-              <p className="font-[family-name:var(--font-display)] text-3xl text-charcoal">
-                $160K
-              </p>
-              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 mt-1">
-                COP &middot; 4 classes
-              </p>
-            </div>
-            <div className="bg-white rounded-2xl border border-rose/10 p-6 text-center">
-              <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-rose/60 mb-2">
-                TU HEALING PACK
-              </p>
-              <p className="font-[family-name:var(--font-display)] text-3xl text-charcoal">
-                $420K
-              </p>
-              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 mt-1">
-                COP &middot; 8 classes
-              </p>
-            </div>
-            <div className="bg-white rounded-2xl border border-rose/10 p-6 text-center">
-              <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-rose/60 mb-2">
-                TU LIFE PACK
-              </p>
-              <p className="font-[family-name:var(--font-display)] text-3xl text-charcoal">
-                $1.05M
-              </p>
-              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 mt-1">
-                COP &middot; Unlimited
-              </p>
-            </div>
+          {/* More packs row */}
+          <div className="fade-in mt-3 grid grid-cols-3 gap-3">
+            {[
+              { label: "JUST FLOW", price: "$295K", sub: "6 classes" },
+              { label: "HEALING", price: "$420K", sub: "8 classes" },
+              { label: "EQUILIBRIUM", price: "$630K", sub: "12 classes" },
+            ].map((promo) => (
+              <div
+                key={promo.label}
+                className="schedule-promo-card rounded-2xl border border-gold/10 bg-white/[0.03] p-5 text-center hover:border-gold/30 hover:bg-white/[0.06] transition-all duration-500"
+              >
+                <p className="font-[family-name:var(--font-body)] text-[9px] tracking-[0.3em] text-gold/70 mb-2">
+                  {promo.label}
+                </p>
+                <p className="font-[family-name:var(--font-display)] text-2xl text-white">
+                  {promo.price}
+                </p>
+                <p className="font-[family-name:var(--font-body)] text-xs text-white/30 mt-1">
+                  COP &middot; {promo.sub}
+                </p>
+              </div>
+            ))}
           </div>
 
-          <div className="fade-in mt-8 bg-white rounded-2xl border border-charcoal/5 p-6">
-            <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-charcoal/40 mb-3">
+          {/* Booking rules */}
+          <div className="fade-in mt-10 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
+            <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-gold/60 mb-4">
               BOOKING RULES
             </p>
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
               {[
                 "Reserve your spot at least 2 hours in advance",
                 "Arrive 10 minutes early (especially first class)",
@@ -699,8 +759,8 @@ export default function Home() {
                 "Tuesday Industry Rate: $45K COP",
                 "Friday Open Flow: $45K COP",
               ].map((rule) => (
-                <p key={rule} className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 flex items-start gap-2">
-                  <span className="text-rose/40 mt-0.5">·</span>
+                <p key={rule} className="font-[family-name:var(--font-body)] text-sm text-white/30 flex items-start gap-2">
+                  <span className="text-gold/40 mt-0.5">·</span>
                   {rule}
                 </p>
               ))}
