@@ -89,9 +89,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth overflow-x-hidden">
+    <html lang="en" className="scroll-smooth">
       <body
-        className={`${cormorant.variable} ${outfit.variable} antialiased overflow-x-hidden`}
+        className={`${cormorant.variable} ${outfit.variable} antialiased`}
       >
         {children}
       </body>

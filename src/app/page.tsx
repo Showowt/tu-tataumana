@@ -312,7 +312,7 @@ export default function Home() {
   const workshopPassed = WORKSHOP_TARGET.getTime() <= Date.now();
 
   return (
-    <main ref={sectionsRef} className="overflow-x-hidden w-full">
+    <main ref={sectionsRef}>
       {/* ━━━ LANGUAGE TOGGLE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <button
         onClick={() => setLang(lang === "en" ? "es" : "en")}
