@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://tu-tataumana.vercel.app"),
   title: "TU. by Tata Umana | Wellness Curator - Cartagena, Colombia",
   description:
-    "23 years of yoga, Reiki, Ayurveda, sound healing & ceremonial practice. Transformative wellness experiences in Cartagena. Featured in Vogue, Forbes, Caribbean Journal.",
+    "30 years of yoga, Reiki, Ayurveda, sound healing & ceremonial practice. Transformative wellness experiences in Cartagena. Featured in Vogue, Forbes, Caribbean Journal.",
   keywords: [
     "Tata Umana",
     "wellness Cartagena",

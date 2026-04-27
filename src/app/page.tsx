@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import BookingModal from "@/components/BookingModal";
 
 const ChatBot = dynamic(() => import("@/components/ChatBot"), { ssr: false });
 const WhatsAppButton = dynamic(() => import("@/components/WhatsAppButton"), {
@@ -13,67 +14,159 @@ const WhatsAppButton = dynamic(() => import("@/components/WhatsAppButton"), {
 
 const services = [
   {
-    name: "Private Yoga",
+    name: "Discovery Session",
     description:
-      "Personalized sessions in Hatha, Vinyasa, Kundalini, Yin, or Ashtanga — tailored to your body and intention.",
-    price: "From $95",
-    duration: "60–90 min",
+      "An intensive one-on-one consultation to design the path toward your personal transformation.",
+    price: "$23 USD · $85K COP",
+    duration: "30 min",
   },
   {
-    name: "Sound Healing",
+    name: "Personalized Yoga",
     description:
-      "Crystal bowls, tuning forks, and ancestral instruments guide you into deep cellular restoration.",
-    price: "From $120",
+      "Tailored sessions in Hatha, Vinyasa, Kundalini, Yin, or Ashtanga — harmonizing body, mind, and spirit.",
+    price: "$51 USD · $190K COP",
+    duration: "60 min",
+  },
+  {
+    name: "Quantum Surgery",
+    description:
+      "A powerful energetic transmutation session for deep cellular restoration and holistic wellbeing.",
+    price: "$86 USD · $320K COP",
+    duration: "60 min",
+  },
+  {
+    name: "Superior Connection",
+    description:
+      "A profound session connecting you with your higher consciousness — an experience designed uniquely for you.",
+    price: "$197 USD · $730K COP",
     duration: "75 min",
   },
   {
-    name: "Reiki & Energy Work",
+    name: "Energy Cleansing",
     description:
-      "Integrated Energy Therapy and Usui Reiki to clear blockages and restore your natural flow.",
-    price: "From $110",
-    duration: "60 min",
+      "A powerful session honoring authentic love — for couples, homes, or workspaces. Beyond the traditional.",
+    price: "$131 USD · $485K COP",
+    duration: "75 min",
   },
   {
     name: "Sacred Ceremonies",
     description:
-      "Cacao, breathwork, and ancestral rituals designed for deep transformation under the Cartagena sky.",
-    price: "From $150",
-    duration: "90–120 min",
-  },
-  {
-    name: "Body Reprogramming",
-    description:
-      "NLP-informed somatic release combining movement, breath, and intention to rewrite stored patterns.",
-    price: "From $130",
-    duration: "75 min",
-  },
-  {
-    name: "Group Journeys",
-    description:
-      "Intimate group experiences limited to 6 participants. Shared energy, individual attention.",
-    price: "From $65/person",
-    duration: "90 min",
+      "Symbolic unions celebrated from the soul — unique rites created with intention, beauty, and heart-centered energy.",
+    price: "$945 USD · $3.5M COP",
+    duration: "Custom",
   },
 ];
 
-const retreats = [
+// ─── Weekly Schedule ─────────────────────────────────────────────────────────
+
+interface ScheduleClass {
+  time: string;
+  name: string;
+}
+
+interface ScheduleDay {
+  day: string;
+  dayShort: string;
+  dayIndex: number; // 0=Sun, 1=Mon, ...
+  classes: ScheduleClass[];
+}
+
+const weeklySchedule: ScheduleDay[] = [
   {
-    title: "Return to Self",
-    subtitle: "3-Day Immersive Retreat",
-    description:
-      "Three days of yoga, sound healing, ceremony, and Ayurvedic nourishment at a private villa overlooking the Caribbean.",
-    price: "From $1,800",
-    capacity: "6 guests maximum",
-    includes: "All sessions, meals, accommodation, airport transfer",
+    day: "Monday",
+    dayShort: "MON",
+    dayIndex: 1,
+    classes: [
+      { time: "9:30 AM", name: "Yoga Conscious" },
+      { time: "7:15 PM", name: "Yoga Conscious" },
+    ],
   },
   {
-    title: "Deep Reset",
-    subtitle: "5-Day Transformation",
+    day: "Tuesday",
+    dayShort: "TUE",
+    dayIndex: 2,
+    classes: [
+      { time: "9:30 AM", name: "Back Care Yoga" },
+      { time: "7:15 PM", name: "Hip Opener · Hatha" },
+    ],
+  },
+  {
+    day: "Wednesday",
+    dayShort: "WED",
+    dayIndex: 3,
+    classes: [
+      { time: "9:30 AM", name: "Yoga Conscious" },
+      { time: "10:45 AM", name: "Pilates" },
+      { time: "7:15 PM", name: "Open Flow" },
+    ],
+  },
+  {
+    day: "Thursday",
+    dayShort: "THU",
+    dayIndex: 4,
+    classes: [
+      { time: "9:30 AM", name: "Yoga Intro · Power Up" },
+      { time: "5:30 PM", name: "Sound Healing" },
+      { time: "7:15 PM", name: "Hip Opener" },
+    ],
+  },
+  {
+    day: "Friday",
+    dayShort: "FRI",
+    dayIndex: 5,
+    classes: [
+      { time: "10:00 AM", name: "Power Yoga · Postura" },
+      { time: "7:00 PM", name: "Open Flow" },
+    ],
+  },
+  {
+    day: "Saturday",
+    dayShort: "SAT",
+    dayIndex: 6,
+    classes: [
+      { time: "11:00 AM", name: "Sun Salutation" },
+      { time: "6:00 PM", name: "Inner Journey · Meditation" },
+    ],
+  },
+  {
+    day: "Sunday",
+    dayShort: "SUN",
+    dayIndex: 0,
+    classes: [
+      { time: "9:00 AM", name: "Just Hatha Flow" },
+      { time: "10:30 AM", name: "Inner Journey · Meditation" },
+    ],
+  },
+];
+
+function getNextDateForDay(dayIndex: number): string {
+  const today = new Date();
+  const todayDay = today.getDay();
+  let daysUntil = dayIndex - todayDay;
+  if (daysUntil <= 0) daysUntil += 7;
+  const next = new Date(today);
+  next.setDate(today.getDate() + daysUntil);
+  return next.toISOString().split("T")[0];
+}
+
+const retreats = [
+  {
+    title: "TUISYOU Program",
+    subtitle: "3-Month Transformation",
     description:
-      "Five days to completely rewire. Daily yoga, energy work, one-on-one sessions with Tata, and a closing ceremony under the stars.",
-    price: "From $3,200",
-    capacity: "4 guests maximum",
-    includes: "Everything included — arrive with nothing but yourself",
+      "A deeply personalized transformational journey designed exclusively for you — integrating yoga, energy work, NLP, and holistic wellness over three transformative months.",
+    price: "$2,095 USD · $7.75M COP",
+    capacity: "1-on-1 with Tata",
+    includes: "Full program, weekly sessions, personalized plan, ongoing support",
+  },
+  {
+    title: "Leadership Integration",
+    subtitle: "Group Experience",
+    description:
+      "Strengthen your leadership through group sessions with a personalized, holistic approach — ideal for teams and organizations seeking alignment.",
+    price: "$330 USD · $1.22M COP/hr",
+    capacity: "Custom group size",
+    includes: "Tailored group facilitation, energy work, integration exercises",
   },
 ];
 
@@ -127,223 +220,30 @@ function useScrollReveal() {
   return ref;
 }
 
-// ─── Booking form ────────────────────────────────────────────────────────────
-
-function BookingSection() {
-  const [step, setStep] = useState<"select" | "details" | "sent">("select");
-  const [selectedService, setSelectedService] = useState("");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [date, setDate] = useState("");
-  const [message, setMessage] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Build WhatsApp message with booking details
-    const text = encodeURIComponent(
-      `Hi Tata! I'd like to book a session.\n\nService: ${selectedService}\nName: ${name}\nDate: ${date}\nMessage: ${message || "None"}`
-    );
-    window.open(`https://wa.me/573001234567?text=${text}`, "_blank");
-    setStep("sent");
-  };
-
-  if (step === "sent") {
-    return (
-      <div className="text-center py-16">
-        <div className="w-16 h-16 rounded-full bg-rose/10 flex items-center justify-center mx-auto mb-6">
-          <svg
-            className="w-8 h-8 text-rose"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4.5 12.75l6 6 9-13.5"
-            />
-          </svg>
-        </div>
-        <h3 className="font-[family-name:var(--font-display)] text-3xl text-charcoal mb-3">
-          Request Sent
-        </h3>
-        <p className="font-[family-name:var(--font-body)] text-charcoal/60 max-w-md mx-auto">
-          Tata will confirm your session within 24 hours. Check your WhatsApp
-          for a direct message.
-        </p>
-        <button
-          onClick={() => {
-            setStep("select");
-            setSelectedService("");
-            setName("");
-            setEmail("");
-            setPhone("");
-            setDate("");
-            setMessage("");
-          }}
-          className="mt-8 font-[family-name:var(--font-body)] text-sm tracking-widest text-rose hover:text-charcoal transition-colors"
-        >
-          BOOK ANOTHER SESSION
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-xl mx-auto">
-      {/* Step indicator */}
-      <div className="flex items-center justify-center gap-3 mb-12">
-        <div
-          className={`h-0.5 w-12 rounded-full transition-colors duration-500 ${
-            step === "select" ? "bg-rose" : "bg-rose/30"
-          }`}
-        />
-        <div
-          className={`h-0.5 w-12 rounded-full transition-colors duration-500 ${
-            step === "details" ? "bg-rose" : "bg-rose/30"
-          }`}
-        />
-      </div>
-
-      {step === "select" && (
-        <div className="space-y-3">
-          <p className="font-[family-name:var(--font-body)] text-sm tracking-widest text-charcoal/50 text-center mb-8">
-            SELECT YOUR EXPERIENCE
-          </p>
-          {services.map((s) => (
-            <button
-              key={s.name}
-              onClick={() => {
-                setSelectedService(s.name);
-                setStep("details");
-              }}
-              className="w-full text-left p-5 rounded-2xl border border-charcoal/5 hover:border-rose/20 hover:bg-rose/[0.02] transition-all duration-300 group"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-[family-name:var(--font-display)] text-xl text-charcoal group-hover:text-rose transition-colors">
-                    {s.name}
-                  </h4>
-                  <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 mt-1">
-                    {s.duration} &middot; {s.price}
-                  </p>
-                </div>
-                <svg
-                  className="w-5 h-5 text-charcoal/20 group-hover:text-rose/60 transition-all group-hover:translate-x-1"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                  />
-                </svg>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {step === "details" && (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <button
-            type="button"
-            onClick={() => setStep("select")}
-            className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 hover:text-charcoal transition-colors flex items-center gap-2"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15.75 19.5L8.25 12l7.5-7.5"
-              />
-            </svg>
-            Back
-          </button>
-
-          <div className="bg-rose/[0.04] rounded-2xl p-5 mb-2">
-            <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50">
-              Selected
-            </p>
-            <p className="font-[family-name:var(--font-display)] text-xl text-charcoal">
-              {selectedService}
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="Your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full px-5 py-4 rounded-xl border border-charcoal/8 bg-transparent font-[family-name:var(--font-body)] text-charcoal placeholder:text-charcoal/30 focus:border-rose/30 focus:outline-none transition-colors"
-            />
-            <input
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-5 py-4 rounded-xl border border-charcoal/8 bg-transparent font-[family-name:var(--font-body)] text-charcoal placeholder:text-charcoal/30 focus:border-rose/30 focus:outline-none transition-colors"
-            />
-            <input
-              type="tel"
-              placeholder="WhatsApp number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-              className="w-full px-5 py-4 rounded-xl border border-charcoal/8 bg-transparent font-[family-name:var(--font-body)] text-charcoal placeholder:text-charcoal/30 focus:border-rose/30 focus:outline-none transition-colors"
-            />
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-              className="w-full px-5 py-4 rounded-xl border border-charcoal/8 bg-transparent font-[family-name:var(--font-body)] text-charcoal placeholder:text-charcoal/30 focus:border-rose/30 focus:outline-none transition-colors"
-            />
-            <textarea
-              placeholder="Anything Tata should know? (optional)"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={3}
-              className="w-full px-5 py-4 rounded-xl border border-charcoal/8 bg-transparent font-[family-name:var(--font-body)] text-charcoal placeholder:text-charcoal/30 focus:border-rose/30 focus:outline-none transition-colors resize-none"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full py-4 rounded-xl bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-widest hover:bg-rose transition-colors duration-500"
-          >
-            REQUEST BOOKING
-          </button>
-        </form>
-      )}
-    </div>
-  );
-}
-
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function Home() {
   const [heroLoaded, setHeroLoaded] = useState(false);
+  const [showStickyBar, setShowStickyBar] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [preselectedService, setPreselectedService] = useState("");
+  const [preselectedDate, setPreselectedDate] = useState("");
+  const [preselectedTime, setPreselectedTime] = useState("");
   const sectionsRef = useScrollReveal();
 
   useEffect(() => {
     const timer = setTimeout(() => setHeroLoaded(true), 300);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Show sticky bar after scrolling past hero
+  useEffect(() => {
+    const handler = () => {
+      setShowStickyBar(window.scrollY > window.innerHeight * 0.7);
+    };
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
   }, []);
 
   // Auto-rotate testimonials
@@ -354,36 +254,40 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  const scrollToBooking = useCallback(() => {
-    document.getElementById("book")?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+  const openBooking = useCallback(
+    (serviceName?: string, date?: string, time?: string) => {
+      setPreselectedService(serviceName || "");
+      setPreselectedDate(date || "");
+      setPreselectedTime(time || "");
+      setBookingOpen(true);
+    },
+    []
+  );
 
   return (
     <main ref={sectionsRef}>
-      {/* ━━━ HERO — Fullscreen Video ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="relative h-screen w-full overflow-hidden">
-        {/* Video Background */}
+      {/* ━━━ HERO — Fullscreen Cinematic Video ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section className="relative h-screen w-full overflow-hidden bg-black">
         <video
           autoPlay
           muted
           loop
           playsInline
           preload="auto"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="hero-video absolute inset-0 w-full h-full object-cover"
           style={{
             opacity: heroLoaded ? 1 : 0,
-            transition: "opacity 1.5s ease",
+            transition: "opacity 2s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
           <source src="/hero-video.mp4" type="video/mp4" />
         </video>
 
-        {/* Gradient Overlay */}
+        {/* Cinematic overlays */}
         <div className="absolute inset-0 video-overlay" />
+        <div className="absolute inset-0 film-grain" />
 
-        {/* Content */}
         <div className="relative z-10 h-full flex flex-col items-center justify-center px-6">
-          {/* Logo */}
           <div
             style={{
               opacity: heroLoaded ? 1 : 0,
@@ -402,7 +306,6 @@ export default function Home() {
             />
           </div>
 
-          {/* Tagline */}
           <h1
             className="font-[family-name:var(--font-display)] text-white text-center mt-8"
             style={{
@@ -429,13 +332,12 @@ export default function Home() {
               transition: "opacity 1.2s ease 0.9s, transform 1.2s ease 0.9s",
             }}
           >
-            Yoga &middot; Sound Healing &middot; Reiki &middot; Ceremonies
-            &middot; Retreats
+            Yoga &middot; Sound Healing &middot; Reiki &middot; PNL
+            &middot; Ceremonies &middot; Retreats
           </p>
 
-          {/* CTA */}
           <button
-            onClick={scrollToBooking}
+            onClick={() => openBooking()}
             className="mt-10 px-10 py-4 border border-white/30 text-white font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-white hover:text-charcoal transition-all duration-500"
             style={{
               opacity: heroLoaded ? 1 : 0,
@@ -447,7 +349,6 @@ export default function Home() {
             BOOK A SESSION
           </button>
 
-          {/* Scroll indicator */}
           <div
             className="absolute bottom-10 left-1/2 -translate-x-1/2"
             style={{
@@ -496,11 +397,14 @@ export default function Home() {
         <div className="max-w-3xl mx-auto px-6 text-center">
           <p
             className="fade-in font-[family-name:var(--font-display)] text-charcoal leading-relaxed"
-            style={{ fontSize: "clamp(1.25rem, 2.5vw, 1.75rem)", fontWeight: 300 }}
+            style={{
+              fontSize: "clamp(1.25rem, 2.5vw, 1.75rem)",
+              fontWeight: 300,
+            }}
           >
-            23 years of practice distilled into experiences that reconnect you
-            with what matters most. Not a spa. Not a class. A return to the
-            version of yourself that has always been waiting.
+            30 years of practice distilled into experiences that reconnect you
+            with what matters most. A return to the version of yourself that
+            has always been waiting.
           </p>
           <div className="fade-in fade-in-delay-2 mt-10 flex items-center justify-center gap-4">
             <div className="h-px w-12 bg-rose/30" />
@@ -510,13 +414,92 @@ export default function Home() {
             <div className="h-px w-12 bg-rose/30" />
           </div>
           <p className="fade-in fade-in-delay-3 mt-4 font-[family-name:var(--font-body)] text-sm text-charcoal/40">
-            Lead Instructor, Casa Carolina &middot; Cartagena, Colombia
+            Wellness Lead, Casa Carolina &middot; Founder of{" "}
+            <a
+              href="https://instagram.com/justbyogabytuisyou"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-rose/60 hover:text-rose transition-colors underline underline-offset-2 decoration-rose/20 hover:decoration-rose/50"
+            >
+              JustbYoga
+            </a>{" "}
+            &middot; Cartagena, Colombia
           </p>
         </div>
       </section>
 
+      {/* ━━━ THE PRACTICE — Glass Gallery ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section className="py-24 md:py-32 bg-white overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
+              THE PRACTICE
+            </p>
+            <h2
+              className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-charcoal"
+              style={{
+                fontSize: "clamp(2rem, 4vw, 3rem)",
+                fontWeight: 300,
+              }}
+            >
+              Where Transformation Happens
+            </h2>
+          </div>
+
+          {/* Asymmetric Glass Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 auto-rows-[280px] md:auto-rows-[320px]">
+            {/* Large — Group class video */}
+            <div className="fade-in fade-in-delay-1 md:col-span-7 md:row-span-2 glass-frame">
+              <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="inline-video"
+              >
+                <source src="/class-video.mp4" type="video/mp4" />
+              </video>
+            </div>
+
+            {/* Top right — Savasana */}
+            <div className="fade-in fade-in-delay-2 md:col-span-5 glass-frame">
+              <Image
+                src="/class-savasana.jpg"
+                alt="Savasana class at Casa Carolina"
+                width={800}
+                height={600}
+                className="object-cover w-full h-full"
+              />
+            </div>
+
+            {/* Bottom right — Seated meditation */}
+            <div className="fade-in fade-in-delay-3 md:col-span-5 glass-frame">
+              <Image
+                src="/class-seated.jpg"
+                alt="Seated meditation class"
+                width={800}
+                height={600}
+                className="object-cover w-full h-full"
+              />
+            </div>
+
+            {/* Full width — Group class wide */}
+            <div className="fade-in fade-in-delay-4 md:col-span-12 glass-frame" style={{ height: 360 }}>
+              <Image
+                src="/class-group.jpg"
+                alt="Full group yoga class at Casa Carolina"
+                width={1400}
+                height={800}
+                className="object-cover w-full h-full"
+                style={{ objectPosition: "center 40%" }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ━━━ SERVICES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="py-24 md:py-32 bg-white">
+      <section className="py-24 md:py-32 bg-cream">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
             <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
@@ -524,7 +507,10 @@ export default function Home() {
             </p>
             <h2
               className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-charcoal"
-              style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 300 }}
+              style={{
+                fontSize: "clamp(2rem, 4vw, 3rem)",
+                fontWeight: 300,
+              }}
             >
               Six Modalities, One Intention
             </h2>
@@ -534,9 +520,10 @@ export default function Home() {
             {services.map((service, i) => (
               <div
                 key={service.name}
-                className={`fade-in fade-in-delay-${Math.min(i + 1, 5)} service-card p-8 rounded-2xl border border-charcoal/5 bg-cream/50`}
+                className={`fade-in fade-in-delay-${Math.min(i + 1, 5)} service-card group relative p-8 rounded-2xl border border-charcoal/5 bg-cream/50 cursor-pointer`}
+                onClick={() => openBooking(service.name)}
               >
-                <h3 className="font-[family-name:var(--font-display)] text-2xl text-charcoal mb-3">
+                <h3 className="font-[family-name:var(--font-display)] text-2xl text-charcoal group-hover:text-rose transition-colors duration-300 mb-3">
                   {service.name}
                 </h3>
                 <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 leading-relaxed mb-6">
@@ -546,21 +533,245 @@ export default function Home() {
                   <span className="font-[family-name:var(--font-body)] text-sm text-charcoal/70">
                     {service.price}
                   </span>
-                  <span className="font-[family-name:var(--font-body)] text-xs text-charcoal/35">
-                    {service.duration}
+                  <span className="font-[family-name:var(--font-body)] text-xs tracking-[0.15em] text-rose/0 group-hover:text-rose transition-all duration-300 translate-y-1 group-hover:translate-y-0">
+                    BOOK
                   </span>
                 </div>
               </div>
             ))}
           </div>
+        </div>
+      </section>
 
-          <div className="fade-in text-center mt-14">
-            <button
-              onClick={scrollToBooking}
-              className="cta-button px-10 py-4 border border-charcoal text-charcoal font-[family-name:var(--font-body)] text-sm tracking-[0.2em]"
+      {/* ━━━ WEEKLY SCHEDULE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section className="py-24 md:py-32 bg-cream">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
+              JUST BYOGA BY TU
+            </p>
+            <h2
+              className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-charcoal"
+              style={{
+                fontSize: "clamp(2rem, 4vw, 3rem)",
+                fontWeight: 300,
+              }}
             >
-              <span>BOOK YOUR EXPERIENCE</span>
-            </button>
+              Weekly Schedule
+            </h2>
+            <p className="fade-in fade-in-delay-2 font-[family-name:var(--font-body)] text-sm text-charcoal/40 mt-4">
+              Tap any class to book your spot instantly
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {weeklySchedule.map((day, dayIdx) => (
+              <div
+                key={day.day}
+                className={`fade-in fade-in-delay-${Math.min(dayIdx + 1, 5)}`}
+              >
+                <div className="bg-white rounded-2xl overflow-hidden border border-charcoal/5">
+                  {/* Day header */}
+                  <div className="px-6 py-4 border-b border-charcoal/5 flex items-center gap-4">
+                    <span className="font-[family-name:var(--font-body)] text-[11px] tracking-[0.25em] text-rose/70 w-10">
+                      {day.dayShort}
+                    </span>
+                    <span className="font-[family-name:var(--font-display)] text-lg text-charcoal">
+                      {day.day}
+                    </span>
+                  </div>
+
+                  {/* Classes */}
+                  <div className="divide-y divide-charcoal/[0.03]">
+                    {day.classes.map((cls, clsIdx) => (
+                      <button
+                        key={`${day.day}-${clsIdx}`}
+                        onClick={() =>
+                          openBooking(
+                            cls.name,
+                            getNextDateForDay(day.dayIndex),
+                            cls.time
+                          )
+                        }
+                        className="w-full px-6 py-4 flex items-center justify-between group hover:bg-rose/[0.02] transition-colors"
+                      >
+                        <div className="flex items-center gap-5">
+                          <span className="font-[family-name:var(--font-body)] text-sm text-charcoal/35 w-20 text-left tabular-nums">
+                            {cls.time}
+                          </span>
+                          <span className="font-[family-name:var(--font-display)] text-base text-charcoal group-hover:text-rose transition-colors">
+                            {cls.name}
+                          </span>
+                        </div>
+                        <svg
+                          className="w-4 h-4 text-charcoal/0 group-hover:text-rose/50 transition-all group-hover:translate-x-0.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                          />
+                        </svg>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Promos */}
+          <div className="fade-in mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-white rounded-2xl border border-rose/10 p-6 text-center">
+              <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-rose/60 mb-2">
+                WALK-IN CLASS
+              </p>
+              <p className="font-[family-name:var(--font-display)] text-3xl text-charcoal">
+                $80K
+              </p>
+              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 mt-1">
+                COP &middot; Single class
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl border border-rose/10 p-6 text-center">
+              <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-rose/60 mb-2">
+                PROMO 2x1
+              </p>
+              <p className="font-[family-name:var(--font-display)] text-3xl text-charcoal">
+                $80K
+              </p>
+              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 mt-1">
+                COP &middot; Bring a friend
+              </p>
+            </div>
+          </div>
+
+          <div className="fade-in mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white rounded-2xl border border-rose/10 p-6 text-center">
+              <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-rose/60 mb-2">
+                TU INTRO PACK
+              </p>
+              <p className="font-[family-name:var(--font-display)] text-3xl text-charcoal">
+                $160K
+              </p>
+              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 mt-1">
+                COP &middot; 4 classes
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl border border-rose/10 p-6 text-center">
+              <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-rose/60 mb-2">
+                TU HEALING PACK
+              </p>
+              <p className="font-[family-name:var(--font-display)] text-3xl text-charcoal">
+                $420K
+              </p>
+              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 mt-1">
+                COP &middot; 8 classes
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl border border-rose/10 p-6 text-center">
+              <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-rose/60 mb-2">
+                TU LIFE PACK
+              </p>
+              <p className="font-[family-name:var(--font-display)] text-3xl text-charcoal">
+                $1.05M
+              </p>
+              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 mt-1">
+                COP &middot; Unlimited
+              </p>
+            </div>
+          </div>
+
+          <div className="fade-in mt-8 bg-white rounded-2xl border border-charcoal/5 p-6">
+            <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-charcoal/40 mb-3">
+              BOOKING RULES
+            </p>
+            <div className="space-y-2">
+              {[
+                "Reserve your spot at least 2 hours in advance",
+                "Arrive 10 minutes early (especially first class)",
+                "Cancel 24 hours ahead for full refund",
+                "Mats and props provided — just bring water",
+                "Tuesday Industry Rate: $45K COP",
+                "Friday Open Flow: $45K COP",
+              ].map((rule) => (
+                <p key={rule} className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 flex items-start gap-2">
+                  <span className="text-rose/40 mt-0.5">·</span>
+                  {rule}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ━━━ BOOKING HIGHLIGHT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section className="py-20 md:py-28 bg-charcoal relative overflow-hidden">
+        {/* Subtle gradient accent */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            background:
+              "radial-gradient(ellipse at 50% 0%, rgba(184,119,119,1) 0%, transparent 60%)",
+          }}
+        />
+
+        <div className="relative max-w-3xl mx-auto px-6 text-center">
+          <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-white/30 mb-6">
+            YOUR NEXT STEP
+          </p>
+          <h2
+            className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-white mb-4"
+            style={{
+              fontSize: "clamp(2.2rem, 5vw, 3.5rem)",
+              fontWeight: 300,
+            }}
+          >
+            Ready to Begin?
+          </h2>
+          <p className="fade-in fade-in-delay-2 font-[family-name:var(--font-body)] text-white/40 max-w-md mx-auto mb-10">
+            Choose your experience, pick a date, and Tata will personally
+            confirm within 24 hours.
+          </p>
+
+          <button
+            onClick={() => openBooking()}
+            className="fade-in fade-in-delay-3 inline-flex items-center gap-3 px-12 py-5 bg-white text-charcoal font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-rose hover:text-white transition-all duration-500 rounded-full"
+          >
+            BOOK A SESSION
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+              />
+            </svg>
+          </button>
+
+          {/* Trust signals */}
+          <div className="fade-in fade-in-delay-4 mt-12 flex items-center justify-center gap-8 flex-wrap">
+            {[
+              "30 Years Experience",
+              "Featured in Vogue",
+              "Casa Carolina",
+            ].map((signal) => (
+              <span
+                key={signal}
+                className="font-[family-name:var(--font-body)] text-xs text-white/20 tracking-wider"
+              >
+                {signal}
+              </span>
+            ))}
           </div>
         </div>
       </section>
@@ -574,7 +785,10 @@ export default function Home() {
             </p>
             <h2
               className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-charcoal"
-              style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 300 }}
+              style={{
+                fontSize: "clamp(2rem, 4vw, 3rem)",
+                fontWeight: 300,
+              }}
             >
               Retreats in Cartagena
             </h2>
@@ -615,7 +829,7 @@ export default function Home() {
                       {retreat.price}
                     </span>
                     <button
-                      onClick={scrollToBooking}
+                      onClick={() => openBooking(retreat.title + " Retreat")}
                       className="font-[family-name:var(--font-body)] text-sm tracking-[0.15em] text-rose hover:text-charcoal transition-colors"
                     >
                       INQUIRE
@@ -629,7 +843,7 @@ export default function Home() {
       </section>
 
       {/* ━━━ TESTIMONIALS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="py-24 md:py-32 bg-charcoal">
+      <section className="py-24 md:py-32 bg-cream-warm">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <div className="relative min-h-[200px] flex items-center justify-center">
             {testimonials.map((t, i) => (
@@ -646,34 +860,37 @@ export default function Home() {
                 }}
               >
                 <p
-                  className="font-[family-name:var(--font-display)] text-white/90 leading-relaxed italic"
-                  style={{ fontSize: "clamp(1.1rem, 2vw, 1.4rem)", fontWeight: 300 }}
+                  className="font-[family-name:var(--font-display)] text-charcoal leading-relaxed italic"
+                  style={{
+                    fontSize: "clamp(1.1rem, 2vw, 1.4rem)",
+                    fontWeight: 300,
+                  }}
                 >
                   &ldquo;{t.quote}&rdquo;
                 </p>
                 <div className="mt-8 flex items-center gap-3">
-                  <div className="h-px w-8 bg-rose-soft/30" />
-                  <span className="font-[family-name:var(--font-body)] text-sm text-white/40">
+                  <div className="h-px w-8 bg-rose/30" />
+                  <span className="font-[family-name:var(--font-body)] text-sm text-charcoal/40">
                     {t.name}, {t.location}
                   </span>
-                  <div className="h-px w-8 bg-rose-soft/30" />
+                  <div className="h-px w-8 bg-rose/30" />
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Dots */}
           <div className="flex items-center justify-center gap-2 mt-12">
             {testimonials.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setActiveTestimonial(i)}
-                className="w-1.5 h-1.5 rounded-full transition-all duration-500"
+                className="rounded-full transition-all duration-500"
                 style={{
                   background:
                     activeTestimonial === i
-                      ? "rgba(212,165,165,0.8)"
-                      : "rgba(255,255,255,0.2)",
+                      ? "rgba(184,119,119,0.6)"
+                      : "rgba(44,44,44,0.12)",
+                  height: 6,
                   width: activeTestimonial === i ? 24 : 6,
                 }}
                 aria-label={`Testimonial ${i + 1}`}
@@ -683,28 +900,24 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ━━━ BOOKING — The Star ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section id="book" className="py-24 md:py-32 bg-cream">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
-              YOUR NEXT STEP
-            </p>
-            <h2
-              className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-charcoal"
-              style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 300 }}
-            >
-              Book Your Session
-            </h2>
-            <p className="fade-in fade-in-delay-2 font-[family-name:var(--font-body)] text-charcoal/50 mt-4 max-w-lg mx-auto">
-              Select an experience below. Tata personally reviews every booking
-              request and will confirm within 24 hours.
-            </p>
-          </div>
-
-          <div className="fade-in fade-in-delay-3">
-            <BookingSection />
-          </div>
+      {/* ━━━ FINAL CTA ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section className="py-24 md:py-32 bg-white">
+        <div className="max-w-2xl mx-auto px-6 text-center">
+          <h2
+            className="fade-in font-[family-name:var(--font-display)] text-charcoal"
+            style={{
+              fontSize: "clamp(1.8rem, 4vw, 2.5rem)",
+              fontWeight: 300,
+            }}
+          >
+            The only thing between you and transformation is one decision.
+          </h2>
+          <button
+            onClick={() => openBooking()}
+            className="fade-in fade-in-delay-2 mt-10 px-12 py-5 bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-rose transition-colors duration-500 rounded-full"
+          >
+            BOOK YOUR SESSION
+          </button>
         </div>
       </section>
 
@@ -712,7 +925,6 @@ export default function Home() {
       <footer className="py-16 border-t border-charcoal/5">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
-            {/* Brand */}
             <div>
               <Image
                 src="/tu-logo.png"
@@ -726,38 +938,36 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Quick links */}
             <div>
               <p className="font-[family-name:var(--font-body)] text-xs tracking-[0.2em] text-charcoal/40 mb-4">
-                QUICK LINKS
+                CONNECT
               </p>
               <div className="space-y-3">
-                {[
-                  { label: "Book a Session", href: "#book" },
-                  { label: "Instagram", href: "https://instagram.com/tuisyou" },
-                  {
-                    label: "WhatsApp",
-                    href: "https://wa.me/573001234567",
-                  },
-                ].map((link) => (
-                  <a
-                    key={link.label}
-                    href={link.href}
-                    target={link.href.startsWith("http") ? "_blank" : undefined}
-                    rel={
-                      link.href.startsWith("http")
-                        ? "noopener noreferrer"
-                        : undefined
-                    }
-                    className="block font-[family-name:var(--font-body)] text-sm text-charcoal/50 hover:text-rose transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                ))}
+                <button
+                  onClick={() => openBooking()}
+                  className="block font-[family-name:var(--font-body)] text-sm text-charcoal/50 hover:text-rose transition-colors"
+                >
+                  Book a Session
+                </button>
+                <a
+                  href="https://instagram.com/tuisyou"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block font-[family-name:var(--font-body)] text-sm text-charcoal/50 hover:text-rose transition-colors"
+                >
+                  Instagram
+                </a>
+                <a
+                  href="https://wa.me/573001234567"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block font-[family-name:var(--font-body)] text-sm text-charcoal/50 hover:text-rose transition-colors"
+                >
+                  WhatsApp
+                </a>
               </div>
             </div>
 
-            {/* Location */}
             <div>
               <p className="font-[family-name:var(--font-body)] text-xs tracking-[0.2em] text-charcoal/40 mb-4">
                 LOCATION
@@ -774,8 +984,7 @@ export default function Home() {
 
           <div className="mt-16 pt-8 border-t border-charcoal/5 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/30">
-              &copy; {new Date().getFullYear()} TU. by Tata Umana. All rights
-              reserved.
+              &copy; {new Date().getFullYear()} TU. by Tata Umana
             </p>
             <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/20">
               Built by MachineMind
@@ -783,6 +992,44 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* ━━━ STICKY BOOK BAR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 transition-all duration-500"
+        style={{
+          transform: showStickyBar ? "translateY(0)" : "translateY(100%)",
+          opacity: showStickyBar ? 1 : 0,
+        }}
+      >
+        <div className="bg-white/90 backdrop-blur-xl border-t border-charcoal/5 px-6 py-4">
+          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+            <div className="hidden sm:block">
+              <p className="font-[family-name:var(--font-display)] text-charcoal text-lg">
+                TU. by Tata Umana
+              </p>
+              <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40">
+                Sessions from $23 USD &middot; Cartagena, Colombia
+              </p>
+            </div>
+            <button
+              onClick={() => openBooking()}
+              className="w-full sm:w-auto px-8 py-3.5 bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.2em] hover:bg-rose transition-colors duration-300 rounded-full"
+            >
+              BOOK NOW
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ━━━ BOOKING MODAL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <BookingModal
+        isOpen={bookingOpen}
+        onClose={() => setBookingOpen(false)}
+        preselectedService={preselectedService}
+        preselectedDate={preselectedDate}
+        preselectedTime={preselectedTime}
+        services={services}
+      />
 
       {/* ━━━ Floating Elements ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <ChatBot />

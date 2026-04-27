@@ -73,16 +73,23 @@ export type BookingStatus = "pending" | "confirmed" | "cancelled";
 // ============================================================================
 
 export const PRICING = {
-  GROUP_VINYASA: 45000,
-  GROUP_HATHA: 40000,
-  GROUP_YIN: 45000,
-  GROUP_KUNDALINI: 55000,
-  GROUP_RESTORATIVE: 40000,
-  GROUP_POWER: 50000,
-  PRIVATE_SESSION: 150000,
-  PACKAGE_5_CLASSES: 200000,
-  PACKAGE_10_CLASSES: 380000,
-  MONTHLY_UNLIMITED: 350000,
+  GROUP_WALKIN: 80000,
+  GROUP_VINYASA: 80000,
+  GROUP_HATHA: 80000,
+  GROUP_YIN: 80000,
+  GROUP_KUNDALINI: 80000,
+  GROUP_RESTORATIVE: 80000,
+  GROUP_POWER: 80000,
+  PRIVATE_SESSION: 190000,
+  PRIVATE_10_PACK: 1500000,
+  MARTES_INDUSTRIA: 45000,
+  VIERNES_OPEN_FLOW: 45000,
+  PROMO_2X1: 80000,
+  TU_INTRO_PACK: 160000,
+  JUST_FLOW_PACK: 295000,
+  TU_HEALING_PACK: 420000,
+  TU_EQUILIBRIUM_PACK: 630000,
+  TU_LIFE_PACK: 1050000,
 } as const;
 
 // ============================================================================
@@ -112,7 +119,7 @@ const GROUP_SCHEDULE: ScheduleSlot[] = [
       "Comienza tu día con movimiento sincronizado con la respiración",
     duration: 75,
     level: "all",
-    price: PRICING.GROUP_VINYASA,
+    price: PRICING.GROUP_WALKIN,
   },
   {
     time: "09:30",
@@ -123,7 +130,7 @@ const GROUP_SCHEDULE: ScheduleSlot[] = [
     descriptionEs: "Práctica lenta y nutritiva con posturas prolongadas",
     duration: 60,
     level: "beginner",
-    price: PRICING.GROUP_RESTORATIVE,
+    price: PRICING.GROUP_WALKIN,
   },
   {
     time: "12:00",
@@ -134,7 +141,7 @@ const GROUP_SCHEDULE: ScheduleSlot[] = [
     descriptionEs: "Práctica dinámica para fortalecer el cuerpo",
     duration: 60,
     level: "intermediate",
-    price: PRICING.GROUP_POWER,
+    price: PRICING.GROUP_WALKIN,
   },
   {
     time: "17:30",
@@ -145,7 +152,7 @@ const GROUP_SCHEDULE: ScheduleSlot[] = [
     descriptionEs: "Estiramiento profundo y meditación al atardecer",
     duration: 90,
     level: "all",
-    price: PRICING.GROUP_YIN,
+    price: PRICING.GROUP_WALKIN,
   },
   {
     time: "19:00",
@@ -156,7 +163,7 @@ const GROUP_SCHEDULE: ScheduleSlot[] = [
     descriptionEs: "Trabajo energético, pranayama y kriyas",
     duration: 90,
     level: "advanced",
-    price: PRICING.GROUP_KUNDALINI,
+    price: PRICING.GROUP_WALKIN,
   },
 ];
 
@@ -650,39 +657,39 @@ export function getPackageInfo(): Array<{
   pricePerClass: string;
   savings: number;
 }> {
-  const avgGroupPrice = 45000;
+  const walkInPrice = PRICING.GROUP_WALKIN;
 
   return [
     {
-      name: "Single Class",
+      name: "Walk-in Class",
       nameEs: "Clase Individual",
-      price: avgGroupPrice,
+      price: walkInPrice,
       classes: 1,
-      pricePerClass: formatPrice(avgGroupPrice),
+      pricePerClass: formatPrice(walkInPrice),
       savings: 0,
     },
     {
-      name: "5-Class Package",
-      nameEs: "Paquete 5 Clases",
-      price: PRICING.PACKAGE_5_CLASSES,
-      classes: 5,
-      pricePerClass: formatPrice(PRICING.PACKAGE_5_CLASSES / 5),
-      savings: avgGroupPrice * 5 - PRICING.PACKAGE_5_CLASSES,
+      name: "TU Intro Pack",
+      nameEs: "TU Intro Pack",
+      price: PRICING.TU_INTRO_PACK,
+      classes: 4,
+      pricePerClass: formatPrice(PRICING.TU_INTRO_PACK / 4),
+      savings: walkInPrice * 4 - PRICING.TU_INTRO_PACK,
     },
     {
-      name: "10-Class Package",
-      nameEs: "Paquete 10 Clases",
-      price: PRICING.PACKAGE_10_CLASSES,
-      classes: 10,
-      pricePerClass: formatPrice(PRICING.PACKAGE_10_CLASSES / 10),
-      savings: avgGroupPrice * 10 - PRICING.PACKAGE_10_CLASSES,
+      name: "TU Healing Pack",
+      nameEs: "TU Healing Pack",
+      price: PRICING.TU_HEALING_PACK,
+      classes: 8,
+      pricePerClass: formatPrice(PRICING.TU_HEALING_PACK / 8),
+      savings: walkInPrice * 8 - PRICING.TU_HEALING_PACK,
     },
     {
-      name: "Monthly Unlimited",
-      nameEs: "Mensual Ilimitado",
-      price: PRICING.MONTHLY_UNLIMITED,
+      name: "TU Life Pack",
+      nameEs: "TU Life Pack",
+      price: PRICING.TU_LIFE_PACK,
       classes: "unlimited",
-      pricePerClass: "Varies",
+      pricePerClass: "Best value",
       savings: 0,
     },
   ];

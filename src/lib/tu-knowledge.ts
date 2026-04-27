@@ -102,10 +102,23 @@ JustbYoga is my daily yoga offering. Group classes at accessible prices so more 
 DAILY CLASS SCHEDULE:
 ━━━━━━━━━━━━━━━━━━━━━
 
+ALL GROUP CLASSES (2026 Pricing):
+Walk-in class: $80,000 COP per class
+Martes de Industria (Tuesday): $45,000 COP
+Viernes Open Flow (Friday): $45,000 COP
+Promo 2x1: $80,000 COP (bring a friend!)
+
+CLASS PACKS (2026):
+TU Intro Pack: $160,000 COP (4 classes)
+Just Flow Pack: $295,000 COP (6 classes)
+TU Healing Pack: $420,000 COP (8 classes)
+TU Equilibrium Pack: $630,000 COP (12 classes)
+TU Life Pack: $1,050,000 COP (unlimited monthly)
+
 MORNING VINYASA FLOW
 Time: 7:00 AM
 Duration: 75 minutes
-Price: $120,000 COP (approximately $30 USD)
+Price: $80,000 COP walk-in
 Level: All Levels
 What to expect: We start before the heat of the day. Breath-synchronized movement to wake up your body and mind. I guide you through sun salutations, standing sequences, and grounding postures. Perfect way to start your day in Cartagena.
 Health benefits: Builds strength and flexibility, improves cardiovascular health, reduces morning stiffness, sets positive intention for the day, increases mental clarity.
@@ -114,7 +127,7 @@ Spots: Maximum 8 students
 GENTLE RESTORE
 Time: 9:30 AM
 Duration: 60 minutes
-Price: $100,000 COP (approximately $25 USD)
+Price: $80,000 COP walk-in
 Level: Beginner-friendly
 What to expect: Slow, nurturing practice with extended holds. Props support your body so you can release tension without effort. This is yoga for tired souls, recovering bodies, and anyone who needs permission to slow down.
 Health benefits: Activates parasympathetic nervous system, reduces cortisol, helps with chronic pain, improves sleep quality, gentle enough for injuries or chronic conditions.
@@ -123,7 +136,7 @@ Spots: Maximum 10 students
 POWER YOGA
 Time: 12:00 PM
 Duration: 60 minutes
-Price: $130,000 COP (approximately $32 USD)
+Price: $80,000 COP walk-in
 Level: Intermediate
 What to expect: Dynamic, strength-building practice. We move with intention and challenge the body. Expect to sweat, to shake, to discover strength you didn't know you had. This is not for the faint of heart, but it's for anyone willing to grow.
 Health benefits: Builds muscle strength, burns calories, improves endurance, builds mental resilience, detoxifies through sweat.
@@ -132,7 +145,7 @@ Spots: Maximum 6 students
 SUNSET YIN
 Time: 5:30 PM
 Duration: 90 minutes
-Price: $110,000 COP (approximately $27 USD)
+Price: $80,000 COP walk-in
 Level: All Levels
 What to expect: Deep stretching and meditation as the sun sets. Poses held for 3-5 minutes to access connective tissue and release deep tension. The longer holds create space for emotions to move. Many students have breakthroughs here.
 Health benefits: Increases flexibility, improves joint health, calms the nervous system, releases fascia, promotes emotional release, prepares body for restful sleep.
@@ -141,7 +154,7 @@ Spots: Maximum 12 students
 KUNDALINI AWAKENING
 Time: 7:00 PM
 Duration: 90 minutes
-Price: $150,000 COP (approximately $37 USD)
+Price: $80,000 COP walk-in
 Level: All Levels (but intense)
 What to expect: Energy work, breathwork, and kriyas. This is the yoga of awareness — we work with the subtle body, the chakras, the energy that moves through you. Expect chanting, movement, meditation, and possibly a completely different state of consciousness.
 Health benefits: Balances hormones, strengthens nervous system, clears energy blockages, enhances intuition, promotes spiritual awakening, deeply transformative.
@@ -195,21 +208,39 @@ I accept cash in Colombian Pesos (COP) or US Dollars (USD)
 Exchange rate: Current market rate
 Best for: In-person sessions
 
-PRICING STRUCTURE:
-- Group classes: Priced in Colombian Pesos (COP) — ranging from $100,000 to $150,000 COP per class
-- Private sessions: Priced in USD — ranging from $95 to $350 USD
-- Retreats: Priced in USD — from $1,800 USD
-- Packages: Discounted rates available (15-20% savings)
+PRICING STRUCTURE (2026):
+- Group classes: Walk-in $80,000 COP per class. Packs from $160,000 COP (4 classes) to $1,050,000 COP (unlimited)
+- Discovery Session: $85,000 COP / $23 USD (30 min)
+- Personalized Yoga: $190,000 COP / $51 USD (60 min), Pack 10: $1,500,000 COP / $388 USD
+- Video Connection: $170,000 COP / $46 USD (60 min), $120,000 COP / $33 USD (30 min)
+- Quantum Surgery: $320,000 COP / $86 USD (60 min)
+- Superior Connection: $730,000 COP / $197 USD (75 min)
+- Energy Cleansing: $485,000 COP / $131 USD (75 min)
+- Sacred Ceremonies: $3,500,000 COP / $945 USD
+- Leadership Integration: $1,220,000 COP / $330 USD per hour
+- TUISYOU Program: $7,750,000 COP / $2,095 USD (3 months)
 
 ═══════════════════════════════════════════════════════════════════════════════
 MY PRIVATE SERVICES — COMPREHENSIVE
 ═══════════════════════════════════════════════════════════════════════════════
 
-PRIVATE YOGA SESSIONS
+DISCOVERY SESSION (CONSULTA DE DESCUBRIMIENTO)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Price: $85,000 COP / $23 USD
+Duration: 30 minutes
+An intensive one-on-one session to design the path toward your personal transformation.
+
+PRIVATE YOGA SESSIONS (YOGA PERSONALIZADO)
 ━━━━━━━━━━━━━━━━━━━━━
-Price: $95 - $150 USD (depending on duration and style)
-Duration: 60-90 minutes
+Price: $190,000 COP / $51 USD per session
+Pack of 10 sessions: $1,500,000 COP / $388 USD
+Duration: 60 minutes
 Location: Casa Carolina or your hotel/villa
+
+VIDEO CONNECTION (CONEXIÓN A DISTANCIA)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Price: $170,000 COP / $46 USD (60 min) or $120,000 COP / $33 USD (30 min)
+Connect with Tata from anywhere for personalized guidance and support.
 
 Styles I offer:
 
@@ -286,9 +317,15 @@ What I customize for you:
 - Your emotional/energetic state that day
 - Specific intentions (stress relief, strength, flexibility, spiritual growth)
 
+QUANTUM SURGERY (CIRUGÍA CUÁNTICA)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Price: $320,000 COP / $86 USD
+Duration: 60 minutes
+A powerful energetic transmutation session for holistic wellbeing — deep cellular restoration through energy work.
+
 SOUND HEALING
 ━━━━━━━━━━━━━
-Price: $120 - $180 USD
+Price: $320,000 COP / $86 USD
 Duration: 75-90 minutes
 
 My instruments:
@@ -345,9 +382,21 @@ What clients often say:
 "I slept better than I have in years."
 "Something shifted — I can't explain it, but I feel different."
 
+SUPERIOR CONNECTION (CONEXIÓN SUPERIOR)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Price: $730,000 COP / $197 USD
+Duration: 75 minutes
+A profound session connecting you with your higher consciousness — designed uniquely for you.
+
+ENERGY CLEANSING (LIMPIEZAS ENERGÉTICAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Price: $485,000 COP / $131 USD
+Duration: 75 minutes
+A powerful session honoring authentic love — for couples, homes, or workspaces. Beyond the traditional.
+
 REIKI & INTEGRATED ENERGY THERAPY (IET)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Price: $110 - $150 USD
+Price: $485,000 COP / $131 USD
 Duration: 60-75 minutes
 
 REIKI (ray-kee):
@@ -383,10 +432,10 @@ Health Benefits:
 - Supports major life transitions
 - Gentle but profound
 
-SACRED CEREMONIES
-━━━━━━━━━━━━━━━━━
-Price: $150 - $300 USD
-Duration: 2-4 hours
+SACRED CEREMONIES (CEREMONIAS SIMBÓLICAS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Price: $3,500,000 COP / $945 USD
+Duration: Custom
 
 Ceremony is how humans have marked important moments for millennia. I offer ceremonies that honor traditional practices while remaining accessible to modern seekers.
 
@@ -482,10 +531,10 @@ CUSTOM CEREMONIES:
 
 Price varies based on complexity. Contact me to discuss.
 
-BODY REPROGRAMMING
-━━━━━━━━━━━━━━━━━━
-Price: $250 - $350 USD
-Duration: 3-4 hours
+TUISYOU PERSONALIZED PROGRAM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Price: $7,750,000 COP / $2,095 USD
+Duration: 3 months
 
 This is my signature experience. A comprehensive journey combining multiple modalities in one transformative session.
 
@@ -523,46 +572,35 @@ I recommend: Plan for rest afterward. No social obligations. Many clients feel "
 PACKAGES — SAVE 15-20%
 ═══════════════════════════════════════════════════════════════════════════════
 
-3-SESSION PACKAGE
-Price: $270 USD (save 15%)
-What you get: Any 3 private sessions (mix and match)
-Valid for: 90 days
-Example: 1 yoga + 1 sound healing + 1 Reiki
+GROUP CLASS PACKS (2026):
+Walk-in: $80,000 COP per class
+Promo 2x1: $80,000 COP (bring a friend)
+TU Intro Pack: $160,000 COP (4 classes)
+Just Flow Pack: $295,000 COP (6 classes)
+TU Healing Pack: $420,000 COP (8 classes)
+TU Equilibrium Pack: $630,000 COP (12 classes)
+TU Life Pack: $1,050,000 COP (unlimited monthly)
 
-5-SESSION PACKAGE
-Price: $425 USD (save 20%)
-What you get: Any 5 private sessions
-Valid for: 6 months
-Example: Weekly yoga for 5 weeks, or a full wellness week
+SPECIAL DAYS:
+Martes de Industria (Tuesday): $45,000 COP
+Viernes Open Flow (Friday): $45,000 COP
 
-WELLNESS WEEK
-Price: $750 USD
-What you get:
-- 5 consecutive days of daily practice
-- Customized program (combination of yoga, sound healing, energy work)
-- One Body Reprogramming session included
-Perfect for: Visitors staying a week in Cartagena who want total transformation
+PRIVATE SESSION PACK:
+10-session yoga pack: $1,500,000 COP / $388 USD (save vs single sessions)
 
-COUPLES JOURNEY
-Price: $400 USD per couple
-What you get:
-- 3 sessions for couples
-- Partner yoga (connecting through movement)
-- Couples sound bath (healing together)
-- Shared ceremony (deepening your bond)
-Perfect for: Honeymoons, anniversaries, relationship renewal
+LEADERSHIP INTEGRATION (INTEGRACIÓN GRUPAL):
+Price: $1,220,000 COP / $330 USD per hour
+Strengthen leadership through group sessions with personalized, holistic approach.
 
 ═══════════════════════════════════════════════════════════════════════════════
 RETREATS
 ═══════════════════════════════════════════════════════════════════════════════
 
-RETURN TO STILLNESS — My Signature Retreat
-Duration: 4 days / 3 nights
-Location: Cartagena (Casa Carolina + special venues)
-Group size: Maximum 6 participants
-Price: From $1,800 USD
-Deposit: $500 USD (non-refundable, applied to total)
-Balance due: 30 days before retreat
+TUISYOU PERSONALIZED PROGRAM — My Signature Transformation
+Duration: 3 months
+Location: Cartagena (Casa Carolina + special venues) or virtual
+Price: $7,750,000 COP / $2,095 USD
+A deeply personalized transformational journey designed exclusively for you.
 
 What's included:
 - 3 nights accommodation at Casa Carolina (private or shared room options)
