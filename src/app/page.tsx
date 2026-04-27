@@ -312,7 +312,7 @@ export default function Home() {
   const workshopPassed = WORKSHOP_TARGET.getTime() <= Date.now();
 
   return (
-    <main ref={sectionsRef}>
+    <main ref={sectionsRef} className="overflow-x-hidden w-full">
       {/* ━━━ LANGUAGE TOGGLE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <button
         onClick={() => setLang(lang === "en" ? "es" : "en")}
@@ -545,12 +545,17 @@ export default function Home() {
               {L(t.workshopLimited) as string}
             </p>
 
-            <button
-              onClick={() => openBooking("Facial Yoga & Ayurveda Workshop", "2026-05-01", "5:30 PM")}
+            <a
+              href="https://checkout.wompi.co/l/h3WPfP"
+              target="_blank"
+              rel="noopener noreferrer"
               className="fade-in fade-in-delay-5 mt-8 inline-flex items-center gap-3 px-10 py-4 bg-gold text-charcoal font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-white transition-all duration-500 rounded-full"
             >
               {L(t.workshopReserve) as string}
-            </button>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+              </svg>
+            </a>
           </div>
         </section>
       )}
@@ -642,12 +647,12 @@ export default function Home() {
 
             <div className="fade-in fade-in-delay-4 md:col-span-12 glass-frame" style={{ height: 360 }}>
               <Image
-                src="/class-group.jpg"
-                alt="Full group yoga class at Casa Carolina"
+                src="/yoga-class.jpg"
+                alt="Yoga class at Casa Carolina — JustbYoga by TUISYOU"
                 width={1400}
                 height={800}
                 className="object-cover w-full h-full"
-                style={{ objectPosition: "center 40%" }}
+                style={{ objectPosition: "center 35%" }}
               />
             </div>
           </div>
@@ -1276,12 +1281,18 @@ export default function Home() {
                   Instagram
                 </a>
                 <a
-                  href="https://wa.me/573001234567"
+                  href="https://wa.me/573185083035"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block font-[family-name:var(--font-body)] text-sm text-charcoal/50 hover:text-rose transition-colors py-1"
                 >
                   WhatsApp
+                </a>
+                <a
+                  href="mailto:tata@tuisyou.com"
+                  className="block font-[family-name:var(--font-body)] text-sm text-charcoal/50 hover:text-rose transition-colors py-1"
+                >
+                  tata@tuisyou.com
                 </a>
               </div>
             </div>

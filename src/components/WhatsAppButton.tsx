@@ -13,7 +13,7 @@ interface WhatsAppButtonProps {
  * Pulses gently to draw attention without being intrusive
  */
 export default function WhatsAppButton({
-  phone = "+573001234567", // Replace with Tata's actual number
+  phone = "+573185083035",
   message = "Hola Tata! I'm interested in booking a wellness experience.",
 }: WhatsAppButtonProps) {
   const [isHovered, setIsHovered] = useState(false);

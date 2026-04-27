@@ -190,7 +190,7 @@ export default function BookingModal({
     const text = encodeURIComponent(
       `Hi Tata! I'd like to book:\n\nClass: ${bookingService}\nDate: ${date ? formatDateDisplay(date) : "Flexible"}\nName: ${name}\n${message ? `Note: ${message}` : ""}`
     );
-    window.open(`https://wa.me/573001234567?text=${text}`, "_blank");
+    window.open(`https://wa.me/573185083035?text=${text}`, "_blank");
   };
 
   const getTomorrow = () => {
@@ -239,34 +239,122 @@ export default function BookingModal({
 
         <div className="p-8 md:p-10">
           {status === "sent" ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-full bg-[#25D366]/10 flex items-center justify-center mx-auto mb-6">
-                <svg
-                  className="w-8 h-8 text-[#25D366]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.5 12.75l6 6 9-13.5"
-                  />
-                </svg>
+            <div className="py-4">
+              <div className="text-center mb-6">
+                <div className="w-14 h-14 rounded-full bg-[#25D366]/10 flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-7 h-7 text-[#25D366]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                </div>
+                <h3 className="font-[family-name:var(--font-display)] text-2xl text-charcoal mb-1">
+                  You&apos;re Almost In
+                </h3>
+                <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 max-w-xs mx-auto">
+                  Complete your payment below, then send your receipt via WhatsApp to confirm.
+                </p>
               </div>
-              <h3 className="font-[family-name:var(--font-display)] text-3xl text-charcoal mb-2">
-                You&apos;re In
-              </h3>
-              <p className="font-[family-name:var(--font-body)] text-charcoal/50 max-w-xs mx-auto">
-                Your spot is reserved. Tata will confirm via WhatsApp within 24
-                hours.
-              </p>
+
+              {/* Payment Methods */}
+              <div className="rounded-2xl border border-charcoal/8 bg-white p-5 mb-4">
+                <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-charcoal/40 font-medium mb-4">
+                  PAYMENT OPTIONS
+                </p>
+                <div className="space-y-3">
+                  {/* Wompi - Card Payment */}
+                  <a
+                    href="https://checkout.wompi.co/l/h3WPfP"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 p-3.5 rounded-xl border border-gold/20 bg-gold/[0.04] hover:bg-gold/[0.08] transition-colors group"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-gold/15 flex items-center justify-center shrink-0">
+                      <svg className="w-4.5 h-4.5 text-gold" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25h-15a2.25 2.25 0 0 0-2.25 2.25v10.5a2.25 2.25 0 0 0 2.25 2.25Z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
+                        Credit / Debit Card
+                      </p>
+                      <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40">
+                        Visa, Mastercard, Amex via Wompi
+                      </p>
+                    </div>
+                    <svg className="w-4 h-4 text-charcoal/20 group-hover:text-gold transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                    </svg>
+                  </a>
+
+                  {/* Nequi */}
+                  <div className="flex items-center gap-4 p-3.5 rounded-xl border border-charcoal/5 bg-charcoal/[0.02]">
+                    <div className="w-9 h-9 rounded-full bg-[#E6007E]/10 flex items-center justify-center shrink-0">
+                      <span className="font-[family-name:var(--font-body)] text-[10px] font-bold text-[#E6007E]">N</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
+                        Nequi
+                      </p>
+                      <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40 font-mono">
+                        3185083035
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Bancolombia */}
+                  <div className="flex items-center gap-4 p-3.5 rounded-xl border border-charcoal/5 bg-charcoal/[0.02]">
+                    <div className="w-9 h-9 rounded-full bg-[#FDDA24]/15 flex items-center justify-center shrink-0">
+                      <span className="font-[family-name:var(--font-body)] text-[10px] font-bold text-[#0033A0]">B</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
+                        Bancolombia
+                      </p>
+                      <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40">
+                        Ahorros: <span className="font-mono">207-859047-00</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Zelle / PayPal */}
+                  <div className="flex items-center gap-4 p-3.5 rounded-xl border border-charcoal/5 bg-charcoal/[0.02]">
+                    <div className="w-9 h-9 rounded-full bg-[#6C3EC1]/10 flex items-center justify-center shrink-0">
+                      <span className="font-[family-name:var(--font-body)] text-[10px] font-bold text-[#6C3EC1]">Z</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
+                        Zelle / PayPal
+                      </p>
+                      <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40 font-mono">
+                        +1 917 453 8307
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Launch phase notice — manual methods only */}
+              <div className="rounded-2xl border border-gold/15 bg-gold/[0.03] p-4 mb-4">
+                <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.2em] text-gold/70 font-medium mb-2">
+                  EARLY ACCESS
+                </p>
+                <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/50 leading-relaxed">
+                  For Nequi, Bancolombia, or Zelle: complete your payment and send the receipt via WhatsApp to{" "}
+                  <span className="text-charcoal/70 font-medium">+57 318 508 3035</span> or DM{" "}
+                  <a href="https://instagram.com/justbyogabytuisyou" target="_blank" rel="noopener noreferrer" className="text-rose/60 hover:text-rose underline underline-offset-2">
+                    @justbyogabytuisyou
+                  </a>
+                  . Your class is confirmed as soon as we receive it.
+                </p>
+                <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/30 mt-2 italic">
+                  Card payments via Wompi are confirmed instantly.
+                </p>
+              </div>
+
               <button
                 onClick={onClose}
-                className="mt-8 font-[family-name:var(--font-body)] text-sm tracking-widest text-charcoal/40 hover:text-charcoal transition-colors"
+                className="w-full py-3.5 rounded-2xl border border-charcoal/10 font-[family-name:var(--font-body)] text-sm tracking-[0.15em] text-charcoal/50 hover:text-charcoal hover:border-charcoal/30 transition-all"
               >
-                CLOSE
+                DONE
               </button>
             </div>
           ) : (

@@ -17,7 +17,7 @@ interface Message {
   content: string;
 }
 
-const TATA_WHATSAPP = "+19174538307";
+const TATA_WHATSAPP = "+573185083035";
 
 const CONVERSATION_STARTERS = [
   "I've never done yoga before",
@@ -99,7 +99,7 @@ export default function ChatBot() {
         ...prev,
         {
           role: "assistant",
-          content: `I apologize, I'm having trouble connecting right now. Please reach out to Tata directly via WhatsApp for immediate assistance: +1 (917) 453-8307`,
+          content: `I apologize, I'm having trouble connecting right now. Please reach out to Tata directly via WhatsApp for immediate assistance: +57 318 508 3035`,
         },
       ]);
     } finally {
@@ -286,14 +286,15 @@ export default function ChatBot() {
                   }
                 `}
               >
-                <p
-                  className="font-display text-sm leading-relaxed whitespace-pre-wrap"
-                  dangerouslySetInnerHTML={{
-                    __html: msg.content
-                      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                      .replace(/\n/g, "<br />"),
-                  }}
-                />
+                <p className="font-display text-sm leading-relaxed whitespace-pre-wrap">
+                  {msg.content.split(/(\*\*.*?\*\*)/).map((part, j) =>
+                    part.startsWith("**") && part.endsWith("**") ? (
+                      <strong key={j}>{part.slice(2, -2)}</strong>
+                    ) : (
+                      <span key={j}>{part}</span>
+                    )
+                  )}
+                </p>
               </div>
             </div>
           ))}
