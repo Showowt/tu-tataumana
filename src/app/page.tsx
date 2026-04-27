@@ -312,7 +312,7 @@ export default function Home() {
   const workshopPassed = WORKSHOP_TARGET.getTime() <= Date.now();
 
   return (
-    <main ref={sectionsRef}>
+    <main ref={sectionsRef} className="overflow-x-hidden w-full">
       {/* ━━━ LANGUAGE TOGGLE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <button
         onClick={() => setLang(lang === "en" ? "es" : "en")}
@@ -1193,30 +1193,26 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="flex items-center justify-center gap-3 mt-12">
+          <div className="flex items-center justify-center gap-2 mt-12">
             {testimonials.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setActiveTestimonial(i)}
-                className="rounded-full transition-all duration-500"
-                style={{
-                  background:
-                    activeTestimonial === i
-                      ? "rgba(184,119,119,0.6)"
-                      : "rgba(44,44,44,0.12)",
-                  height: 8,
-                  width: activeTestimonial === i ? 28 : 8,
-                  minWidth: 44,
-                  minHeight: 44,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 0,
-                  backgroundClip: "content-box",
-                  border: "18px solid transparent",
-                }}
+                className="p-3 group"
                 aria-label={`Testimonial ${i + 1}`}
-              />
+              >
+                <div
+                  className="rounded-full transition-all duration-500"
+                  style={{
+                    background:
+                      activeTestimonial === i
+                        ? "rgba(184,119,119,0.6)"
+                        : "rgba(44,44,44,0.12)",
+                    height: 8,
+                    width: activeTestimonial === i ? 28 : 8,
+                  }}
+                />
+              </button>
             ))}
           </div>
         </div>
@@ -1244,7 +1240,7 @@ export default function Home() {
       </section>
 
       {/* ━━━ FOOTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <footer className="py-16 border-t border-charcoal/5">
+      <footer className="pt-16 pb-28 border-t border-charcoal/5">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
             <div>

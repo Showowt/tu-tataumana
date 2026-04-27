@@ -13,6 +13,11 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 0;
@@ -23,7 +28,6 @@ body {
   background: var(--color-cream);
   color: var(--color-charcoal);
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
 }
 
 ::selection {
