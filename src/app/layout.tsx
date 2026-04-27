@@ -19,63 +19,55 @@ const outfit = Outfit({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#2C2C2C",
+  themeColor: "#FAF8F5",
 };
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://tu-tataumana.vercel.app"),
-  title: "TU. by Tata Umaña | Wellness Curator · Cartagena, Colombia",
+  title: "TU. by Tata Umana | Wellness Curator - Cartagena, Colombia",
   description:
-    "23 years of yoga, Reiki, Ayurveda, sound healing & ceremonial practice — distilled into transformative experiences that reconnect you with what matters most. Featured in Vogue, Forbes, Caribbean Journal. Lead instructor at Casa Carolina.",
+    "23 years of yoga, Reiki, Ayurveda, sound healing & ceremonial practice. Transformative wellness experiences in Cartagena. Featured in Vogue, Forbes, Caribbean Journal.",
   keywords: [
-    "Tata Umaña",
+    "Tata Umana",
     "wellness Cartagena",
     "yoga Cartagena Colombia",
     "sound healing",
     "Reiki master",
     "retreat Cartagena",
     "Casa Carolina wellness",
-    "holistic healing",
-    "guided meditation",
-    "Ayurveda Colombia",
     "luxury wellness",
     "wellness curator",
   ],
-  authors: [{ name: "Tata Umaña" }],
+  authors: [{ name: "Tata Umana" }],
   creator: "MachineMind Consulting",
-  applicationName: "TU. by Tata Umaña",
+  applicationName: "TU. by Tata Umana",
   openGraph: {
     type: "website",
     locale: "en_US",
     alternateLocale: "es_CO",
     url: "https://tu-tataumana.vercel.app",
-    siteName: "TU. by Tata Umaña",
-    title: "TU. by Tata Umaña | Come Home to Yourself",
+    siteName: "TU. by Tata Umana",
+    title: "TU. by Tata Umana | Come Home to Yourself",
     description:
-      "Transformative wellness experiences in Cartagena, Colombia. Yoga, sound healing, Reiki, ceremonies & retreats with Vogue-featured practitioner Tata Umaña.",
+      "Transformative wellness experiences in Cartagena, Colombia. Yoga, sound healing, Reiki, ceremonies & retreats with Vogue-featured practitioner Tata Umana.",
     images: [
       {
         url: "https://tu-tataumana.vercel.app/opengraph-image",
-        secureUrl: "https://tu-tataumana.vercel.app/opengraph-image",
         width: 1200,
         height: 630,
         type: "image/png",
-        alt: "TU. by Tata Umaña — Wellness Curator · Cartagena, Colombia",
+        alt: "TU. by Tata Umana — Wellness Curator",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "TU. by Tata Umaña | Wellness Curator · Cartagena",
+    title: "TU. by Tata Umana | Wellness Curator",
     description:
-      "Transformative wellness experiences. Yoga, sound healing, Reiki & retreats with Vogue-featured practitioner.",
+      "Transformative wellness experiences. Yoga, sound healing, Reiki & retreats in Cartagena.",
     images: ["https://tu-tataumana.vercel.app/twitter-image"],
-    creator: "@tataumana",
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
   icons: {
     icon: [
       { url: "/icon", sizes: "32x32", type: "image/png" },
@@ -85,7 +77,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "TU. by Tata Umaña",
+    title: "TU.",
     statusBarStyle: "black-translucent",
   },
 };
@@ -97,15 +89,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="scroll-smooth">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-      </head>
-      <body className={`${cormorant.variable} ${outfit.variable} antialiased`}>
+      <body
+        className={`${cormorant.variable} ${outfit.variable} antialiased`}
+      >
         {children}
       </body>
     </html>
