@@ -15,45 +15,75 @@ const WhatsAppButton = dynamic(() => import("@/components/WhatsAppButton"), {
 const services = [
   {
     name: "Discovery Session",
+    nameEs: "Consulta de Descubrimiento",
     description:
       "An intensive one-on-one consultation to design the path toward your personal transformation.",
-    price: "$23 USD · $85K COP",
+    price: "$85,000 COP / $23 USD",
     duration: "30 min",
   },
   {
     name: "Personalized Yoga",
+    nameEs: "Yoga Personalizado",
     description:
       "Tailored sessions in Hatha, Vinyasa, Kundalini, Yin, or Ashtanga — harmonizing body, mind, and spirit.",
-    price: "$51 USD · $190K COP",
+    price: "$190,000 COP / $51 USD",
+    duration: "60 min",
+  },
+  {
+    name: "Video Connection",
+    nameEs: "Video Conexión",
+    description:
+      "Connect with Tata from anywhere in the world for personalized guidance, support, and transformation.",
+    price: "$170,000 COP / $46 USD",
     duration: "60 min",
   },
   {
     name: "Quantum Surgery",
+    nameEs: "Cirugía Cuántica",
     description:
       "A powerful energetic transmutation session for deep cellular restoration and holistic wellbeing.",
-    price: "$86 USD · $320K COP",
+    price: "$320,000 COP / $86 USD",
     duration: "60 min",
   },
   {
     name: "Superior Connection",
+    nameEs: "Conexión Superior",
     description:
       "A profound session connecting you with your higher consciousness — an experience designed uniquely for you.",
-    price: "$197 USD · $730K COP",
+    price: "$730,000 COP / $197 USD",
     duration: "75 min",
   },
   {
     name: "Energy Cleansing",
+    nameEs: "Limpiezas Energéticas",
     description:
       "A powerful session honoring authentic love — for couples, homes, or workspaces. Beyond the traditional.",
-    price: "$131 USD · $485K COP",
+    price: "$485,000 COP / $131 USD",
     duration: "75 min",
   },
   {
     name: "Sacred Ceremonies",
+    nameEs: "Ceremonias Simbólicas",
     description:
       "Symbolic unions celebrated from the soul — unique rites created with intention, beauty, and heart-centered energy.",
-    price: "$945 USD · $3.5M COP",
+    price: "$3,500,000 COP / $945 USD",
     duration: "Custom",
+  },
+  {
+    name: "Leadership Integration",
+    nameEs: "Integración Grupal de Liderazgo",
+    description:
+      "Strengthen your leadership in group sessions with a personalized, holistic approach — ideal for teams seeking alignment.",
+    price: "$1,220,000 COP / $330 USD",
+    duration: "Per hour",
+  },
+  {
+    name: "TUISYOU Program",
+    nameEs: "Programa TUISYOU Personalizado",
+    description:
+      "A deeply personalized 3-month transformational journey designed exclusively for you — the ultimate investment in yourself.",
+    price: "$7,750,000 COP / $2,095 USD",
+    duration: "3 months",
   },
 ];
 
@@ -503,7 +533,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
             <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
-              OFFERINGS
+              TUISYOU &middot; PRIVATE SERVICES
             </p>
             <h2
               className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-charcoal"
@@ -512,25 +542,36 @@ export default function Home() {
                 fontWeight: 300,
               }}
             >
-              Six Modalities, One Intention
+              Your Personal Journey with Tata
             </h2>
+            <p className="fade-in fade-in-delay-2 font-[family-name:var(--font-body)] text-sm text-charcoal/40 mt-4 max-w-lg mx-auto">
+              One-on-one experiences tailored to your unique path — in person or virtual
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((service, i) => (
               <div
                 key={service.name}
-                className={`fade-in fade-in-delay-${Math.min(i + 1, 5)} service-card group relative p-8 rounded-2xl border border-charcoal/5 bg-cream/50 cursor-pointer`}
+                className={`fade-in fade-in-delay-${Math.min(i + 1, 5)} service-card group relative p-8 rounded-2xl border border-charcoal/5 bg-white cursor-pointer`}
                 onClick={() => openBooking(service.name)}
               >
-                <h3 className="font-[family-name:var(--font-display)] text-2xl text-charcoal group-hover:text-rose transition-colors duration-300 mb-3">
-                  {service.name}
-                </h3>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-[family-name:var(--font-display)] text-2xl text-charcoal group-hover:text-rose transition-colors duration-300">
+                    {service.name}
+                  </h3>
+                  <span className="font-[family-name:var(--font-body)] text-[10px] tracking-wider text-charcoal/25">
+                    {service.duration}
+                  </span>
+                </div>
+                <p className="font-[family-name:var(--font-body)] text-xs text-rose/50 italic mb-3">
+                  {service.nameEs}
+                </p>
                 <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 leading-relaxed mb-6">
                   {service.description}
                 </p>
                 <div className="flex items-center justify-between pt-4 border-t border-charcoal/5">
-                  <span className="font-[family-name:var(--font-body)] text-sm text-charcoal/70">
+                  <span className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 font-medium">
                     {service.price}
                   </span>
                   <span className="font-[family-name:var(--font-body)] text-xs tracking-[0.15em] text-rose/0 group-hover:text-rose transition-all duration-300 translate-y-1 group-hover:translate-y-0">
@@ -539,6 +580,46 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Yoga 10-pack callout */}
+          <div className="fade-in mt-8 rounded-2xl border border-rose/10 bg-white p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <p className="font-[family-name:var(--font-display)] text-xl text-charcoal">
+                Yoga 10-Session Pack
+              </p>
+              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 mt-1">
+                Save with 10 personalized yoga sessions
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="font-[family-name:var(--font-display)] text-2xl text-charcoal">
+                $1,500,000 <span className="text-base text-charcoal/40">COP</span>
+              </p>
+              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40">
+                $388 USD
+              </p>
+            </div>
+          </div>
+
+          {/* Video Connection 30-min option */}
+          <div className="fade-in mt-3 rounded-2xl border border-charcoal/5 bg-white p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <p className="font-[family-name:var(--font-display)] text-xl text-charcoal">
+                Video Connection — 30 min
+              </p>
+              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 mt-1">
+                Shorter session for focused guidance
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="font-[family-name:var(--font-display)] text-2xl text-charcoal">
+                $120,000 <span className="text-base text-charcoal/40">COP</span>
+              </p>
+              <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40">
+                $33 USD
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -585,7 +666,7 @@ export default function Home() {
           {/* Header with cinematic feel */}
           <div className="text-center mb-16">
             <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.4em] text-gold mb-4">
-              JUST B YOGA BY TU
+              JUST B YOGA BY TU &middot; CASA CAROLINA
             </p>
             <h2
               className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-white"
@@ -595,12 +676,12 @@ export default function Home() {
                 lineHeight: 1.1,
               }}
             >
-              Your Weekly
+              Weekly Group
               <br />
-              <span className="text-rose-soft italic">Transformation</span>
+              <span className="text-rose-soft italic">Classes</span>
             </h2>
             <p className="fade-in fade-in-delay-2 font-[family-name:var(--font-body)] text-sm text-white/40 mt-6 max-w-md mx-auto">
-              Seven days of intention. Tap any class to reserve your mat.
+              Group sessions at Casa Carolina, Cartagena. Tap any class to reserve your mat.
             </p>
           </div>
 
@@ -697,36 +778,14 @@ export default function Home() {
           </div>
 
           {/* Pricing cards — glowing glass */}
-          <div className="fade-in mt-12 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="fade-in mt-12 grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
-              { label: "WALK-IN", price: "$80K", sub: "Single class" },
-              { label: "2x1 PROMO", price: "$80K", sub: "Bring a friend" },
-              { label: "INTRO PACK", price: "$160K", sub: "4 classes" },
-              { label: "LIFE PACK", price: "$1.05M", sub: "Unlimited" },
-            ].map((promo) => (
-              <div
-                key={promo.label}
-                className="schedule-promo-card rounded-2xl border border-gold/10 bg-white/[0.03] p-5 text-center hover:border-gold/30 hover:bg-white/[0.06] transition-all duration-500"
-              >
-                <p className="font-[family-name:var(--font-body)] text-[9px] tracking-[0.3em] text-gold/70 mb-2">
-                  {promo.label}
-                </p>
-                <p className="font-[family-name:var(--font-display)] text-2xl md:text-3xl text-white">
-                  {promo.price}
-                </p>
-                <p className="font-[family-name:var(--font-body)] text-xs text-white/30 mt-1">
-                  COP &middot; {promo.sub}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {/* More packs row */}
-          <div className="fade-in mt-3 grid grid-cols-3 gap-3">
-            {[
-              { label: "JUST FLOW", price: "$295K", sub: "6 classes" },
-              { label: "HEALING", price: "$420K", sub: "8 classes" },
-              { label: "EQUILIBRIUM", price: "$630K", sub: "12 classes" },
+              { label: "WALK-IN CLASS", cop: "$80,000", usd: "$22", sub: "Single class" },
+              { label: "PROMO 2x1", cop: "$80,000", usd: "$22", sub: "Bring a friend" },
+              { label: "MARTES INDUSTRIA", cop: "$45,000", usd: "$12", sub: "Tuesdays only" },
+              { label: "VIERNES OPEN FLOW", cop: "$45,000", usd: "$12", sub: "Fridays only" },
+              { label: "PROMO MES MUJER", cop: "$160,000", usd: "$43", sub: "Special promo" },
+              { label: "TU INTRO PACK", cop: "$160,000", usd: "$43", sub: "4 classes" },
             ].map((promo) => (
               <div
                 key={promo.label}
@@ -736,10 +795,35 @@ export default function Home() {
                   {promo.label}
                 </p>
                 <p className="font-[family-name:var(--font-display)] text-2xl text-white">
-                  {promo.price}
+                  {promo.cop}
                 </p>
                 <p className="font-[family-name:var(--font-body)] text-xs text-white/30 mt-1">
-                  COP &middot; {promo.sub}
+                  COP &middot; {promo.usd} USD &middot; {promo.sub}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Premium packs row */}
+          <div className="fade-in mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "JUST FLOW PACK", cop: "$295,000", usd: "$80", sub: "6 classes" },
+              { label: "TU HEALING PACK", cop: "$420,000", usd: "$114", sub: "8 classes" },
+              { label: "TU EQUILIBRIUM", cop: "$630,000", usd: "$170", sub: "12 classes" },
+              { label: "TU LIFE PACK", cop: "$1,050,000", usd: "$284", sub: "Unlimited" },
+            ].map((promo) => (
+              <div
+                key={promo.label}
+                className="schedule-promo-card rounded-2xl border border-gold/10 bg-white/[0.03] p-5 text-center hover:border-gold/30 hover:bg-white/[0.06] transition-all duration-500"
+              >
+                <p className="font-[family-name:var(--font-body)] text-[9px] tracking-[0.3em] text-gold/70 mb-2">
+                  {promo.label}
+                </p>
+                <p className="font-[family-name:var(--font-display)] text-2xl text-white">
+                  {promo.cop}
+                </p>
+                <p className="font-[family-name:var(--font-body)] text-xs text-white/30 mt-1">
+                  COP &middot; {promo.usd} USD &middot; {promo.sub}
                 </p>
               </div>
             ))}
@@ -756,8 +840,8 @@ export default function Home() {
                 "Arrive 10 minutes early (especially first class)",
                 "Cancel 24 hours ahead for full refund",
                 "Mats and props provided — just bring water",
-                "Tuesday Industry Rate: $45K COP",
-                "Friday Open Flow: $45K COP",
+                "Tuesday Industry Rate: $45,000 COP / $12 USD",
+                "Friday Open Flow: $45,000 COP / $12 USD",
               ].map((rule) => (
                 <p key={rule} className="font-[family-name:var(--font-body)] text-sm text-white/30 flex items-start gap-2">
                   <span className="text-gold/40 mt-0.5">·</span>

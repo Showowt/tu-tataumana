@@ -8,7 +8,7 @@ interface BookingModalProps {
   preselectedService?: string;
   preselectedDate?: string;
   preselectedTime?: string;
-  services: { name: string; price: string; duration: string }[];
+  services: { name: string; nameEs?: string; price: string; duration: string }[];
 }
 
 // Weekly schedule for date-aware class display
