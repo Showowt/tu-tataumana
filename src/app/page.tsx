@@ -235,6 +235,7 @@ export default function Home() {
   const [preselectedTime, setPreselectedTime] = useState("");
   const [lang, setLang] = useState<Lang>("en");
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [closedDates, setClosedDates] = useState<string[]>([]);
   const sectionsRef = useScrollReveal();
 
   const L = useCallback(
@@ -288,6 +289,14 @@ export default function Home() {
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Fetch closed dates
+  useEffect(() => {
+    fetch("/api/admin/closed-dates")
+      .then((r) => r.json())
+      .then((json) => setClosedDates((json.data || []).map((d: { date: string }) => d.date)))
+      .catch(() => {});
   }, []);
 
   const openBooking = useCallback(
@@ -842,12 +851,15 @@ export default function Home() {
 
           {/* Schedule grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {weeklySchedule.map((day, dayIdx) => (
+            {weeklySchedule.map((day, dayIdx) => {
+              const nextDate = getNextDateForDay(day.dayIndex);
+              const isClosed = closedDates.includes(nextDate);
+              return (
               <div
                 key={day.day}
                 className={`fade-in fade-in-delay-${Math.min(dayIdx + 1, 5)}`}
               >
-                <div className="schedule-day-card rounded-2xl overflow-hidden border border-white/[0.06] bg-white/[0.04] backdrop-blur-sm hover:border-rose/20 transition-all duration-500">
+                <div className={`schedule-day-card rounded-2xl overflow-hidden border backdrop-blur-sm transition-all duration-500 ${isClosed ? "border-white/[0.04] bg-white/[0.02] opacity-50" : "border-white/[0.06] bg-white/[0.04] hover:border-rose/20"}`}>
                   <div className="px-5 py-3 border-b border-white/[0.06] flex items-center gap-3">
                     <span className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-gold w-10">
                       {day.dayShort}
@@ -855,28 +867,35 @@ export default function Home() {
                     <span className="font-[family-name:var(--font-display)] text-lg text-white/90">
                       {lang === "en" ? day.day : day.dayEs}
                     </span>
+                    {isClosed && (
+                      <span className="ml-auto font-[family-name:var(--font-body)] text-[9px] tracking-[0.2em] text-rose/60 bg-rose/10 px-3 py-1 rounded-full">
+                        {lang === "en" ? "CLOSED" : "CERRADO"}
+                      </span>
+                    )}
                   </div>
                   <div className="divide-y divide-white/[0.04]">
                     {day.classes.map((cls, clsIdx) => (
                       <button
                         key={`${day.day}-${clsIdx}`}
+                        disabled={isClosed}
                         onClick={() =>
-                          openBooking(
+                          !isClosed && openBooking(
                             cls.name,
-                            getNextDateForDay(day.dayIndex),
+                            nextDate,
                             cls.time
                           )
                         }
-                        className="w-full px-5 py-3.5 flex items-center justify-between group hover:bg-white/[0.04] transition-all duration-300"
+                        className={`w-full px-5 py-3.5 flex items-center justify-between group transition-all duration-300 ${isClosed ? "cursor-not-allowed" : "hover:bg-white/[0.04]"}`}
                       >
                         <div className="flex items-center gap-4">
-                          <span className="font-[family-name:var(--font-body)] text-sm text-white/25 w-[72px] text-left tabular-nums">
+                          <span className={`font-[family-name:var(--font-body)] text-sm w-[72px] text-left tabular-nums ${isClosed ? "text-white/15 line-through" : "text-white/25"}`}>
                             {cls.time}
                           </span>
-                          <span className="font-[family-name:var(--font-display)] text-[15px] text-white/70 group-hover:text-rose-soft transition-colors duration-300">
+                          <span className={`font-[family-name:var(--font-display)] text-[15px] transition-colors duration-300 ${isClosed ? "text-white/25 line-through" : "text-white/70 group-hover:text-rose-soft"}`}>
                             {cls.name}
                           </span>
                         </div>
+                        {!isClosed && (
                         <svg
                           className="w-3.5 h-3.5 text-white/0 group-hover:text-gold/60 transition-all duration-300 group-hover:translate-x-0.5"
                           fill="none"
@@ -886,12 +905,14 @@ export default function Home() {
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                         </svg>
+                        )}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Pricing cards */}
@@ -946,18 +967,46 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Booking rules */}
-          <div className="fade-in mt-10 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
-            <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-gold/60 mb-4">
-              {L(t.bookingRules) as string}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
-              {(L(t.rules) as string[]).map((rule) => (
-                <p key={rule} className="font-[family-name:var(--font-body)] text-sm text-white/30 flex items-start gap-2">
-                  <span className="text-gold/40 mt-0.5">·</span>
-                  {rule}
+          {/* Booking rules — prominent gold card */}
+          <div className="fade-in mt-12 rounded-3xl border-2 border-gold/30 bg-gradient-to-br from-gold/[0.08] to-white/[0.03] p-8 sm:p-10 relative overflow-hidden">
+            {/* Decorative corner glow */}
+            <div
+              className="absolute top-0 right-0 w-[200px] h-[200px] pointer-events-none"
+              style={{ background: "radial-gradient(ellipse at top right, rgba(201,169,110,0.15) 0%, transparent 70%)" }}
+            />
+
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                  </svg>
+                </div>
+                <p className="font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-gold font-medium">
+                  {L(t.bookingRules) as string}
                 </p>
-              ))}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-4">
+                {(L(t.rules) as string[]).map((rule) => (
+                  <div key={rule} className="flex items-start gap-3">
+                    <svg className="w-4 h-4 text-gold/50 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    <p className="font-[family-name:var(--font-body)] text-sm text-white/50 leading-relaxed">
+                      {rule}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 pt-5 border-t border-gold/10">
+                <p className="font-[family-name:var(--font-body)] text-xs text-gold/40 italic text-center">
+                  {lang === "en"
+                    ? "You will be asked to confirm these rules when booking"
+                    : "Se te pedirá confirmar estas reglas al reservar"}
+                </p>
+              </div>
             </div>
           </div>
         </div>

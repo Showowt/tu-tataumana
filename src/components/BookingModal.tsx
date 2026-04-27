@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -11,7 +11,13 @@ interface BookingModalProps {
   services: { name: string; nameEs?: string; price: string; duration: string }[];
 }
 
-// Weekly schedule for date-aware class display
+const BOOKING_RULES = [
+  "Reserve your spot at least 2 hours in advance",
+  "Arrive 10 minutes early (especially first class)",
+  "Cancel 24 hours ahead for full refund",
+  "Mats and props provided — just bring water",
+];
+
 const scheduleByDay: Record<number, { time: string; name: string }[]> = {
   1: [
     { time: "9:30 AM", name: "Yoga Conscious" },
@@ -87,12 +93,29 @@ export default function BookingModal({
   const [date, setDate] = useState(preselectedDate || "");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const [rulesAccepted, setRulesAccepted] = useState(false);
+  const [closedDates, setClosedDates] = useState<string[]>([]);
   const modalRef = useRef<HTMLDivElement>(null);
 
   const availableClasses = getClassesForDate(date);
   const isClassBooking = !!preselectedTime || availableClasses.length > 0;
+  const isDateClosed = date && closedDates.includes(date);
 
-  // Update when preselected values change
+  // Fetch closed dates on mount
+  const fetchClosedDates = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/closed-dates");
+      const json = await res.json();
+      setClosedDates((json.data || []).map((d: { date: string }) => d.date));
+    } catch {
+      // Silently fail — booking still works
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchClosedDates();
+  }, [fetchClosedDates]);
+
   useEffect(() => {
     if (preselectedService) setService(preselectedService);
     if (preselectedDate) setDate(preselectedDate);
@@ -130,6 +153,7 @@ export default function BookingModal({
           setService("");
           setSelectedTime("");
           setStatus("idle");
+          setRulesAccepted(false);
         }
       }, 300);
     }
@@ -137,6 +161,7 @@ export default function BookingModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!rulesAccepted) return;
     setStatus("sending");
 
     const bookingService = selectedTime
@@ -290,7 +315,6 @@ export default function BookingModal({
                 {/* Service/class selector — only show if NOT pre-selected from schedule */}
                 {!preselectedTime && (
                   <>
-                    {/* Date picker first — so classes appear */}
                     <input
                       type="date"
                       value={date}
@@ -303,8 +327,25 @@ export default function BookingModal({
                       className="w-full px-5 py-4 rounded-2xl border border-charcoal/8 bg-white font-[family-name:var(--font-body)] text-charcoal focus:border-rose/30 focus:outline-none transition-colors"
                     />
 
+                    {/* Closed date warning */}
+                    {isDateClosed && (
+                      <div className="rounded-2xl border border-rose/20 bg-rose/[0.04] p-4 flex items-start gap-3">
+                        <svg className="w-5 h-5 text-rose mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                        </svg>
+                        <div>
+                          <p className="font-[family-name:var(--font-body)] text-sm text-rose font-medium">
+                            No classes on this date
+                          </p>
+                          <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-0.5">
+                            Tata is unavailable on {formatDateDisplay(date)}. Please choose a different date.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Show available classes for selected date */}
-                    {date && availableClasses.length > 0 && (
+                    {date && !isDateClosed && availableClasses.length > 0 && (
                       <div className="space-y-2">
                         <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 tracking-wider pl-1">
                           {formatDateDisplay(date).toUpperCase()} — CLASSES
@@ -346,7 +387,7 @@ export default function BookingModal({
                     )}
 
                     {/* Fallback: service dropdown if no date or private sessions */}
-                    {(!date || availableClasses.length === 0) && (
+                    {(!date || isDateClosed || availableClasses.length === 0) && !isDateClosed && (
                       <div className="relative">
                         <select
                           value={service}
@@ -380,7 +421,7 @@ export default function BookingModal({
                     )}
 
                     {/* Also show private session option when classes are visible */}
-                    {date && availableClasses.length > 0 && (
+                    {date && !isDateClosed && availableClasses.length > 0 && (
                       <button
                         type="button"
                         onClick={() => {
@@ -429,13 +470,58 @@ export default function BookingModal({
                   className="w-full px-5 py-4 rounded-2xl border border-charcoal/8 bg-white font-[family-name:var(--font-body)] text-charcoal placeholder:text-charcoal/25 focus:border-rose/30 focus:outline-none transition-colors resize-none"
                 />
 
+                {/* ━━━ BOOKING RULES ACKNOWLEDGMENT ━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                <div className="rounded-2xl border-2 border-gold/30 bg-gold/[0.04] p-5">
+                  <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-gold font-medium mb-3">
+                    BOOKING RULES
+                  </p>
+                  <div className="space-y-2 mb-4">
+                    {BOOKING_RULES.map((rule) => (
+                      <div key={rule} className="flex items-start gap-2.5">
+                        <svg className="w-4 h-4 text-gold/60 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                        </svg>
+                        <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/60 leading-snug">
+                          {rule}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <div className="relative mt-0.5">
+                      <input
+                        type="checkbox"
+                        checked={rulesAccepted}
+                        onChange={(e) => setRulesAccepted(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-5 h-5 rounded-md border-2 border-charcoal/15 bg-white peer-checked:border-gold peer-checked:bg-gold transition-all duration-200 flex items-center justify-center">
+                        {rulesAccepted && (
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                    <span className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 leading-snug group-hover:text-charcoal transition-colors">
+                      I have read and agree to the booking rules
+                    </span>
+                  </label>
+                </div>
+
                 <button
                   type="submit"
-                  disabled={status === "sending" || !service}
+                  disabled={status === "sending" || !service || !rulesAccepted || !!isDateClosed}
                   className="w-full py-4 rounded-2xl bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.2em] hover:bg-rose transition-colors duration-500 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {status === "sending" ? "SENDING..." : "BOOK NOW"}
                 </button>
+
+                {!rulesAccepted && service && (
+                  <p className="text-center font-[family-name:var(--font-body)] text-xs text-rose/60 pt-0.5">
+                    Please accept the booking rules to continue
+                  </p>
+                )}
 
                 <p className="text-center font-[family-name:var(--font-body)] text-xs text-charcoal/30 pt-1">
                   Sends booking request + opens WhatsApp chat with Tata
