@@ -621,7 +621,7 @@ export default function Home() {
                 loop
                 playsInline
                 className="inline-video"
-                style={{ minHeight: "100%" }}
+                style={{ minHeight: "100%", objectPosition: "center 20%" }}
               >
                 <source src="/class-video.mp4" type="video/mp4" />
               </video>
@@ -775,7 +775,7 @@ export default function Home() {
             playsInline
             preload="auto"
             className="w-full h-full object-cover"
-            style={{ opacity: 0.15, filter: "brightness(0.8) saturate(1.2)" }}
+            style={{ opacity: 0.15, filter: "brightness(0.8) saturate(1.2)", objectPosition: "center 20%" }}
           >
             <source src="/class-video.mp4" type="video/mp4" />
           </video>
@@ -832,7 +832,7 @@ export default function Home() {
                 loop
                 playsInline
                 className="w-full h-full object-cover"
-                style={{ filter: "brightness(0.95) contrast(1.05) saturate(1.1)" }}
+                style={{ filter: "brightness(0.95) contrast(1.05) saturate(1.1)", objectPosition: "center 20%" }}
               >
                 <source src="/class-video.mp4" type="video/mp4" />
               </video>
