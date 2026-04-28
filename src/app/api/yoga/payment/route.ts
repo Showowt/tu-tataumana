@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
 
     // Build redirect URL
     const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL || "https://tu-tataumana.vercel.app";
+      process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
     const redirectUrl = `${baseUrl}/booking/confirmation?ref=${encodeURIComponent(reference)}`;
 
     // Create Wompi payment link

@@ -128,6 +128,16 @@ export const t = {
     es: "Sesiones desde $23 USD",
   },
 
+  // Payment
+  paymentLabel: { en: "HOW TO PAY", es: "CÓMO PAGAR" },
+  paymentTitle: { en: "Payment Methods", es: "Métodos de Pago" },
+  paymentCardDesc: { en: "Visa, Mastercard, Amex — instant confirmation", es: "Visa, Mastercard, Amex — confirmación inmediata" },
+  paymentNequiDesc: { en: "Send to this number", es: "Envía a este número" },
+  paymentBancoDesc: { en: "Savings Account", es: "Cuenta de Ahorros" },
+  paymentZelleDesc: { en: "For international clients", es: "Para clientes internacionales" },
+  paymentReceipt: { en: "For Nequi, Bancolombia, or Zelle — send your receipt via WhatsApp to confirm", es: "Para Nequi, Bancolombia o Zelle — envía tu comprobante por WhatsApp para confirmar" },
+  payNow: { en: "PAY WITH CARD", es: "PAGAR CON TARJETA" },
+
   // Misc
   casaCarolina: { en: "Casa Carolina", es: "Casa Carolina" },
   centroHistorico: { en: "Centro Historico", es: "Centro Hist\u00F3rico" },

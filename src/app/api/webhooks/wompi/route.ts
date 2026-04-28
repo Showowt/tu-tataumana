@@ -12,6 +12,7 @@ import {
   type WompiWebhookEvent,
   type WompiPaymentStatus,
 } from "@/lib/wompi";
+import { notifyPaymentReceived } from "@/lib/telegram";
 
 // Wompi webhook event types
 type WompiEventType =
@@ -37,6 +38,16 @@ async function handleApprovedPayment(
     amount: transaction.amount_in_cents,
     email: transaction.customer_email,
   });
+
+  // Notify Tata via Telegram
+  notifyPaymentReceived({
+    reference: transaction.reference,
+    amount: transaction.amount_in_cents,
+    currency: transaction.currency,
+    customerEmail: transaction.customer_email,
+    customerName: transaction.customer_data?.full_name,
+    status: "APPROVED",
+  }).catch(() => {});
 
   // In production with Supabase:
   // 1. Update booking payment status
@@ -104,6 +115,16 @@ async function handleFailedPayment(
     status: transaction.status,
     message: transaction.status_message,
   });
+
+  // Notify Tata via Telegram
+  notifyPaymentReceived({
+    reference: transaction.reference,
+    amount: transaction.amount_in_cents,
+    currency: transaction.currency,
+    customerEmail: transaction.customer_email,
+    customerName: transaction.customer_data?.full_name,
+    status: transaction.status,
+  }).catch(() => {});
 
   // Update payment intent status
   // await supabase

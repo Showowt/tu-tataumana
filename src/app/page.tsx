@@ -312,7 +312,7 @@ export default function Home() {
   const workshopPassed = WORKSHOP_TARGET.getTime() <= Date.now();
 
   return (
-    <main ref={sectionsRef} className="overflow-x-hidden w-full">
+    <main ref={sectionsRef} className="w-full">
       {/* ━━━ LANGUAGE TOGGLE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <button
         onClick={() => setLang(lang === "en" ? "es" : "en")}
@@ -431,7 +431,7 @@ export default function Home() {
 
       {/* ━━━ PRESS BAR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="py-12 border-b border-charcoal/5">
-        <div className="max-w-4xl mx-auto px-6">
+        <div className="max-w-5xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-center gap-6 sm:gap-12 md:gap-16 flex-wrap">
             {["VOGUE", "FORBES", "CARIBBEAN JOURNAL", "DINERS"].map(
               (press) => (
@@ -449,7 +449,7 @@ export default function Home() {
 
       {/* ━━━ WORKSHOP EVENT — Countdown ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {!workshopPassed && (
-        <section className="relative py-20 md:py-28 bg-charcoal overflow-hidden">
+        <section className="relative py-20 md:py-28 bg-charcoal overflow-clip">
           {/* Radial glow accents */}
           <div
             className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] pointer-events-none"
@@ -464,7 +464,7 @@ export default function Home() {
             }}
           />
 
-          <div className="relative max-w-4xl mx-auto px-6 text-center">
+          <div className="relative max-w-5xl mx-auto px-6 lg:px-8 text-center">
             {/* Anniversary badge */}
             <div className="fade-in inline-flex items-center gap-2 px-5 py-2 rounded-full border border-gold/20 bg-gold/5 mb-8">
               <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
@@ -562,7 +562,7 @@ export default function Home() {
 
       {/* ━━━ PHILOSOPHY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="py-24 md:py-32">
-        <div className="max-w-3xl mx-auto px-6 text-center">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
           <p
             className="fade-in font-[family-name:var(--font-display)] text-charcoal leading-relaxed"
             style={{
@@ -595,8 +595,8 @@ export default function Home() {
       </section>
 
       {/* ━━━ THE PRACTICE — Glass Gallery ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="py-24 md:py-32 bg-white overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6">
+      <section id="practice" className="py-24 md:py-32 bg-white overflow-clip">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
               {L(t.thePractice) as string}
@@ -612,47 +612,54 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 auto-rows-[280px] md:auto-rows-[320px]">
-            <div className="fade-in fade-in-delay-1 md:col-span-7 md:row-span-2 glass-frame">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+            {/* Video — landscape, spans left side */}
+            <div className="fade-in fade-in-delay-1 md:col-span-7 md:row-span-2 glass-frame" style={{ minHeight: "400px" }}>
               <video
                 autoPlay
                 muted
                 loop
                 playsInline
                 className="inline-video"
+                style={{ minHeight: "100%" }}
               >
                 <source src="/class-video.mp4" type="video/mp4" />
               </video>
             </div>
 
-            <div className="fade-in fade-in-delay-2 md:col-span-5 glass-frame">
+            {/* Savasana — portrait image, faces at top and center */}
+            <div className="fade-in fade-in-delay-2 md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto">
               <Image
                 src="/class-savasana.jpg"
-                alt="Savasana class at Casa Carolina"
-                width={800}
-                height={600}
-                className="object-cover w-full h-full"
-              />
-            </div>
-
-            <div className="fade-in fade-in-delay-3 md:col-span-5 glass-frame">
-              <Image
-                src="/class-seated.jpg"
-                alt="Seated meditation class"
-                width={800}
-                height={600}
-                className="object-cover w-full h-full"
-              />
-            </div>
-
-            <div className="fade-in fade-in-delay-4 md:col-span-12 glass-frame" style={{ height: 360 }}>
-              <Image
-                src="/yoga-class.jpg"
-                alt="Yoga class at Casa Carolina — JustbYoga by TUISYOU"
-                width={1400}
-                height={800}
+                alt="Savasana yoga class at Casa Carolina boutique hotel in Cartagena Colombia — guided by Tata Umana"
+                width={1067}
+                height={1600}
                 className="object-cover w-full h-full"
                 style={{ objectPosition: "center 35%" }}
+              />
+            </div>
+
+            {/* Seated — portrait image, people with arms up in center */}
+            <div className="fade-in fade-in-delay-3 md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto">
+              <Image
+                src="/class-seated.jpg"
+                alt="Seated meditation and yoga class in Cartagena Colombia — holistic wellness with Tata Umana"
+                width={900}
+                height={1600}
+                className="object-cover w-full h-full"
+                style={{ objectPosition: "center 30%" }}
+              />
+            </div>
+
+            {/* Group photo — full width, tall to show all faces */}
+            <div className="fade-in fade-in-delay-4 md:col-span-12 glass-frame" style={{ height: "clamp(420px, 50vw, 700px)" }}>
+              <Image
+                src="/yoga-class.jpg"
+                alt="Group yoga class at Casa Carolina Cartagena — JustbYoga by TUISYOU daily wellness classes with sound bowls and mats"
+                width={900}
+                height={1600}
+                className="object-cover w-full h-full"
+                style={{ objectPosition: "center 55%" }}
               />
             </div>
           </div>
@@ -660,8 +667,8 @@ export default function Home() {
       </section>
 
       {/* ━━━ SERVICES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="py-24 md:py-32 bg-cream">
-        <div className="max-w-6xl mx-auto px-6">
+      <section id="services" className="py-24 md:py-32 bg-cream">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
               {L(t.servicesLabel) as string}
@@ -758,7 +765,7 @@ export default function Home() {
       </section>
 
       {/* ━━━ WEEKLY SCHEDULE — Cinematic Dark Section ━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="relative py-24 md:py-32 bg-charcoal overflow-hidden">
+      <section id="schedule" className="relative py-24 md:py-32 bg-charcoal overflow-clip">
         {/* Background video */}
         <div className="absolute inset-0">
           <video
@@ -794,7 +801,7 @@ export default function Home() {
           }}
         />
 
-        <div className="relative max-w-5xl mx-auto px-6">
+        <div className="relative max-w-6xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.4em] text-gold mb-4">
               {L(t.scheduleLabel) as string}
@@ -1017,8 +1024,110 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ━━━ PAYMENT METHODS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section id="payment" className="py-20 md:py-28 bg-cream-warm">
+        <div className="max-w-5xl mx-auto px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
+              {L(t.paymentLabel) as string}
+            </p>
+            <h2
+              className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-charcoal"
+              style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 300 }}
+            >
+              {L(t.paymentTitle) as string}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Wompi — Card Payment */}
+            <a
+              href="https://checkout.wompi.co/l/h3WPfP"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="fade-in fade-in-delay-1 group flex items-center gap-5 p-6 rounded-2xl border-2 border-gold/25 bg-white hover:border-gold/50 hover:shadow-lg transition-all duration-500"
+            >
+              <div className="w-12 h-12 rounded-full bg-gold/15 flex items-center justify-center shrink-0 group-hover:bg-gold/25 transition-colors">
+                <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25h-15a2.25 2.25 0 0 0-2.25 2.25v10.5a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-[family-name:var(--font-display)] text-lg text-charcoal">
+                  Credit / Debit Card
+                </p>
+                <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-0.5">
+                  {L(t.paymentCardDesc) as string}
+                </p>
+              </div>
+              <svg className="w-5 h-5 text-charcoal/20 group-hover:text-gold group-hover:translate-x-1 transition-all shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+              </svg>
+            </a>
+
+            {/* Nequi */}
+            <div className="fade-in fade-in-delay-2 flex items-center gap-5 p-6 rounded-2xl border border-charcoal/8 bg-white">
+              <div className="w-12 h-12 rounded-full bg-[#E6007E]/10 flex items-center justify-center shrink-0">
+                <span className="font-[family-name:var(--font-body)] text-sm font-bold text-[#E6007E]">N</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-[family-name:var(--font-display)] text-lg text-charcoal">
+                  Nequi
+                </p>
+                <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-0.5">
+                  {L(t.paymentNequiDesc) as string}
+                </p>
+              </div>
+              <p className="font-mono text-sm text-charcoal/70 shrink-0">3185083035</p>
+            </div>
+
+            {/* Bancolombia */}
+            <div className="fade-in fade-in-delay-3 flex items-center gap-5 p-6 rounded-2xl border border-charcoal/8 bg-white">
+              <div className="w-12 h-12 rounded-full bg-[#FDDA24]/20 flex items-center justify-center shrink-0">
+                <span className="font-[family-name:var(--font-body)] text-sm font-bold text-[#0033A0]">B</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-[family-name:var(--font-display)] text-lg text-charcoal">
+                  Bancolombia
+                </p>
+                <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-0.5">
+                  {L(t.paymentBancoDesc) as string}
+                </p>
+              </div>
+              <p className="font-mono text-sm text-charcoal/70 shrink-0">207-859047-00</p>
+            </div>
+
+            {/* Zelle / PayPal */}
+            <div className="fade-in fade-in-delay-4 flex items-center gap-5 p-6 rounded-2xl border border-charcoal/8 bg-white">
+              <div className="w-12 h-12 rounded-full bg-[#6C3EC1]/10 flex items-center justify-center shrink-0">
+                <span className="font-[family-name:var(--font-body)] text-sm font-bold text-[#6C3EC1]">Z</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-[family-name:var(--font-display)] text-lg text-charcoal">
+                  Zelle / PayPal
+                </p>
+                <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-0.5">
+                  {L(t.paymentZelleDesc) as string}
+                </p>
+              </div>
+              <p className="font-mono text-sm text-charcoal/70 shrink-0">+1 917 453 8307</p>
+            </div>
+          </div>
+
+          {/* Receipt notice */}
+          <div className="fade-in fade-in-delay-5 mt-6 text-center">
+            <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40">
+              {L(t.paymentReceipt) as string}:{" "}
+              <a href="https://wa.me/573185083035" target="_blank" rel="noopener noreferrer" className="text-rose hover:text-rose-soft underline underline-offset-2 transition-colors">
+                +57 318 508 3035
+              </a>
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ━━━ BOOKING HIGHLIGHT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="py-20 md:py-28 bg-charcoal relative overflow-hidden">
+      <section className="py-20 md:py-28 bg-charcoal relative overflow-clip">
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{
@@ -1027,7 +1136,7 @@ export default function Home() {
           }}
         />
 
-        <div className="relative max-w-3xl mx-auto px-6 text-center">
+        <div className="relative max-w-4xl mx-auto px-6 lg:px-8 text-center">
           <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-white/30 mb-6">
             {L(t.yourNextStep) as string}
           </p>
@@ -1079,8 +1188,8 @@ export default function Home() {
       </section>
 
       {/* ━━━ RETREATS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="py-24 md:py-32">
-        <div className="max-w-6xl mx-auto px-6">
+      <section id="retreats" className="py-24 md:py-32">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
               {L(t.immersive) as string}
@@ -1163,7 +1272,7 @@ export default function Home() {
 
       {/* ━━━ TESTIMONIALS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="py-24 md:py-32 bg-cream-warm">
-        <div className="max-w-3xl mx-auto px-6 text-center">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
           <div className="relative min-h-[200px] flex items-center justify-center">
             {testimonials.map((testimonial, i) => (
               <div
@@ -1225,7 +1334,7 @@ export default function Home() {
 
       {/* ━━━ FINAL CTA ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="py-24 md:py-32 bg-white">
-        <div className="max-w-2xl mx-auto px-6 text-center">
+        <div className="max-w-3xl mx-auto px-6 lg:px-8 text-center">
           <h2
             className="fade-in font-[family-name:var(--font-display)] text-charcoal"
             style={{
@@ -1244,9 +1353,66 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ━━━ INSTAGRAM ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section className="py-20 md:py-28 bg-cream-warm">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8">
+          <a
+            href="https://instagram.com/tuisyou"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="fade-in group block rounded-3xl border border-charcoal/8 bg-white p-8 md:p-10 hover:border-rose/20 hover:shadow-lg transition-all duration-500"
+          >
+            <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+              {/* Profile avatar */}
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#f09433] via-[#e6683c] to-[#bc1888] p-[3px] shrink-0">
+                <div className="w-full h-full rounded-full bg-cream-warm flex items-center justify-center overflow-hidden">
+                  <span className="font-[family-name:var(--font-display)] text-2xl text-charcoal">TU.</span>
+                </div>
+              </div>
+
+              {/* Profile info */}
+              <div className="flex-1 text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                  <h3 className="font-[family-name:var(--font-display)] text-xl text-charcoal">
+                    @tuisyou
+                  </h3>
+                  <svg className="w-4.5 h-4.5 text-[#3897f0]" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
+                </div>
+                <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 mb-3">
+                  TU. By Tata Umana | Energy Mentor | Holistic Healing
+                </p>
+                <div className="flex items-center justify-center sm:justify-start gap-6">
+                  <span className="font-[family-name:var(--font-body)] text-xs text-charcoal/40">
+                    <span className="font-medium text-charcoal/70">686</span> posts
+                  </span>
+                  <span className="font-[family-name:var(--font-body)] text-xs text-charcoal/40">
+                    <span className="font-medium text-charcoal/70">5K</span> followers
+                  </span>
+                </div>
+                <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-3 leading-relaxed max-w-md">
+                  🇨🇴🇺🇸 Healing Cartagena · IET · Yoga · Ayurveda · Reiki · Sacred Ceremonies
+                </p>
+              </div>
+
+              {/* Follow CTA */}
+              <div className="shrink-0">
+                <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.1em] group-hover:bg-rose transition-colors duration-500">
+                  FOLLOW
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+          </a>
+        </div>
+      </section>
+
       {/* ━━━ FOOTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <footer className="pt-16 pb-28 border-t border-charcoal/5">
-        <div className="max-w-6xl mx-auto px-6">
+      <footer className="pt-16 pb-36 border-t border-charcoal/5">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
             <div>
               <Image
@@ -1278,7 +1444,15 @@ export default function Home() {
                   rel="noopener noreferrer"
                   className="block font-[family-name:var(--font-body)] text-sm text-charcoal/50 hover:text-rose transition-colors py-1"
                 >
-                  Instagram
+                  @tuisyou
+                </a>
+                <a
+                  href="https://instagram.com/justbyogabytuisyou"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block font-[family-name:var(--font-body)] text-sm text-charcoal/50 hover:text-rose transition-colors py-1"
+                >
+                  @justbyogabytuisyou
                 </a>
                 <a
                   href="https://wa.me/573185083035"
@@ -1330,8 +1504,8 @@ export default function Home() {
           opacity: showStickyBar ? 1 : 0,
         }}
       >
-        <div className="bg-white/90 backdrop-blur-xl border-t border-charcoal/5 px-6 py-4" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
-          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
+        <div className="bg-white/90 backdrop-blur-xl border-t border-charcoal/5 px-6 lg:px-8 py-4" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <div className="hidden sm:block">
               <p className="font-[family-name:var(--font-display)] text-charcoal text-lg">
                 TU. by Tata Umana

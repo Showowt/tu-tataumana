@@ -24,7 +24,7 @@ body {
   color: var(--color-charcoal);
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
-  max-width: 100vw;
+  min-width: 320px;
 }
 
 ::selection {
@@ -205,6 +205,11 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Full-width layout safety */
+section {
+  max-width: 100%;
 }
 
 /* Inline video cinematic treatment */

@@ -11,6 +11,9 @@ interface BookingModalProps {
   services: { name: string; nameEs?: string; price: string; duration: string }[];
 }
 
+type Step = "form" | "payment" | "confirmed";
+type PaymentMethod = "wompi" | "nequi" | "bancolombia" | "zelle" | null;
+
 const BOOKING_RULES = [
   "Reserve your spot at least 2 hours in advance",
   "Arrive 10 minutes early (especially first class)",
@@ -85,6 +88,7 @@ export default function BookingModal({
   preselectedTime,
   services,
 }: BookingModalProps) {
+  const [step, setStep] = useState<Step>("form");
   const [service, setService] = useState(preselectedService || "");
   const [selectedTime, setSelectedTime] = useState(preselectedTime || "");
   const [name, setName] = useState("");
@@ -92,23 +96,26 @@ export default function BookingModal({
   const [email, setEmail] = useState("");
   const [date, setDate] = useState(preselectedDate || "");
   const [message, setMessage] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const [submitting, setSubmitting] = useState(false);
   const [rulesAccepted, setRulesAccepted] = useState(false);
   const [closedDates, setClosedDates] = useState<string[]>([]);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
   const availableClasses = getClassesForDate(date);
-  const isClassBooking = !!preselectedTime || availableClasses.length > 0;
   const isDateClosed = date && closedDates.includes(date);
 
-  // Fetch closed dates on mount
+  const bookingService = selectedTime
+    ? `${service} @ ${selectedTime}`
+    : service;
+
   const fetchClosedDates = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/closed-dates");
       const json = await res.json();
       setClosedDates((json.data || []).map((d: { date: string }) => d.date));
     } catch {
-      // Silently fail — booking still works
+      // Silently fail
     }
   }, []);
 
@@ -141,35 +148,64 @@ export default function BookingModal({
     return () => window.removeEventListener("keydown", handler);
   }, [isOpen, onClose]);
 
+  // Capture abandoned bookings + reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
+      // If they had any data filled but didn't complete, capture as abandoned lead
+      const hasData = name || phone || email || service;
+      const didNotComplete = step !== "confirmed";
+      if (hasData && didNotComplete) {
+        const bookingStep =
+          step === "payment" ? "payment_selected" :
+          (name && phone) ? "form_filled" : "form_started";
+        fetch("/api/leads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            source: "booking_abandoned",
+            name: name || undefined,
+            email: email || undefined,
+            phone: phone || undefined,
+            service_interest: bookingService || service || undefined,
+            preferred_date: date || undefined,
+            booking_step: "abandoned",
+            payment_method: selectedPayment || undefined,
+            warmth: (name && phone) ? "hot" : "warm",
+          }),
+        }).catch(() => {});
+      }
+
       setTimeout(() => {
-        if (status === "sent") {
-          setName("");
-          setPhone("");
-          setEmail("");
-          setDate("");
-          setMessage("");
-          setService("");
-          setSelectedTime("");
-          setStatus("idle");
-          setRulesAccepted(false);
-        }
+        setName("");
+        setPhone("");
+        setEmail("");
+        setDate("");
+        setMessage("");
+        setService("");
+        setSelectedTime("");
+        setStep("form");
+        setSubmitting(false);
+        setRulesAccepted(false);
+        setSelectedPayment(null);
       }, 300);
     }
-  }, [isOpen, status]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  // Scroll to top when step changes
+  useEffect(() => {
+    if (modalRef.current) {
+      modalRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [step]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rulesAccepted) return;
-    setStatus("sending");
-
-    const bookingService = selectedTime
-      ? `${service} @ ${selectedTime}`
-      : service;
+    setSubmitting(true);
 
     try {
-      await fetch("/api/bookings", {
+      const bookRes = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -179,18 +215,46 @@ export default function BookingModal({
           service: bookingService,
           preferred_date: date,
           message,
+          class_time: selectedTime || undefined,
+          class_name: service || undefined,
         }),
       });
+      const bookData = await bookRes.json();
+      if (bookData.error && bookRes.status === 409) {
+        alert(bookData.error);
+        setSubmitting(false);
+        return;
+      }
     } catch {
-      // Fallback to WhatsApp even if API fails
+      // Continue to payment even if API fails
     }
 
-    setStatus("sent");
+    // Also capture as a lead (completed booking)
+    fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source: "booking_completed",
+        name,
+        email: email || undefined,
+        phone,
+        service_interest: bookingService || service,
+        preferred_date: date || undefined,
+        booking_step: "form_filled",
+        warmth: "hot",
+      }),
+    }).catch(() => {});
 
-    const text = encodeURIComponent(
-      `Hi Tata! I'd like to book:\n\nClass: ${bookingService}\nDate: ${date ? formatDateDisplay(date) : "Flexible"}\nName: ${name}\n${message ? `Note: ${message}` : ""}`
-    );
-    window.open(`https://wa.me/573185083035?text=${text}`, "_blank");
+    setSubmitting(false);
+    setStep("payment");
+  };
+
+  const handlePaymentSelect = (method: PaymentMethod) => {
+    setSelectedPayment(method);
+    if (method === "wompi") {
+      window.open("https://checkout.wompi.co/l/h3WPfP", "_blank", "noopener,noreferrer");
+    }
+    setStep("confirmed");
   };
 
   const getTomorrow = () => {
@@ -222,149 +286,41 @@ export default function BookingModal({
           className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center text-charcoal/30 hover:text-charcoal transition-colors z-10"
           aria-label="Close"
         >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6 18L18 6M6 6l12 12"
-            />
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
 
         <div className="p-8 md:p-10">
-          {status === "sent" ? (
-            <div className="py-4">
-              <div className="text-center mb-6">
-                <div className="w-14 h-14 rounded-full bg-[#25D366]/10 flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-7 h-7 text-[#25D366]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-                </div>
-                <h3 className="font-[family-name:var(--font-display)] text-2xl text-charcoal mb-1">
-                  You&apos;re Almost In
-                </h3>
-                <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 max-w-xs mx-auto">
-                  Complete your payment below, then send your receipt via WhatsApp to confirm.
-                </p>
+          {/* ━━━ STEP INDICATOR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <div className="flex items-center justify-center gap-2 mb-8">
+            {(["form", "payment", "confirmed"] as Step[]).map((s, i) => (
+              <div key={s} className="flex items-center gap-2">
+                <div
+                  className="w-2 h-2 rounded-full transition-all duration-300"
+                  style={{
+                    background: step === s
+                      ? "rgba(184,119,119,0.8)"
+                      : i < ["form", "payment", "confirmed"].indexOf(step)
+                        ? "rgba(184,119,119,0.4)"
+                        : "rgba(44,44,44,0.12)",
+                    width: step === s ? 24 : 8,
+                  }}
+                />
+                {i < 2 && <div className="w-8 h-px bg-charcoal/8" />}
               </div>
+            ))}
+          </div>
 
-              {/* Payment Methods */}
-              <div className="rounded-2xl border border-charcoal/8 bg-white p-5 mb-4">
-                <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-charcoal/40 font-medium mb-4">
-                  PAYMENT OPTIONS
-                </p>
-                <div className="space-y-3">
-                  {/* Wompi - Card Payment */}
-                  <a
-                    href="https://checkout.wompi.co/l/h3WPfP"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-4 p-3.5 rounded-xl border border-gold/20 bg-gold/[0.04] hover:bg-gold/[0.08] transition-colors group"
-                  >
-                    <div className="w-9 h-9 rounded-full bg-gold/15 flex items-center justify-center shrink-0">
-                      <svg className="w-4.5 h-4.5 text-gold" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25h-15a2.25 2.25 0 0 0-2.25 2.25v10.5a2.25 2.25 0 0 0 2.25 2.25Z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
-                        Credit / Debit Card
-                      </p>
-                      <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40">
-                        Visa, Mastercard, Amex via Wompi
-                      </p>
-                    </div>
-                    <svg className="w-4 h-4 text-charcoal/20 group-hover:text-gold transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                    </svg>
-                  </a>
-
-                  {/* Nequi */}
-                  <div className="flex items-center gap-4 p-3.5 rounded-xl border border-charcoal/5 bg-charcoal/[0.02]">
-                    <div className="w-9 h-9 rounded-full bg-[#E6007E]/10 flex items-center justify-center shrink-0">
-                      <span className="font-[family-name:var(--font-body)] text-[10px] font-bold text-[#E6007E]">N</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
-                        Nequi
-                      </p>
-                      <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40 font-mono">
-                        3185083035
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Bancolombia */}
-                  <div className="flex items-center gap-4 p-3.5 rounded-xl border border-charcoal/5 bg-charcoal/[0.02]">
-                    <div className="w-9 h-9 rounded-full bg-[#FDDA24]/15 flex items-center justify-center shrink-0">
-                      <span className="font-[family-name:var(--font-body)] text-[10px] font-bold text-[#0033A0]">B</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
-                        Bancolombia
-                      </p>
-                      <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40">
-                        Ahorros: <span className="font-mono">207-859047-00</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Zelle / PayPal */}
-                  <div className="flex items-center gap-4 p-3.5 rounded-xl border border-charcoal/5 bg-charcoal/[0.02]">
-                    <div className="w-9 h-9 rounded-full bg-[#6C3EC1]/10 flex items-center justify-center shrink-0">
-                      <span className="font-[family-name:var(--font-body)] text-[10px] font-bold text-[#6C3EC1]">Z</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
-                        Zelle / PayPal
-                      </p>
-                      <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40 font-mono">
-                        +1 917 453 8307
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Launch phase notice — manual methods only */}
-              <div className="rounded-2xl border border-gold/15 bg-gold/[0.03] p-4 mb-4">
-                <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.2em] text-gold/70 font-medium mb-2">
-                  EARLY ACCESS
-                </p>
-                <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/50 leading-relaxed">
-                  For Nequi, Bancolombia, or Zelle: complete your payment and send the receipt via WhatsApp to{" "}
-                  <span className="text-charcoal/70 font-medium">+57 318 508 3035</span> or DM{" "}
-                  <a href="https://instagram.com/justbyogabytuisyou" target="_blank" rel="noopener noreferrer" className="text-rose/60 hover:text-rose underline underline-offset-2">
-                    @justbyogabytuisyou
-                  </a>
-                  . Your class is confirmed as soon as we receive it.
-                </p>
-                <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/30 mt-2 italic">
-                  Card payments via Wompi are confirmed instantly.
-                </p>
-              </div>
-
-              <button
-                onClick={onClose}
-                className="w-full py-3.5 rounded-2xl border border-charcoal/10 font-[family-name:var(--font-body)] text-sm tracking-[0.15em] text-charcoal/50 hover:text-charcoal hover:border-charcoal/30 transition-all"
-              >
-                DONE
-              </button>
-            </div>
-          ) : (
+          {/* ━━━ STEP 1: BOOKING FORM ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          {step === "form" && (
             <>
               <div className="text-center mb-8">
                 <h3 className="font-[family-name:var(--font-display)] text-3xl text-charcoal">
                   {preselectedTime ? "Confirm Your Class" : "Book a Session"}
                 </h3>
                 <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 mt-2">
-                  Takes 30 seconds. Tata confirms within 24 hours.
+                  Your info + select your class
                 </p>
               </div>
 
@@ -381,18 +337,8 @@ export default function BookingModal({
                       </p>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-rose/[0.06] flex items-center justify-center">
-                      <svg
-                        className="w-5 h-5 text-rose"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={1.5}
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
+                      <svg className="w-5 h-5 text-rose" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                   </div>
@@ -400,7 +346,6 @@ export default function BookingModal({
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Service/class selector — only show if NOT pre-selected from schedule */}
                 {!preselectedTime && (
                   <>
                     <input
@@ -415,7 +360,6 @@ export default function BookingModal({
                       className="w-full px-5 py-4 rounded-2xl border border-charcoal/8 bg-white font-[family-name:var(--font-body)] text-charcoal focus:border-rose/30 focus:outline-none transition-colors"
                     />
 
-                    {/* Closed date warning */}
                     {isDateClosed && (
                       <div className="rounded-2xl border border-rose/20 bg-rose/[0.04] p-4 flex items-start gap-3">
                         <svg className="w-5 h-5 text-rose mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -432,7 +376,6 @@ export default function BookingModal({
                       </div>
                     )}
 
-                    {/* Show available classes for selected date */}
                     {date && !isDateClosed && availableClasses.length > 0 && (
                       <div className="space-y-2">
                         <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 tracking-wider pl-1">
@@ -447,8 +390,7 @@ export default function BookingModal({
                               setSelectedTime(cls.time);
                             }}
                             className={`w-full text-left px-5 py-3.5 rounded-2xl border transition-all duration-200 ${
-                              service === cls.name &&
-                              selectedTime === cls.time
+                              service === cls.name && selectedTime === cls.time
                                 ? "border-rose/30 bg-rose/[0.04]"
                                 : "border-charcoal/5 bg-white hover:border-charcoal/10"
                             }`}
@@ -462,19 +404,17 @@ export default function BookingModal({
                                   {cls.name}
                                 </span>
                               </div>
-                              {service === cls.name &&
-                                selectedTime === cls.time && (
-                                  <div className="w-5 h-5 rounded-full bg-rose/20 flex items-center justify-center">
-                                    <div className="w-2 h-2 rounded-full bg-rose" />
-                                  </div>
-                                )}
+                              {service === cls.name && selectedTime === cls.time && (
+                                <div className="w-5 h-5 rounded-full bg-rose/20 flex items-center justify-center">
+                                  <div className="w-2 h-2 rounded-full bg-rose" />
+                                </div>
+                              )}
                             </div>
                           </button>
                         ))}
                       </div>
                     )}
 
-                    {/* Fallback: service dropdown if no date or private sessions */}
                     {(!date || isDateClosed || availableClasses.length === 0) && !isDateClosed && (
                       <div className="relative">
                         <select
@@ -483,39 +423,23 @@ export default function BookingModal({
                           required
                           className="w-full px-5 py-4 rounded-2xl border border-charcoal/8 bg-white font-[family-name:var(--font-body)] text-charcoal appearance-none cursor-pointer focus:border-rose/30 focus:outline-none transition-colors"
                         >
-                          <option value="" disabled>
-                            Choose your experience
-                          </option>
+                          <option value="" disabled>Choose your experience</option>
                           {services.map((s) => (
                             <option key={s.name} value={s.name}>
                               {s.name} — {s.price}
                             </option>
                           ))}
                         </select>
-                        <svg
-                          className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/30 pointer-events-none"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={1.5}
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-                          />
+                        <svg className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/30 pointer-events-none" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                         </svg>
                       </div>
                     )}
 
-                    {/* Also show private session option when classes are visible */}
                     {date && !isDateClosed && availableClasses.length > 0 && (
                       <button
                         type="button"
-                        onClick={() => {
-                          setSelectedTime("");
-                          setService("");
-                        }}
+                        onClick={() => { setSelectedTime(""); setService(""); }}
                         className="w-full text-center font-[family-name:var(--font-body)] text-xs text-charcoal/30 hover:text-charcoal/50 transition-colors py-2"
                       >
                         Or book a private session instead
@@ -558,7 +482,7 @@ export default function BookingModal({
                   className="w-full px-5 py-4 rounded-2xl border border-charcoal/8 bg-white font-[family-name:var(--font-body)] text-charcoal placeholder:text-charcoal/25 focus:border-rose/30 focus:outline-none transition-colors resize-none"
                 />
 
-                {/* ━━━ BOOKING RULES ACKNOWLEDGMENT ━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                {/* Booking Rules */}
                 <div className="rounded-2xl border-2 border-gold/30 bg-gold/[0.04] p-5">
                   <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-gold font-medium mb-3">
                     BOOKING RULES
@@ -569,9 +493,7 @@ export default function BookingModal({
                         <svg className="w-4 h-4 text-gold/60 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                         </svg>
-                        <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/60 leading-snug">
-                          {rule}
-                        </p>
+                        <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/60 leading-snug">{rule}</p>
                       </div>
                     ))}
                   </div>
@@ -599,10 +521,15 @@ export default function BookingModal({
 
                 <button
                   type="submit"
-                  disabled={status === "sending" || !service || !rulesAccepted || !!isDateClosed}
-                  className="w-full py-4 rounded-2xl bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.2em] hover:bg-rose transition-colors duration-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={submitting || !service || !rulesAccepted || !!isDateClosed}
+                  className="w-full py-4 rounded-2xl bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.2em] hover:bg-rose transition-colors duration-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                 >
-                  {status === "sending" ? "SENDING..." : "BOOK NOW"}
+                  {submitting ? "SAVING..." : "CONTINUE TO PAYMENT"}
+                  {!submitting && (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                    </svg>
+                  )}
                 </button>
 
                 {!rulesAccepted && service && (
@@ -610,12 +537,308 @@ export default function BookingModal({
                     Please accept the booking rules to continue
                   </p>
                 )}
-
-                <p className="text-center font-[family-name:var(--font-body)] text-xs text-charcoal/30 pt-1">
-                  Sends booking request + opens WhatsApp chat with Tata
-                </p>
               </form>
             </>
+          )}
+
+          {/* ━━━ STEP 2: PAYMENT SELECTION ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          {step === "payment" && (
+            <div className="py-2">
+              {/* Booking summary */}
+              <div className="bg-white rounded-2xl p-5 mb-6 border border-rose/10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-[family-name:var(--font-display)] text-lg text-charcoal">
+                      {bookingService}
+                    </p>
+                    <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 mt-0.5">
+                      {date ? formatDateDisplay(date) : "Flexible"} &middot; {name}
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-[#25D366]/10 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-[#25D366]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center mb-6">
+                <h3 className="font-[family-name:var(--font-display)] text-2xl text-charcoal mb-1">
+                  Select Payment Method
+                </h3>
+                <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40">
+                  Choose how you&apos;d like to pay
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {/* Wompi - Card Payment */}
+                <button
+                  onClick={() => handlePaymentSelect("wompi")}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-gold/25 bg-white hover:border-gold/50 hover:shadow-md transition-all group text-left"
+                >
+                  <div className="w-11 h-11 rounded-full bg-gold/15 flex items-center justify-center shrink-0 group-hover:bg-gold/25 transition-colors">
+                    <svg className="w-5 h-5 text-gold" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25h-15a2.25 2.25 0 0 0-2.25 2.25v10.5a2.25 2.25 0 0 0 2.25 2.25Z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
+                      Credit / Debit Card
+                    </p>
+                    <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40">
+                      Visa, Mastercard, Amex — instant confirmation
+                    </p>
+                  </div>
+                  <svg className="w-4 h-4 text-charcoal/20 group-hover:text-gold transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                  </svg>
+                </button>
+
+                {/* Nequi */}
+                <button
+                  onClick={() => handlePaymentSelect("nequi")}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-charcoal/8 bg-white hover:border-[#E6007E]/30 hover:shadow-md transition-all group text-left"
+                >
+                  <div className="w-11 h-11 rounded-full bg-[#E6007E]/10 flex items-center justify-center shrink-0">
+                    <span className="font-[family-name:var(--font-body)] text-xs font-bold text-[#E6007E]">N</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
+                      Nequi
+                    </p>
+                    <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40">
+                      Send to <span className="font-mono">3185083035</span>
+                    </p>
+                  </div>
+                  <svg className="w-4 h-4 text-charcoal/20 group-hover:text-[#E6007E] transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                  </svg>
+                </button>
+
+                {/* Bancolombia */}
+                <button
+                  onClick={() => handlePaymentSelect("bancolombia")}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-charcoal/8 bg-white hover:border-[#FDDA24]/50 hover:shadow-md transition-all group text-left"
+                >
+                  <div className="w-11 h-11 rounded-full bg-[#FDDA24]/15 flex items-center justify-center shrink-0">
+                    <span className="font-[family-name:var(--font-body)] text-xs font-bold text-[#0033A0]">B</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
+                      Bancolombia
+                    </p>
+                    <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40">
+                      Ahorros: <span className="font-mono">207-859047-00</span>
+                    </p>
+                  </div>
+                  <svg className="w-4 h-4 text-charcoal/20 group-hover:text-[#0033A0] transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                  </svg>
+                </button>
+
+                {/* Zelle / PayPal */}
+                <button
+                  onClick={() => handlePaymentSelect("zelle")}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-charcoal/8 bg-white hover:border-[#6C3EC1]/30 hover:shadow-md transition-all group text-left"
+                >
+                  <div className="w-11 h-11 rounded-full bg-[#6C3EC1]/10 flex items-center justify-center shrink-0">
+                    <span className="font-[family-name:var(--font-body)] text-xs font-bold text-[#6C3EC1]">Z</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
+                      Zelle / PayPal
+                    </p>
+                    <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40">
+                      Send to <span className="font-mono">+1 917 453 8307</span>
+                    </p>
+                  </div>
+                  <svg className="w-4 h-4 text-charcoal/20 group-hover:text-[#6C3EC1] transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                  </svg>
+                </button>
+
+                {/* Cash */}
+                <button
+                  onClick={() => {
+                    setSelectedPayment(null);
+                    setStep("confirmed");
+                  }}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-charcoal/8 bg-white hover:border-charcoal/20 hover:shadow-md transition-all group text-left"
+                >
+                  <div className="w-11 h-11 rounded-full bg-charcoal/[0.06] flex items-center justify-center shrink-0">
+                    <span className="font-[family-name:var(--font-body)] text-xs font-bold text-charcoal/50">$</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
+                      Cash (in person)
+                    </p>
+                    <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40">
+                      COP or USD — pay when you arrive
+                    </p>
+                  </div>
+                  <svg className="w-4 h-4 text-charcoal/20 group-hover:text-charcoal/50 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Back button */}
+              <button
+                onClick={() => setStep("form")}
+                className="w-full mt-4 py-3 font-[family-name:var(--font-body)] text-xs text-charcoal/30 hover:text-charcoal/50 transition-colors flex items-center justify-center gap-2"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                </svg>
+                Back to booking details
+              </button>
+            </div>
+          )}
+
+          {/* ━━━ STEP 3: CONFIRMATION ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          {step === "confirmed" && (
+            <div className="py-4">
+              <div className="text-center mb-6">
+                <div className="w-14 h-14 rounded-full bg-[#25D366]/10 flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-7 h-7 text-[#25D366]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                </div>
+                <h3 className="font-[family-name:var(--font-display)] text-2xl text-charcoal mb-1">
+                  {selectedPayment === "wompi" ? "You're Booked!" : "Almost There!"}
+                </h3>
+              </div>
+
+              {/* Booking summary */}
+              <div className="rounded-2xl border border-charcoal/8 bg-white p-5 mb-5">
+                <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-charcoal/40 font-medium mb-3">
+                  YOUR BOOKING
+                </p>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="font-[family-name:var(--font-body)] text-sm text-charcoal/50">Class</span>
+                    <span className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">{bookingService}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-[family-name:var(--font-body)] text-sm text-charcoal/50">Date</span>
+                    <span className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">{date ? formatDateDisplay(date) : "Flexible"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-[family-name:var(--font-body)] text-sm text-charcoal/50">Name</span>
+                    <span className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">{name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-[family-name:var(--font-body)] text-sm text-charcoal/50">Payment</span>
+                    <span className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
+                      {selectedPayment === "wompi" ? "Card (Wompi)" :
+                       selectedPayment === "nequi" ? "Nequi" :
+                       selectedPayment === "bancolombia" ? "Bancolombia" :
+                       selectedPayment === "zelle" ? "Zelle / PayPal" :
+                       "Cash (in person)"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment-specific instructions */}
+              {selectedPayment === "wompi" ? (
+                <div className="rounded-2xl border border-[#25D366]/20 bg-[#25D366]/[0.04] p-5 mb-5">
+                  <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 leading-relaxed">
+                    Your card payment through Wompi confirms your spot instantly. If the checkout didn&apos;t open,{" "}
+                    <a
+                      href="https://checkout.wompi.co/l/h3WPfP"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-rose font-medium underline underline-offset-2 hover:text-charcoal transition-colors"
+                    >
+                      click here to pay now
+                    </a>.
+                  </p>
+                </div>
+              ) : selectedPayment ? (
+                <div className="rounded-2xl border border-gold/20 bg-gold/[0.03] p-5 mb-5">
+                  <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.2em] text-gold/70 font-medium mb-3">
+                    NEXT STEP
+                  </p>
+
+                  {selectedPayment === "nequi" && (
+                    <div className="space-y-3">
+                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 leading-relaxed">
+                        Open your Nequi app and send payment to:
+                      </p>
+                      <div className="bg-white rounded-xl p-4 text-center">
+                        <p className="font-mono text-xl text-charcoal font-medium">3185083035</p>
+                        <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-1">Include your name: {name}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedPayment === "bancolombia" && (
+                    <div className="space-y-3">
+                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 leading-relaxed">
+                        Transfer via Bancolombia app:
+                      </p>
+                      <div className="bg-white rounded-xl p-4 space-y-2">
+                        <div className="flex justify-between">
+                          <span className="font-[family-name:var(--font-body)] text-xs text-charcoal/40">Type</span>
+                          <span className="font-[family-name:var(--font-body)] text-sm text-charcoal">Cuenta de Ahorros</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-[family-name:var(--font-body)] text-xs text-charcoal/40">Account</span>
+                          <span className="font-mono text-sm text-charcoal font-medium">207-859047-00</span>
+                        </div>
+                        <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 pt-1">Include your name as reference</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedPayment === "zelle" && (
+                    <div className="space-y-3">
+                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 leading-relaxed">
+                        Send via Zelle or PayPal to:
+                      </p>
+                      <div className="bg-white rounded-xl p-4 text-center">
+                        <p className="font-mono text-xl text-charcoal font-medium">+1 917 453 8307</p>
+                        <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-1">Include your name: {name}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-4 pt-4 border-t border-gold/10">
+                    <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/50 leading-relaxed">
+                      After paying, send your receipt via WhatsApp to confirm:
+                    </p>
+                    <a
+                      href={`https://wa.me/573185083035?text=${encodeURIComponent(`Hi Tata! I just paid for ${bookingService}${date ? ` on ${formatDateDisplay(date)}` : ""}. My name is ${name}. Sending receipt now!`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-[#25D366] text-white font-[family-name:var(--font-body)] text-sm tracking-[0.1em] hover:bg-[#20bd5a] transition-colors"
+                    >
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                        <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 0 1-4.29-1.243L4 20l1.243-3.71A8 8 0 1 1 12 20z"/>
+                      </svg>
+                      SEND RECEIPT VIA WHATSAPP
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-charcoal/8 bg-white p-5 mb-5">
+                  <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 leading-relaxed">
+                    Pay in cash (COP or USD) when you arrive at Casa Carolina. Arrive 10 minutes early for your class.
+                  </p>
+                </div>
+              )}
+
+              <button
+                onClick={onClose}
+                className="w-full py-4 rounded-2xl bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.2em] hover:bg-rose transition-colors duration-500"
+              >
+                DONE
+              </button>
+            </div>
           )}
         </div>
       </div>

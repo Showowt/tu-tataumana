@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 
 const TULogoAliveNew = dynamic(() => import("@/components/TULogoAliveNew"), {
@@ -22,14 +22,72 @@ const TATA_WHATSAPP = "+573185083035";
 const CONVERSATION_STARTERS = [
   "I've never done yoga before",
   "What's sound healing like?",
-  "Tell me about retreats",
-  "I'm visiting Cartagena soon",
+  "I'm visiting Cartagena soon!",
+  "I'd love to book a class",
   "How much do sessions cost?",
 ];
 
+// Generate a unique session ID per browser session
+function getSessionId(): string {
+  const key = "tu_chat_session_id";
+  let id = sessionStorage.getItem(key);
+  if (!id) {
+    id = `chat_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    sessionStorage.setItem(key, id);
+  }
+  return id;
+}
+
+// Extract contact info from conversation text
+function extractContactInfo(messages: Message[]) {
+  const allUserText = messages
+    .filter((m) => m.role === "user")
+    .map((m) => m.content)
+    .join(" ");
+
+  const emailMatch = allUserText.match(/[\w.-]+@[\w.-]+\.\w+/);
+  const phoneMatch = allUserText.match(/\+?\d[\d\s()-]{8,}/);
+  const namePatterns = [
+    /(?:my name is|i'm|i am|me llamo|soy)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i,
+    /(?:name(?:'s| is)?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i,
+  ];
+  let name: string | undefined;
+  for (const p of namePatterns) {
+    const m = allUserText.match(p);
+    if (m) { name = m[1]; break; }
+  }
+
+  // Detect interests from keywords
+  const interests: string[] = [];
+  const interestMap: Record<string, string> = {
+    yoga: "Yoga",
+    "sound healing": "Sound Healing",
+    reiki: "Reiki",
+    meditation: "Meditation",
+    retreat: "Retreat",
+    ceremony: "Ceremony",
+    cacao: "Cacao Ceremony",
+    kundalini: "Kundalini",
+    pilates: "Pilates",
+    "private session": "Private Session",
+    "energy": "Energy Work",
+  };
+  const lower = allUserText.toLowerCase();
+  for (const [keyword, label] of Object.entries(interestMap)) {
+    if (lower.includes(keyword)) interests.push(label);
+  }
+
+  return {
+    name,
+    email: emailMatch?.[0],
+    phone: phoneMatch?.[0]?.replace(/\s/g, ""),
+    interests: interests.length > 0 ? interests : undefined,
+  };
+}
+
 /**
  * YOU ChatBot — AI Concierge for Tata Umaña's Wellness Practice
- * "YOU" = TU = Tata Umaña — the guide is YOU, speaking to YOU
+ * With lead intelligence: tracks every conversation, scores leads, captures contact info
  */
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -39,6 +97,13 @@ export default function ChatBot() {
   const [showHint, setShowHint] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sessionIdRef = useRef<string>("");
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Initialize session ID on mount (client only)
+  useEffect(() => {
+    sessionIdRef.current = getSessionId();
+  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -65,11 +130,57 @@ export default function ChatBot() {
     if (isOpen) setShowHint(false);
   }, [isOpen]);
 
+  // Save chat session to DB (debounced)
+  const saveChatSession = useCallback(
+    (currentMessages: Message[]) => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        if (currentMessages.length === 0 || !sessionIdRef.current) return;
+        const extracted = extractContactInfo(currentMessages);
+        fetch("/api/chat-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: sessionIdRef.current,
+            messages: currentMessages,
+            extracted,
+          }),
+        }).catch(() => {});
+      }, 2000);
+    },
+    []
+  );
+
+  // Save on chat close or page unload (capture abandoned conversations)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (messages.length > 0 && sessionIdRef.current) {
+        const extracted = extractContactInfo(messages);
+        navigator.sendBeacon(
+          "/api/chat-session",
+          new Blob(
+            [
+              JSON.stringify({
+                session_id: sessionIdRef.current,
+                messages,
+                extracted,
+              }),
+            ],
+            { type: "application/json" }
+          )
+        );
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [messages]);
+
   const sendMessage = async (content: string) => {
     if (!content.trim()) return;
 
     const userMessage: Message = { role: "user", content: content.trim() };
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInput("");
     setIsLoading(true);
 
@@ -78,7 +189,7 @@ export default function ChatBot() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [...messages, userMessage],
+          messages: updatedMessages,
         }),
       });
 
@@ -92,7 +203,11 @@ export default function ChatBot() {
         role: "assistant",
         content: data.message,
       };
-      setMessages((prev) => [...prev, assistantMessage]);
+      const allMessages = [...updatedMessages, assistantMessage];
+      setMessages(allMessages);
+
+      // Save session after each exchange
+      saveChatSession(allMessages);
     } catch (error) {
       console.error("Chat error:", error);
       setMessages((prev) => [
@@ -187,7 +302,7 @@ export default function ChatBot() {
       <div
         className={`
           fixed bottom-6 right-6 z-50
-          w-[380px] max-w-[calc(100vw-48px)]
+          w-[380px] max-w-[calc(100%-48px)]
           bg-cream
           shadow-2xl
           flex flex-col
@@ -243,10 +358,10 @@ export default function ChatBot() {
             <div className="space-y-4">
               <div className="bg-charcoal/5 p-4">
                 <p className="font-display text-charcoal leading-relaxed">
-                  Hello, beautiful soul.
+                  Hello!! Welcome!
                 </p>
                 <p className="font-display text-charcoal/70 text-sm mt-3">
-                  I'm Tata. What brings you here today?
+                  I'm Tata — I'd love to help you find what you're looking for. What brings you here today?
                 </p>
               </div>
 
