@@ -1,26 +1,72 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { z } from "zod";
 import { TU_SYSTEM_PROMPT } from "@/lib/tu-knowledge";
 import { notifyChatConversation } from "@/lib/telegram";
 
+// Rate limiting
+const requestCounts = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 15;
+const RATE_WINDOW = 60 * 1000;
+
+function checkRateLimit(identifier: string): boolean {
+  const now = Date.now();
+  const record = requestCounts.get(identifier);
+
+  if (!record || now > record.resetTime) {
+    requestCounts.set(identifier, { count: 1, resetTime: now + RATE_WINDOW });
+    return true;
+  }
+
+  if (record.count >= RATE_LIMIT) {
+    return false;
+  }
+
+  record.count++;
+  return true;
+}
+
+// Message validation — only allow user/assistant roles, cap content length
+const MessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1).max(2000),
+});
+
+const ChatRequestSchema = z.object({
+  messages: z.array(MessageSchema).min(1).max(20),
+});
+
 export async function POST(request: NextRequest) {
   try {
-    const { messages } = await request.json();
-
-    if (!messages || !Array.isArray(messages)) {
+    // Rate limiting by IP
+    const forwarded = request.headers.get("x-forwarded-for");
+    const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
+    if (!checkRateLimit(ip)) {
       return NextResponse.json(
-        { error: "Messages array is required" },
+        { error: "Demasiadas solicitudes. Too many requests." },
+        { status: 429 },
+      );
+    }
+
+    const body = await request.json();
+    const validationResult = ChatRequestSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: "Formato de mensaje inválido. Invalid message format." },
         { status: 400 },
       );
     }
 
+    const { messages } = validationResult.data;
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
-      console.error("ANTHROPIC_API_KEY is not set");
+      console.error("[chat] ANTHROPIC_API_KEY is not set");
       return NextResponse.json(
-        { error: "API key not configured" },
-        { status: 500 },
+        { error: "Servicio no disponible. Service unavailable." },
+        { status: 503 },
       );
     }
 
@@ -46,17 +92,23 @@ export async function POST(request: NextRequest) {
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
       system: TU_SYSTEM_PROMPT + timeContext,
-      messages: messages.map((msg: { role: string; content: string }) => ({
-        role: msg.role as "user" | "assistant",
+      messages: messages.map((msg) => ({
+        role: msg.role,
         content: msg.content,
       })),
     });
 
-    const assistantMessage =
-      response.content[0].type === "text" ? response.content[0].text : "";
+    const textBlock = response.content.find((b) => b.type === "text");
+    if (!textBlock || textBlock.type !== "text") {
+      return NextResponse.json(
+        { error: "No se recibió respuesta. Empty AI response." },
+        { status: 500 },
+      );
+    }
 
-    // Notify Tata via Telegram — must await before returning
-    // (serverless functions terminate after response is sent)
+    const assistantMessage = textBlock.text;
+
+    // Notify Tata via Telegram
     const lastUserMsg = messages[messages.length - 1];
     if (lastUserMsg?.content) {
       try {
@@ -65,17 +117,15 @@ export async function POST(request: NextRequest) {
           botResponse: assistantMessage,
         });
       } catch (e) {
-        console.error("[Chat] Telegram notification failed:", e);
+        console.error("[chat] Telegram notification failed:", e);
       }
     }
 
     return NextResponse.json({ message: assistantMessage });
   } catch (error) {
-    console.error("Chat API error:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
+    console.error("[chat]", error);
     return NextResponse.json(
-      { error: `Failed to process chat request: ${errorMessage}` },
+      { error: "No se pudo procesar tu mensaje. Could not process your message." },
       { status: 500 },
     );
   }

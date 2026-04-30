@@ -538,7 +538,6 @@ const PAYMENT_METHODS = [
     name: "Pay Online",
     nameEs: "Pagar en Línea",
     icon: "🔒",
-    url: "https://checkout.wompi.co/l/h3WPfP",
     description: "Secure card payment with Wompi",
     descriptionEs: "Pago seguro con tarjeta vía Wompi",
     type: "link" as const,
@@ -559,6 +558,8 @@ function PaymentCheckout({
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [wompiLoading, setWompiLoading] = useState(false);
+  const [wompiError, setWompiError] = useState<string | null>(null);
 
   const handleCopy = async (text: string, methodId: string) => {
     try {
@@ -578,11 +579,48 @@ function PaymentCheckout({
     }
   };
 
-  const handleWompiClick = () => {
-    const wompiMethod = PAYMENT_METHODS.find((m) => m.id === "wompi");
-    if (wompiMethod && "url" in wompiMethod) {
-      window.open(wompiMethod.url, "_blank", "noopener,noreferrer");
-      setSelectedMethod("wompi");
+  const handleWompiClick = async () => {
+    if (!bookingData.selectedClass || !bookingData.email || !bookingData.fullName) {
+      setWompiError("Missing booking information. Please go back and fill in all fields.");
+      return;
+    }
+
+    setWompiLoading(true);
+    setWompiError(null);
+
+    try {
+      const response = await fetch("/api/yoga/payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: bookingData.selectedClass.id,
+          amount: bookingData.selectedClass.price,
+          currency: "COP",
+          customerEmail: bookingData.email,
+          customerName: bookingData.fullName,
+          description: `TU. Wellness - ${bookingData.selectedClass.name}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to create payment link");
+      }
+
+      const data = await response.json();
+
+      if (data.paymentUrl) {
+        setSelectedMethod("wompi");
+        window.open(data.paymentUrl, "_blank", "noopener,noreferrer");
+      } else {
+        throw new Error("No payment URL received");
+      }
+    } catch (error) {
+      console.error("[PaymentCheckout] Wompi error:", error);
+      const message = error instanceof Error ? error.message : "Payment failed";
+      setWompiError(message);
+    } finally {
+      setWompiLoading(false);
     }
   };
 
@@ -686,18 +724,29 @@ function PaymentCheckout({
                     setSelectedMethod(method.id);
                   }
                 }}
-                className="w-full p-4 text-left flex items-center gap-4 min-h-[72px]"
+                disabled={method.type === "link" && wompiLoading}
+                className="w-full p-4 text-left flex items-center gap-4 min-h-[72px] disabled:opacity-60"
               >
-                <span className="text-2xl">{method.icon}</span>
+                <span className="text-2xl">
+                  {method.type === "link" && wompiLoading ? (
+                    <svg className="w-6 h-6 animate-spin text-charcoal/60" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="40" strokeDashoffset="10" />
+                    </svg>
+                  ) : (
+                    method.icon
+                  )}
+                </span>
                 <div className="flex-1">
                   <p className="font-display text-sm text-charcoal">
-                    {method.name}
+                    {method.type === "link" && wompiLoading ? "Creating payment link..." : method.name}
                   </p>
                   <p className="font-body text-[10px] text-charcoal/50">
-                    {method.description}
+                    {method.type === "link" && wompiLoading
+                      ? "Creando enlace de pago..."
+                      : method.description}
                   </p>
                 </div>
-                {method.type === "link" && (
+                {method.type === "link" && !wompiLoading && (
                   <svg
                     className="w-4 h-4 text-charcoal/40"
                     fill="none"
@@ -797,6 +846,31 @@ function PaymentCheckout({
             </div>
           ))}
         </div>
+
+        {/* Wompi Error Message */}
+        {wompiError && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="font-body text-sm text-red-700">{wompiError}</p>
+                <p className="font-body text-xs text-red-500 mt-1">
+                  Please try another payment method or contact us via WhatsApp.
+                  <br />
+                  <span className="text-red-400">Intenta otro método de pago o contáctanos por WhatsApp.</span>
+                </p>
+                <button
+                  onClick={() => setWompiError(null)}
+                  className="font-body text-xs text-red-600 underline mt-2 hover:text-red-800"
+                >
+                  Dismiss / Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}

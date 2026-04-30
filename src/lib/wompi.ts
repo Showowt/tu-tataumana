@@ -24,11 +24,6 @@ const WOMPI_API_BASE =
     ? "https://production.wompi.co/v1"
     : "https://sandbox.wompi.co/v1";
 
-const WOMPI_CHECKOUT_BASE =
-  process.env.NODE_ENV === "production"
-    ? "https://checkout.wompi.co/p/"
-    : "https://checkout.wompi.co/p/";
-
 export type WompiCurrency = "COP" | "USD";
 
 export type WompiPaymentStatus =
@@ -268,7 +263,6 @@ export function verifyWompiSignature(event: WompiWebhookEvent): boolean {
 
   try {
     const { properties, checksum } = event.signature;
-    const transaction = event.data.transaction;
 
     // Build the string to hash based on the properties array
     const values = properties.map((prop) => {
@@ -294,7 +288,11 @@ export function verifyWompiSignature(event: WompiWebhookEvent): boolean {
       .update(signatureString)
       .digest("hex");
 
-    return calculatedChecksum === checksum;
+    // Timing-safe comparison to prevent oracle attacks
+    const calcBuf = Buffer.from(calculatedChecksum, "hex");
+    const recvBuf = Buffer.from(checksum, "hex");
+    if (calcBuf.length !== recvBuf.length) return false;
+    return crypto.timingSafeEqual(calcBuf, recvBuf);
   } catch (error) {
     console.error("Error verifying Wompi signature:", error);
     return false;

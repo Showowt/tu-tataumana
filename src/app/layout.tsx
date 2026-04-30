@@ -184,7 +184,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="es" className="scroll-smooth">
       <head>
         <StructuredData />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

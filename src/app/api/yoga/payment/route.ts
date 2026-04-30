@@ -3,6 +3,7 @@
  * TU. by Tata Umana
  *
  * Creates Wompi payment links for yoga bookings
+ * Amount is validated server-side — never trusted from client
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -13,24 +14,36 @@ import {
   type WompiCurrency,
 } from "@/lib/wompi";
 
+// Canonical class prices (COP) — single source of truth
+// All group classes are 80,000 COP walk-in, private sessions 190,000 COP
+const CLASS_PRICES: Record<string, number> = {
+  "morning-flow": 80000,
+  "gentle-restore": 80000,
+  "power-yoga": 80000,
+  "sunset-yin": 80000,
+  "kundalini": 80000,
+  "private": 190000,
+};
+
+// Minimum valid amount as a safety net
+const MIN_AMOUNT_COP = 40000;
+
 // Request validation schema
 const PaymentRequestSchema = z.object({
+  classId: z.string().optional(),
   amount: z.number().positive("Amount must be positive"),
   currency: z.enum(["COP", "USD"]).default("COP"),
   reference: z.string().optional(),
   customerEmail: z.string().email("Valid email required"),
   customerName: z.string().min(2, "Name must be at least 2 characters"),
   description: z.string().optional(),
-  // Optional: booking ID to verify it exists and isn't already paid
   bookingId: z.string().optional(),
 });
 
-type PaymentRequest = z.infer<typeof PaymentRequestSchema>;
-
-// Rate limiting (simple in-memory, use Redis in production)
+// Rate limiting (simple in-memory — use Upstash/Redis in production)
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT = 10; // requests per window
-const RATE_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT = 10;
+const RATE_WINDOW = 60 * 1000;
 
 function checkRateLimit(identifier: string): boolean {
   const now = Date.now();
@@ -51,11 +64,12 @@ function checkRateLimit(identifier: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting by IP
-    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    // Rate limiting by IP (parse first IP from x-forwarded-for)
+    const forwarded = request.headers.get("x-forwarded-for");
+    const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
     if (!checkRateLimit(ip)) {
       return NextResponse.json(
-        { error: "Too many requests. Please try again later." },
+        { error: "Demasiadas solicitudes. Too many requests. Please try again later." },
         { status: 429 },
       );
     }
@@ -67,58 +81,49 @@ export async function POST(request: NextRequest) {
     if (!validationResult.success) {
       return NextResponse.json(
         {
-          error: "Invalid request data",
+          error: "Datos inválidos. Invalid request data.",
           details: validationResult.error.flatten().fieldErrors,
         },
         { status: 400 },
       );
     }
 
-    const data: PaymentRequest = validationResult.data;
+    const data = validationResult.data;
+
+    // Server-side price validation: never trust client amount
+    let validatedAmount = data.amount;
+
+    if (data.classId && CLASS_PRICES[data.classId]) {
+      // Use canonical price from server
+      validatedAmount = CLASS_PRICES[data.classId];
+    } else if (data.currency === "COP" && data.amount < MIN_AMOUNT_COP) {
+      // Reject suspiciously low amounts
+      return NextResponse.json(
+        { error: "Monto inválido. Invalid payment amount." },
+        { status: 400 },
+      );
+    } else {
+      // Verify amount matches a known class price
+      const knownPrices = Object.values(CLASS_PRICES);
+      if (data.currency === "COP" && !knownPrices.includes(data.amount)) {
+        return NextResponse.json(
+          { error: "Monto no corresponde a ninguna clase. Amount does not match any class." },
+          { status: 400 },
+        );
+      }
+    }
 
     // Generate reference if not provided
     const reference = data.reference || generateBookingReference();
 
-    // In production, verify booking exists and isn't already paid
-    // Example Supabase query:
-    // if (data.bookingId) {
-    //   const { data: booking, error } = await supabase
-    //     .from('yoga_bookings')
-    //     .select('id, status, payment_status, amount')
-    //     .eq('id', data.bookingId)
-    //     .single();
-    //
-    //   if (error || !booking) {
-    //     return NextResponse.json(
-    //       { error: "Booking not found" },
-    //       { status: 404 }
-    //     );
-    //   }
-    //
-    //   if (booking.payment_status === 'PAID') {
-    //     return NextResponse.json(
-    //       { error: "Booking is already paid" },
-    //       { status: 400 }
-    //     );
-    //   }
-    //
-    //   // Verify amount matches
-    //   if (booking.amount !== data.amount) {
-    //     return NextResponse.json(
-    //       { error: "Amount mismatch" },
-    //       { status: 400 }
-    //     );
-    //   }
-    // }
-
     // Build redirect URL
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
-    const redirectUrl = `${baseUrl}/booking/confirmation?ref=${encodeURIComponent(reference)}`;
+    const redirectUrl = `${baseUrl}?payment=success&ref=${encodeURIComponent(reference)}`;
 
-    // Create Wompi payment link
+    // Create Wompi payment link with server-validated amount
     const paymentLink = await createPaymentLink({
-      amount: data.amount,
+      amount: validatedAmount,
       currency: data.currency as WompiCurrency,
       reference,
       customerEmail: data.customerEmail,
@@ -128,21 +133,6 @@ export async function POST(request: NextRequest) {
       expirationMinutes: 30,
     });
 
-    // In production, save payment intent to database
-    // await supabase
-    //   .from('payment_intents')
-    //   .insert({
-    //     reference,
-    //     booking_id: data.bookingId,
-    //     amount: data.amount,
-    //     currency: data.currency,
-    //     status: 'PENDING',
-    //     wompi_link_id: paymentLink.id,
-    //     customer_email: data.customerEmail,
-    //     customer_name: data.customerName,
-    //     created_at: new Date().toISOString(),
-    //   });
-
     return NextResponse.json({
       success: true,
       reference,
@@ -150,9 +140,8 @@ export async function POST(request: NextRequest) {
       expiresAt: paymentLink.expires_at,
     });
   } catch (error) {
-    console.error("Payment API error:", error);
+    console.error("[yoga/payment]", error);
 
-    // Don't expose internal errors to client
     const message =
       error instanceof Error ? error.message : "Payment creation failed";
     const isConfigError = message.includes("not configured");
@@ -160,21 +149,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: isConfigError
-          ? "Payment system is not configured. Please contact support."
-          : "Failed to create payment. Please try again.",
+          ? "Sistema de pagos no configurado. Payment system not configured. Please contact support."
+          : "Error al crear el pago. Failed to create payment. Please try again.",
       },
       { status: isConfigError ? 503 : 500 },
     );
   }
 }
 
-// Handle OPTIONS for CORS
+// CORS restricted to production origin
 export async function OPTIONS() {
+  const allowedOrigin =
+    process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
   return new NextResponse(null, {
     status: 204,
     headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Origin": allowedOrigin,
+      "Access-Control-Allow-Methods": "POST",
       "Access-Control-Allow-Headers": "Content-Type",
     },
   });

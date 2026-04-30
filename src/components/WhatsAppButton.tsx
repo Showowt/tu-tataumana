@@ -14,7 +14,7 @@ interface WhatsAppButtonProps {
  */
 export default function WhatsAppButton({
   phone = "+573185083035",
-  message = "Hola Tata! I'm interested in booking a wellness experience.",
+  message = "Hola Tata! Me interesa reservar una experiencia de bienestar. / I'm interested in booking a wellness experience.",
 }: WhatsAppButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
 

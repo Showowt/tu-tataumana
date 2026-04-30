@@ -167,12 +167,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
-    console.error("Yoga booking API error:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
+    console.error("[yoga/book]", error);
     return NextResponse.json(
       {
-        error: `Failed to process booking: ${errorMessage}`,
+        error: "No se pudo procesar la reserva. Unable to process booking. Please try again.",
         code: "INTERNAL_ERROR",
       },
       { status: 500 },
@@ -242,28 +240,20 @@ function generateBookingId(): string {
 }
 
 /**
- * Generates a payment URL for the booking
- * In production, this would integrate with Wompi payment gateway
+ * Generates a payment URL that directs the user to complete payment
+ * via the /api/yoga/payment endpoint which creates real Wompi links
  */
 function generatePaymentUrl(
   booking: { id: string; customerName: string; email: string },
   yogaClass: YogaClass,
 ): string {
-  // Base price depends on class style (placeholder pricing)
-  const basePrice = yogaClass.style.toLowerCase().includes("private")
-    ? 150000 // 150,000 COP for private
-    : 45000; // 45,000 COP for group
-
-  // In production, this would create a real Wompi payment link
-  // For now, return a placeholder URL with booking reference
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
   const params = new URLSearchParams({
-    reference: booking.id,
-    amount: basePrice.toString(),
-    currency: "COP",
-    name: booking.customerName,
-    email: booking.email,
-    description: `${yogaClass.name} - TU. by Tata Umana`,
+    ref: booking.id,
+    class: yogaClass.name,
+    amount: yogaClass.price.toString(),
   });
 
-  return `https://checkout.wompi.co/tu-tataumana?${params.toString()}`;
+  return `${baseUrl}?booking=payment&${params.toString()}`;
 }
