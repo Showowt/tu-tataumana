@@ -165,10 +165,40 @@ function getNextDateForDay(dayIndex: number): string {
   const today = new Date();
   const todayDay = today.getDay();
   let daysUntil = dayIndex - todayDay;
-  if (daysUntil <= 0) daysUntil += 7;
+  if (daysUntil < 0) daysUntil += 7;
+  if (daysUntil === 0) daysUntil = 7; // Show next week's occurrence on the schedule grid
   const next = new Date(today);
   next.setDate(today.getDate() + daysUntil);
   return next.toISOString().split("T")[0];
+}
+
+/**
+ * Check if a class is bookable — must be at least 2 hours before class time.
+ * Uses Colombia timezone (UTC-5, no DST).
+ */
+function isClassBookable(dateStr: string, timeStr: string): boolean {
+  const now = new Date();
+  const colombiaNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+  const todayStr = colombiaNow.toISOString().split("T")[0];
+
+  // Future dates are always bookable
+  if (dateStr > todayStr) return true;
+
+  // Past dates are never bookable
+  if (dateStr < todayStr) return false;
+
+  // Today — check 2-hour window
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return false;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const period = match[3].toUpperCase();
+  if (period === "PM" && hours !== 12) hours += 12;
+  if (period === "AM" && hours === 12) hours = 0;
+
+  const nowMinutes = colombiaNow.getHours() * 60 + colombiaNow.getMinutes();
+  const classMinutes = hours * 60 + minutes;
+  return (classMinutes - nowMinutes) >= 120;
 }
 
 const testimonials = [
@@ -970,28 +1000,30 @@ export default function Home() {
                     )}
                   </div>
                   <div className="divide-y divide-white/[0.04]">
-                    {day.classes.map((cls, clsIdx) => (
+                    {day.classes.map((cls, clsIdx) => {
+                      const bookable = !isClosed && isClassBookable(nextDate, cls.time);
+                      return (
                       <button
                         key={`${day.day}-${clsIdx}`}
-                        disabled={isClosed}
+                        disabled={!bookable}
                         onClick={() =>
-                          !isClosed && openBooking(
+                          bookable && openBooking(
                             cls.name,
                             nextDate,
                             cls.time
                           )
                         }
-                        className={`w-full px-5 py-3.5 flex items-center justify-between group transition-all duration-300 ${isClosed ? "cursor-not-allowed" : "hover:bg-white/[0.04]"}`}
+                        className={`w-full px-5 py-3.5 flex items-center justify-between group transition-all duration-300 ${!bookable ? "cursor-not-allowed" : "hover:bg-white/[0.04]"}`}
                       >
                         <div className="flex items-center gap-4">
-                          <span className={`font-[family-name:var(--font-body)] text-sm w-[72px] text-left tabular-nums ${isClosed ? "text-white/15 line-through" : "text-white/25"}`}>
+                          <span className={`font-[family-name:var(--font-body)] text-sm w-[72px] text-left tabular-nums ${!bookable ? "text-white/15" : "text-white/25"}`}>
                             {cls.time}
                           </span>
-                          <span className={`font-[family-name:var(--font-display)] text-[15px] transition-colors duration-300 ${isClosed ? "text-white/25 line-through" : "text-white/70 group-hover:text-rose-soft"}`}>
+                          <span className={`font-[family-name:var(--font-display)] text-[15px] transition-colors duration-300 ${!bookable ? "text-white/25" : "text-white/70 group-hover:text-rose-soft"}`}>
                             {cls.name}{cls.note && <span className="text-gold/60 text-xs ml-1.5">{cls.note}</span>}
                           </span>
                         </div>
-                        {!isClosed && (
+                        {bookable && (
                         <svg
                           className="w-3.5 h-3.5 text-white/0 group-hover:text-gold/60 transition-all duration-300 group-hover:translate-x-0.5"
                           fill="none"
@@ -1003,7 +1035,8 @@ export default function Home() {
                         </svg>
                         )}
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>

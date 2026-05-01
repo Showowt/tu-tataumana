@@ -64,11 +64,64 @@ const dayNames = [
   "Saturday",
 ];
 
+/**
+ * Parse class time string like "9:30 AM" or "7:15 PM" into 24h hours/minutes
+ */
+function parseClassTime(timeStr: string): { hours: number; minutes: number } {
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return { hours: 0, minutes: 0 };
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const period = match[3].toUpperCase();
+  if (period === "PM" && hours !== 12) hours += 12;
+  if (period === "AM" && hours === 12) hours = 0;
+  return { hours, minutes };
+}
+
+/**
+ * Check if a class can be booked (must be at least 2 hours from now)
+ * Uses Colombia timezone (UTC-5, no DST)
+ */
+function isClassBookable(dateStr: string, timeStr: string): boolean {
+  const now = new Date();
+  // Convert to Colombia time
+  const colombiaNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+
+  // Parse the class date and time
+  const classDate = new Date(dateStr + "T12:00:00");
+  const { hours, minutes } = parseClassTime(timeStr);
+
+  // Build the full class datetime in Colombia time
+  const classDateTime = new Date(classDate);
+  classDateTime.setHours(hours, minutes, 0, 0);
+
+  // If class is on a future day (not today), always bookable
+  const todayStr = colombiaNow.toISOString().split("T")[0];
+  const classDateStr = classDate.toISOString().split("T")[0];
+  if (classDateStr > todayStr) return true;
+
+  // If class is today, check 2-hour window
+  if (classDateStr === todayStr) {
+    const colombiaHours = colombiaNow.getHours();
+    const colombiaMinutes = colombiaNow.getMinutes();
+    const nowMinutes = colombiaHours * 60 + colombiaMinutes;
+    const classMinutes = hours * 60 + minutes;
+    const diffMinutes = classMinutes - nowMinutes;
+    return diffMinutes >= 120; // Must be at least 2 hours away
+  }
+
+  // Past date — not bookable
+  return false;
+}
+
 function getClassesForDate(dateStr: string) {
   if (!dateStr) return [];
   const d = new Date(dateStr + "T12:00:00");
   const day = d.getDay();
-  return scheduleByDay[day] || [];
+  const classes = scheduleByDay[day] || [];
+
+  // Filter out classes within the 2-hour booking window
+  return classes.filter((cls) => isClassBookable(dateStr, cls.time));
 }
 
 function formatDateDisplay(dateStr: string) {
@@ -257,10 +310,11 @@ export default function BookingModal({
     setStep("confirmed");
   };
 
-  const getTomorrow = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return d.toISOString().split("T")[0];
+  const getToday = () => {
+    // Use Colombia timezone for date minimum
+    const now = new Date();
+    const colombia = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+    return colombia.toISOString().split("T")[0];
   };
 
   if (!isOpen) return null;
@@ -356,7 +410,7 @@ export default function BookingModal({
                         setService("");
                         setSelectedTime("");
                       }}
-                      min={getTomorrow()}
+                      min={getToday()}
                       className="w-full px-5 py-4 rounded-2xl border border-charcoal/8 bg-white font-[family-name:var(--font-body)] text-charcoal focus:border-rose/30 focus:outline-none transition-colors"
                     />
 
