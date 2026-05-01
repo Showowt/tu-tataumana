@@ -292,6 +292,20 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  // Hero parallax on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const heroVideo = document.querySelector('.hero-video') as HTMLElement;
+      if (heroVideo && scrollY < window.innerHeight) {
+        heroVideo.style.transform = `scale(${1.02 + scrollY * 0.0003})`;
+        heroVideo.style.opacity = `${Math.max(0, 1 - scrollY / (window.innerHeight * 1.2))}`;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Fetch closed dates
   useEffect(() => {
     fetch("/api/admin/closed-dates")
@@ -442,7 +456,7 @@ export default function Home() {
 
       {/* ━━━ MAY EVENTS — Two-column: TU Naturaleza + Mayo Mes Mamá ━━━━━━━━ */}
       {!workshopPassed && (
-        <section className="relative py-16 md:py-24 bg-charcoal overflow-clip">
+        <section className="relative py-16 md:py-24 bg-charcoal overflow-clip grain-overlay">
           {/* Radial glow accents */}
           <div
             className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] pointer-events-none"
@@ -486,7 +500,7 @@ export default function Home() {
                       { value: countdown.seconds, label: L(t.countdownSeconds) as string },
                     ].map((unit) => (
                       <div key={unit.label} className="flex flex-col items-center">
-                        <div className="w-12 h-12 rounded-xl border border-white/[0.08] bg-white/[0.04] flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-xl border border-white/[0.08] bg-white/[0.04] flex items-center justify-center gold-breath">
                           <span className="font-[family-name:var(--font-display)] text-lg text-white tabular-nums">
                             {String(unit.value).padStart(2, "0")}
                           </span>
@@ -552,13 +566,15 @@ export default function Home() {
       )}
 
       {/* ━━━ PHILOSOPHY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="py-24 md:py-32">
+      <section className="py-16 md:py-20">
         <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
           <p
             className="fade-in font-[family-name:var(--font-display)] text-charcoal leading-relaxed"
             style={{
               fontSize: "clamp(1.25rem, 2.5vw, 1.75rem)",
               fontWeight: 300,
+              fontStyle: "italic",
+              lineHeight: 1.8,
             }}
           >
             {L(t.philosophy) as string}
@@ -586,7 +602,7 @@ export default function Home() {
       </section>
 
       {/* ━━━ THE PRACTICE — Glass Gallery ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section id="practice" className="py-24 md:py-32 bg-white overflow-clip">
+      <section id="practice" className="py-28 md:py-40 bg-white overflow-clip">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
@@ -619,25 +635,25 @@ export default function Home() {
             </div>
 
             {/* Upper right — sound healing experience with headphones */}
-            <div className="fade-in fade-in-delay-2 md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto">
+            <div className="fade-in fade-in-delay-2 md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto editorial-tilt-right">
               <Image
                 src="/practice-1.jpg"
                 alt="Sound healing experience with headphones at TUISYOU wellness event in Cartagena Colombia"
                 width={1067}
                 height={1600}
-                className="object-cover w-full h-full"
+                className="object-cover w-full h-full img-editorial"
                 style={{ objectPosition: "center 35%" }}
               />
             </div>
 
             {/* Lower right — Tata leading group yoga session */}
-            <div className="fade-in fade-in-delay-3 md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto">
+            <div className="fade-in fade-in-delay-3 md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto editorial-tilt-left">
               <Image
                 src="/practice-2.jpg"
                 alt="Tata Umana leading yoga and sound healing session at TUISYOU wellness event in Cartagena Colombia"
                 width={1067}
                 height={1600}
-                className="object-cover w-full h-full"
+                className="object-cover w-full h-full img-editorial"
                 style={{ objectPosition: "center 30%" }}
               />
             </div>
@@ -656,6 +672,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <div className="divider-gold my-0" />
 
       {/* ━━━ SERVICES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section id="services" className="py-24 md:py-32 bg-cream">
@@ -678,11 +696,11 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-reveal">
             {services.map((service, i) => (
               <div
                 key={service.name}
-                className={`fade-in fade-in-delay-${Math.min(i + 1, 5)} service-card group relative p-6 sm:p-8 rounded-2xl border border-charcoal/5 bg-white cursor-pointer`}
+                className={`fade-in fade-in-delay-${Math.min(i + 1, 5)} service-card group relative p-6 sm:p-8 ${i % 3 === 1 ? 'rounded-none' : 'rounded-2xl'} border border-charcoal/5 bg-white cursor-pointer`}
                 onClick={() => openBooking(service.name)}
               >
                 <div className="flex items-start justify-between gap-2 mb-1">
@@ -756,7 +774,7 @@ export default function Home() {
       </section>
 
       {/* ━━━ WEEKLY SCHEDULE — Cinematic Dark Section ━━━━━━━━━━━━━━━━━━━━━ */}
-      <section id="schedule" className="relative py-24 md:py-32 bg-charcoal overflow-clip">
+      <section id="schedule" className="relative py-24 md:py-32 bg-charcoal overflow-clip grain-overlay">
         {/* Background video */}
         <div className="absolute inset-0">
           <video
@@ -854,7 +872,7 @@ export default function Home() {
 
           {/* Schedule grid */}
           <div id="schedule-grid"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 stagger-reveal">
             {weeklySchedule.map((day, dayIdx) => {
               const nextDate = getNextDateForDay(day.dayIndex);
               const isClosed = closedDates.includes(nextDate);
@@ -920,7 +938,7 @@ export default function Home() {
           </div>
 
           {/* Pricing cards */}
-          <div className="fade-in mt-12 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+          <div className="fade-in mt-12 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 stagger-reveal">
             {[
               { label: "WALK-IN CLASS", cop: "$80,000", usd: "$22", sub: lang === "en" ? "Single class" : "Clase individual", featured: false },
               { label: "PROMO 2x1", cop: "$80,000", usd: "$22", sub: lang === "en" ? "Bring a friend" : "Trae un amigo", featured: false },
@@ -937,7 +955,7 @@ export default function Home() {
                 }`}
               >
                 {promo.featured && (
-                  <span className="inline-block mb-2 px-2 py-0.5 bg-gold/20 text-gold text-[7px] tracking-[0.2em] rounded-full font-[family-name:var(--font-body)]">
+                  <span className="inline-block mb-2 px-2 py-0.5 bg-gold/20 text-gold text-[7px] tracking-[0.2em] rounded-full font-[family-name:var(--font-body)] gold-breath">
                     {lang === "en" ? "PROMO OF THE MONTH" : "PROMO DEL MES"}
                   </span>
                 )}
@@ -1024,6 +1042,8 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="py-4"><div className="divider-gold" /></div>
+
       {/* ━━━ PAYMENT METHODS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section id="payment" className="py-20 md:py-28 bg-cream-warm">
         <div className="max-w-5xl mx-auto px-6 lg:px-8">
@@ -1039,7 +1059,7 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 stagger-reveal">
             {/* Wompi — Card Payment */}
             <a
               href="https://checkout.wompi.co/l/h3WPfP"
@@ -1127,7 +1147,7 @@ export default function Home() {
       </section>
 
       {/* ━━━ BOOKING HIGHLIGHT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="py-20 md:py-28 bg-charcoal relative overflow-clip">
+      <section className="py-20 md:py-28 bg-charcoal relative overflow-clip grain-overlay">
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{
@@ -1188,7 +1208,7 @@ export default function Home() {
       </section>
 
       {/* ━━━ RETREATS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section id="retreats" className="py-24 md:py-32">
+      <section id="retreats" className="py-32 md:py-44">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
@@ -1333,7 +1353,7 @@ export default function Home() {
       </section>
 
       {/* ━━━ FINAL CTA ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="py-24 md:py-32 bg-white">
+      <section className="py-12 md:py-16 bg-white">
         <div className="max-w-3xl mx-auto px-6 lg:px-8 text-center">
           <h2
             className="fade-in font-[family-name:var(--font-display)] text-charcoal"
@@ -1400,7 +1420,7 @@ export default function Home() {
                   </span>
                 </div>
                 <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-3 leading-relaxed max-w-md">
-                  🇨🇴🇺🇸 Healing Cartagena · IET · Yoga · Ayurveda · Reiki · Sacred Ceremonies
+                  Healing Cartagena · IET · Yoga · Ayurveda · Reiki · Sacred Ceremonies
                 </p>
               </div>
 

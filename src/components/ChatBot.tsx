@@ -260,7 +260,7 @@ export default function ChatBot() {
                     <button
                       key={i}
                       onClick={() => handleStarterClick(starter)}
-                      className="font-body text-xs text-rose-deep border border-rose-soft/30 px-3 py-2.5 min-h-[44px] hover:bg-rose-soft/10 active:bg-rose-soft/20 transition-colors text-left focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1"
+                      className="btn-tactile font-body text-xs text-rose-deep border border-rose-soft/30 px-3 py-2.5 min-h-[44px] hover:bg-rose-soft/10 active:bg-rose-soft/20 hover:scale-[1.03] hover:shadow-md transition-all duration-200 text-left focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1"
                     >
                       {starter}
                     </button>
@@ -274,7 +274,7 @@ export default function ChatBot() {
           {messages.map((msg, i) => (
             <div
               key={i}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              className={`flex ${msg.role === "user" ? "justify-end msg-user" : "justify-start msg-assistant"}`}
             >
               <div
                 className={`
@@ -304,18 +304,9 @@ export default function ChatBot() {
             <div className="flex justify-start">
               <div className="bg-charcoal/5 p-3 flex items-center gap-2">
                 <div className="flex gap-1">
-                  <span
-                    className="w-2 h-2 bg-rose-soft animate-bounce"
-                    style={{ animationDelay: "0ms" }}
-                  />
-                  <span
-                    className="w-2 h-2 bg-rose-soft animate-bounce"
-                    style={{ animationDelay: "150ms" }}
-                  />
-                  <span
-                    className="w-2 h-2 bg-rose-soft animate-bounce"
-                    style={{ animationDelay: "300ms" }}
-                  />
+                  <span className="w-2 h-2 bg-rose-soft rounded-full dot-sine" />
+                  <span className="w-2 h-2 bg-rose-soft rounded-full dot-sine" />
+                  <span className="w-2 h-2 bg-rose-soft rounded-full dot-sine" />
                 </div>
                 <span className="font-body text-xs text-charcoal/50">
                   thinking...
@@ -341,6 +332,7 @@ export default function ChatBot() {
               placeholder="What's on your mind?"
               disabled={isLoading}
               className="
+                input-glow
                 flex-1
                 font-display text-sm
                 border border-charcoal/10
@@ -356,6 +348,7 @@ export default function ChatBot() {
               type="submit"
               disabled={isLoading || !input.trim()}
               className="
+                btn-tactile
                 bg-rose-deep hover:bg-rose-soft
                 text-cream
                 px-4 py-3
