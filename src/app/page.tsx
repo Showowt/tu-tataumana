@@ -440,28 +440,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ━━━ PRESS BAR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="py-12 border-b border-charcoal/5">
-        <div className="max-w-5xl mx-auto px-6 lg:px-8">
-          <div className="flex items-center justify-center gap-6 sm:gap-12 md:gap-16 flex-wrap">
-            {[
-              { name: "VOGUE", url: "https://www.vogue.com/article/cartagena-wellness-destination" },
-              { name: "DINERS", url: "https://revistadiners.com.co/estilo-de-vida/casa-carolina-el-patrimonio-historico-de-cartagena-que-renacio-junto-a-su-duena/" },
-            ].map((press) => (
-              <a
-                key={press.name}
-                href={press.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="press-logo font-[family-name:var(--font-display)] text-charcoal text-sm md:text-base tracking-[0.2em] font-light select-none hover:text-rose-deep transition-colors duration-300"
-              >
-                {press.name}
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ━━━ WORKSHOP EVENT — Countdown ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {!workshopPassed && (
         <section className="relative py-20 md:py-28 bg-charcoal overflow-clip">
