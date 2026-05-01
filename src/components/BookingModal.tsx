@@ -153,6 +153,7 @@ export default function BookingModal({
   const [rulesAccepted, setRulesAccepted] = useState(false);
   const [closedDates, setClosedDates] = useState<string[]>([]);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>(null);
+  const [activePass, setActivePass] = useState<{ pass_type: string; classes_remaining: number | string; is_unlimited: boolean } | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Reset form when modal opens with new preselected values
@@ -174,6 +175,30 @@ export default function BookingModal({
   const bookingService = selectedTime
     ? `${service} @ ${selectedTime}`
     : service;
+
+  // Check for active class pass when phone number changes
+  useEffect(() => {
+    if (phone.length >= 10) {
+      const normalized = phone.replace(/[\s\-\+]/g, "");
+      fetch(`/api/passes?phone=${encodeURIComponent(normalized)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.passes && data.passes.length > 0) {
+            const pass = data.passes[0];
+            setActivePass({
+              pass_type: pass.pass_type,
+              classes_remaining: pass.classes_remaining,
+              is_unlimited: pass.is_unlimited,
+            });
+          } else {
+            setActivePass(null);
+          }
+        })
+        .catch(() => setActivePass(null));
+    } else {
+      setActivePass(null);
+    }
+  }, [phone]);
 
   const fetchClosedDates = useCallback(async () => {
     try {
@@ -580,6 +605,27 @@ export default function BookingModal({
                   required
                   className="w-full px-5 py-4 rounded-2xl border border-charcoal/8 bg-white font-[family-name:var(--font-body)] text-charcoal placeholder:text-charcoal/25 focus:border-rose/30 focus:outline-none transition-colors"
                 />
+
+                {/* Active pass indicator */}
+                {activePass && (
+                  <div className="rounded-2xl border-2 border-[#25D366]/30 bg-[#25D366]/[0.05] p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#25D366]/15 flex items-center justify-center shrink-0">
+                      <svg className="w-5 h-5 text-[#25D366]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
+                        {activePass.pass_type}
+                      </p>
+                      <p className="font-[family-name:var(--font-body)] text-xs text-[#25D366]">
+                        {activePass.is_unlimited
+                          ? "Unlimited classes · Pass active"
+                          : `${activePass.classes_remaining} classes remaining`}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <input
                   type="email"

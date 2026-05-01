@@ -96,6 +96,40 @@ export async function POST(request: Request) {
       }
     }
 
+    // --- Check for active class pass ---
+    let passInfo = "";
+    const normalizedPhone = phone.replace(/[\s\-\+]/g, "");
+    try {
+      const { data: passes } = await supabase
+        .from("tu_passes")
+        .select("*")
+        .or(`phone.eq.${normalizedPhone},phone.eq.+${normalizedPhone}`)
+        .eq("status", "active")
+        .order("created_at", { ascending: true })
+        .limit(1);
+
+      if (passes && passes.length > 0) {
+        const pass = passes[0];
+        const isUnlimited = pass.total_classes === -1;
+        const hasRemaining = isUnlimited || pass.classes_used < pass.total_classes;
+        const notExpired = !pass.expires_at || new Date(pass.expires_at) > new Date();
+
+        if (hasRemaining && notExpired) {
+          // Decrement the pass
+          const newUsed = pass.classes_used + 1;
+          await supabase
+            .from("tu_passes")
+            .update({ classes_used: newUsed, updated_at: new Date().toISOString() })
+            .eq("id", pass.id);
+
+          const remaining = isUnlimited ? "Unlimited" : pass.total_classes - newUsed;
+          passInfo = ` [PASS: ${pass.pass_type} — ${remaining} classes remaining]`;
+        }
+      }
+    } catch (e) {
+      console.error("[Bookings] Pass check failed:", e);
+    }
+
     // --- Create booking ---
     const { data, error } = await supabase
       .from("tu_bookings")
@@ -123,14 +157,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Notify Tata via Telegram with spots info
+    // Notify Tata via Telegram with spots + pass info
     try {
       const spotsMsg = spotsLeft !== null ? ` (${spotsLeft} spots left)` : "";
       await notifyNewBooking({
         name,
         email,
         phone,
-        service: `${service}${spotsMsg}`,
+        service: `${service}${spotsMsg}${passInfo}`,
         preferred_date,
         message,
       });
@@ -141,6 +175,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       data,
       spots_left: spotsLeft,
+      pass_used: passInfo ? true : false,
       message: "Booking created",
     });
   } catch (err) {
