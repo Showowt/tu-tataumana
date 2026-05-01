@@ -620,11 +620,11 @@ export default function Home() {
               </video>
             </div>
 
-            {/* Savasana — portrait image, faces at top and center */}
+            {/* Upper right — sound healing experience with headphones */}
             <div className="fade-in fade-in-delay-2 md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto">
               <Image
-                src="/class-savasana.jpg"
-                alt="Savasana yoga class at Casa Carolina boutique hotel in Cartagena Colombia — guided by Tata Umana"
+                src="/practice-1.jpg"
+                alt="Sound healing experience with headphones at TUISYOU wellness event in Cartagena Colombia"
                 width={1067}
                 height={1600}
                 className="object-cover w-full h-full"
@@ -632,12 +632,12 @@ export default function Home() {
               />
             </div>
 
-            {/* Seated — portrait image, people with arms up in center */}
+            {/* Lower right — Tata leading group yoga session */}
             <div className="fade-in fade-in-delay-3 md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto">
               <Image
-                src="/class-seated.jpg"
-                alt="Seated meditation and yoga class in Cartagena Colombia — holistic wellness with Tata Umana"
-                width={900}
+                src="/practice-2.jpg"
+                alt="Tata Umana leading yoga and sound healing session at TUISYOU wellness event in Cartagena Colombia"
+                width={1067}
                 height={1600}
                 className="object-cover w-full h-full"
                 style={{ objectPosition: "center 30%" }}
@@ -934,7 +934,7 @@ export default function Home() {
                 key={promo.label}
                 className={`schedule-promo-card rounded-2xl border p-4 sm:p-5 text-center transition-all duration-500 ${
                   promo.featured
-                    ? "border-gold/40 bg-gold/[0.08] col-span-2 sm:col-span-1 ring-1 ring-gold/20"
+                    ? "border-gold bg-gold/[0.15] col-span-2 sm:col-span-1 ring-2 ring-gold/30 shadow-lg shadow-gold/10"
                     : "border-gold/10 bg-white/[0.03] hover:border-gold/30 hover:bg-white/[0.06]"
                 }`}
               >
