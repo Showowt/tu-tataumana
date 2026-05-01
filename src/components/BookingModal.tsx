@@ -508,24 +508,47 @@ export default function BookingModal({
                     )}
 
                     {(!date || isDateClosed || availableClasses.length === 0) && !isDateClosed && (
-                      <div className="relative">
-                        <select
-                          value={service}
-                          onChange={(e) => setService(e.target.value)}
-                          required
-                          className="w-full px-5 py-4 rounded-2xl border border-charcoal/8 bg-white font-[family-name:var(--font-body)] text-charcoal appearance-none cursor-pointer focus:border-rose/30 focus:outline-none transition-colors"
-                        >
-                          <option value="" disabled>Choose your experience</option>
-                          {services.map((s) => (
-                            <option key={s.name} value={s.name}>
-                              {s.name} — {s.price}
-                            </option>
-                          ))}
-                        </select>
-                        <svg className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/30 pointer-events-none" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                        </svg>
-                      </div>
+                      <>
+                        {/* If a promo/pack is preselected (not in services list), show it locked */}
+                        {service && !services.some((s) => s.name === service) ? (
+                          <div className="w-full px-5 py-4 rounded-2xl border-2 border-gold/30 bg-gold/[0.05]">
+                            <p className="font-[family-name:var(--font-display)] text-lg text-charcoal">
+                              {service}
+                            </p>
+                            <p className="font-[family-name:var(--font-body)] text-xs text-gold/70 mt-1">
+                              {service.includes("Mamá") ? "$160,000 COP · 4 classes" :
+                               service.includes("WALK-IN") ? "$80,000 COP" :
+                               service.includes("2x1") ? "$80,000 COP · Bring a friend" :
+                               service.includes("MARTES") ? "$45,000 COP · Tuesdays" :
+                               service.includes("VIERNES") ? "$45,000 COP · Fridays" :
+                               service.includes("JUST FLOW") ? "$295,000 COP · 6 classes" :
+                               service.includes("HEALING") ? "$420,000 COP · 8 classes" :
+                               service.includes("EQUILIBRIUM") ? "$630,000 COP · 12 classes" :
+                               service.includes("LIFE") ? "$1,050,000 COP · Unlimited" :
+                               "Special promotion"}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <select
+                              value={service}
+                              onChange={(e) => setService(e.target.value)}
+                              required
+                              className="w-full px-5 py-4 rounded-2xl border border-charcoal/8 bg-white font-[family-name:var(--font-body)] text-charcoal appearance-none cursor-pointer focus:border-rose/30 focus:outline-none transition-colors"
+                            >
+                              <option value="" disabled>Choose your experience</option>
+                              {services.map((s) => (
+                                <option key={s.name} value={s.name}>
+                                  {s.name} — {s.price}
+                                </option>
+                              ))}
+                            </select>
+                            <svg className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/30 pointer-events-none" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {date && !isDateClosed && availableClasses.length > 0 && (
