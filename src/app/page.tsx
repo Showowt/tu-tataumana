@@ -701,7 +701,7 @@ export default function Home() {
               <div
                 key={service.name}
                 className={`fade-in fade-in-delay-${Math.min(i + 1, 5)} service-card group relative p-6 sm:p-8 ${i % 3 === 1 ? 'rounded-none' : 'rounded-2xl'} border border-charcoal/5 bg-white cursor-pointer`}
-                onClick={() => openBooking(service.name)}
+                onClick={() => window.open(`https://wa.me/573185083035?text=${encodeURIComponent(`Hola Tata! Me interesa ${lang === "en" ? service.name : service.nameEs}. ¿Tienes disponibilidad? / I'm interested in ${service.name}. Do you have availability?`)}`, "_blank")}
               >
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <h3 className="font-[family-name:var(--font-display)] text-xl sm:text-2xl text-charcoal group-hover:text-rose transition-colors duration-300">
@@ -1087,6 +1087,9 @@ export default function Home() {
                 <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-0.5">
                   {L(t.paymentCardDesc) as string}
                 </p>
+                <p className="font-[family-name:var(--font-body)] text-[10px] text-rose/50 mt-0.5">
+                  {lang === "en" ? "+4% processing fee applies" : "+4% comisión de procesamiento"}
+                </p>
               </div>
               <svg className="w-5 h-5 text-charcoal/20 group-hover:text-gold group-hover:translate-x-1 transition-all shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
@@ -1285,7 +1288,7 @@ export default function Home() {
                       {retreat.price}
                     </span>
                     <button
-                      onClick={() => openBooking(retreat.title)}
+                      onClick={() => window.open(`https://wa.me/573185083035?text=${encodeURIComponent(`Hola Tata! Me interesa ${retreat.title}. ¿Puedes darme más información? / I'm interested in ${retreat.title}. Can you give me more info?`)}`, "_blank")}
                       className="btn-tactile font-[family-name:var(--font-body)] text-sm tracking-[0.15em] text-rose hover:text-charcoal transition-colors py-2"
                     >
                       {L(t.inquire) as string}

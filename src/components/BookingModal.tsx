@@ -590,6 +590,9 @@ export default function BookingModal({
                     <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40">
                       Visa, Mastercard, Amex — instant confirmation
                     </p>
+                    <p className="font-[family-name:var(--font-body)] text-[10px] text-rose/60 mt-0.5">
+                      +4% processing fee applies / +4% comisión de procesamiento
+                    </p>
                   </div>
                   <svg className="w-4 h-4 text-charcoal/20 group-hover:text-gold transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
