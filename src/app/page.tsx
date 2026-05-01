@@ -426,10 +426,10 @@ export default function Home() {
           <h1
             className="font-[family-name:var(--font-display)] text-white text-center mt-8"
             style={{
-              fontSize: "clamp(2.5rem, 8vw, 6.5rem)",
+              fontSize: "clamp(2.5rem, 7vw, 5.5rem)",
               fontWeight: 300,
-              letterSpacing: "-0.04em",
-              lineHeight: 1.05,
+              letterSpacing: "-0.03em",
+              lineHeight: 1.1,
               opacity: heroLoaded ? 1 : 0,
               transform: heroLoaded ? "translateY(0)" : "translateY(16px)",
               transition: "opacity 1.2s ease 0.6s, transform 1.2s ease 0.6s",
@@ -503,6 +503,14 @@ export default function Home() {
       {/* ━━━ MAY EVENTS — Two-column: TU Naturaleza + Mayo Mes Mamá ━━━━━━━━ */}
       {!workshopPassed && (
         <section className="relative py-16 md:py-24 bg-charcoal overflow-clip grain-overlay">
+          {/* Radial glow accents */}
+          <div
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] pointer-events-none"
+            style={{
+              background: "radial-gradient(ellipse, rgba(201,169,110,0.12) 0%, transparent 70%)",
+            }}
+          />
+
           <div className="relative max-w-6xl mx-auto px-6 lg:px-8">
             {/* Header */}
             <div className="text-center mb-12">
@@ -604,7 +612,7 @@ export default function Home() {
       )}
 
       {/* ━━━ PHILOSOPHY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="py-24 md:py-36">
+      <section className="py-16 md:py-20">
         <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
           <p
             className="blur-in font-[family-name:var(--font-display)] text-charcoal leading-relaxed"
@@ -711,10 +719,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* clean break — no decorative divider */}
+      <div className="divider-gold my-0" />
 
       {/* ━━━ THE PRACTICE — Glass Gallery ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section id="practice" className="py-32 md:py-48 bg-white overflow-clip">
+      <section id="practice" className="py-28 md:py-40 bg-white overflow-clip">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
@@ -785,10 +793,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* clean break — no decorative divider */}
+      <div className="divider-gold my-0" />
 
       {/* ━━━ SERVICES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section id="services" className="py-28 md:py-40 bg-cream">
+      <section id="services" className="py-24 md:py-32 bg-cream">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40 mb-4">
@@ -908,6 +916,19 @@ export default function Home() {
             }}
           />
         </div>
+
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse, rgba(184,119,119,0.12) 0%, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse, rgba(201,169,110,0.08) 0%, transparent 70%)",
+          }}
+        />
 
         <div className="relative max-w-6xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -1152,7 +1173,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* clean break */}
+      <div className="py-4"><div className="divider-gold" /></div>
 
       {/* ━━━ PAYMENT METHODS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section id="payment" className="py-20 md:py-28 bg-cream-warm">
@@ -1276,9 +1297,9 @@ export default function Home() {
           <h2
             className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-white mb-4"
             style={{
-              fontSize: "clamp(2.5rem, 7vw, 5rem)",
+              fontSize: "clamp(2.2rem, 6vw, 4rem)",
               fontWeight: 300,
-              letterSpacing: "-0.03em",
+              letterSpacing: "-0.02em",
             }}
           >
             {L(t.readyToBegin) as string}
@@ -1472,9 +1493,8 @@ export default function Home() {
           <h2
             className="fade-in font-[family-name:var(--font-display)] text-charcoal"
             style={{
-              fontSize: "clamp(1.8rem, 5vw, 3.5rem)",
+              fontSize: "clamp(1.8rem, 4vw, 2.5rem)",
               fontWeight: 300,
-              letterSpacing: "-0.02em",
             }}
           >
             {L(t.finalCta) as string}
