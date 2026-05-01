@@ -155,6 +155,19 @@ export default function BookingModal({
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
+  // Reset form when modal opens with new preselected values
+  useEffect(() => {
+    if (isOpen) {
+      setService(preselectedService || "");
+      setSelectedTime(preselectedTime || "");
+      setDate(preselectedDate || "");
+      setStep("form");
+      setRulesAccepted(false);
+      setSelectedPayment(null);
+      setSubmitting(false);
+    }
+  }, [isOpen, preselectedService, preselectedDate, preselectedTime]);
+
   const availableClasses = getClassesForDate(date);
   const isDateClosed = date && closedDates.includes(date);
 
