@@ -378,24 +378,49 @@ export default function BookingModal({
                 </p>
               </div>
 
-              {/* Pre-selected class info card */}
+              {/* Pre-selected class info card — BIG DATE so they can't miss it */}
               {preselectedTime && preselectedDate && (
-                <div className="bg-white rounded-2xl p-5 mb-6 border border-rose/10">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-[family-name:var(--font-display)] text-xl text-charcoal">
-                        {service}
-                      </p>
-                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 mt-1">
-                        {formatDateDisplay(date)} &middot; {selectedTime}
-                      </p>
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-rose/[0.06] flex items-center justify-center">
-                      <svg className="w-5 h-5 text-rose" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
+                <div className="mb-6 space-y-3">
+                  {/* Prominent date banner */}
+                  <div className="bg-gold/10 border-2 border-gold/30 rounded-2xl p-5 text-center">
+                    <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-gold/70 mb-1">
+                      YOUR CLASS DATE
+                    </p>
+                    <p className="font-[family-name:var(--font-display)] text-2xl text-charcoal">
+                      {formatDateDisplay(date)}
+                    </p>
+                    <p className="font-[family-name:var(--font-display)] text-lg text-rose mt-1">
+                      {service} &middot; {selectedTime}
+                    </p>
                   </div>
+
+                  {/* Alert: this is NOT today */}
+                  {(() => {
+                    const now = new Date();
+                    const colombiaNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+                    const todayStr = colombiaNow.toISOString().split("T")[0];
+                    if (date && date !== todayStr) {
+                      return (
+                        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex items-start gap-3">
+                          <svg className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                          </svg>
+                          <div>
+                            <p className="font-[family-name:var(--font-body)] text-sm text-amber-800 font-medium">
+                              This class is NOT today
+                            </p>
+                            <p className="font-[family-name:var(--font-body)] text-xs text-amber-600 mt-0.5">
+                              You are booking for <strong>{formatDateDisplay(date)}</strong>. Please confirm this is the correct date before proceeding.
+                            </p>
+                            <p className="font-[family-name:var(--font-body)] text-xs text-amber-500 mt-1">
+                              Esta clase NO es hoy. Estás reservando para el <strong>{formatDateDisplay(date)}</strong>.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               )}
 
@@ -578,7 +603,7 @@ export default function BookingModal({
                   disabled={submitting || !service || !rulesAccepted || !!isDateClosed}
                   className="w-full py-4 rounded-2xl bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.2em] hover:bg-rose transition-colors duration-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                 >
-                  {submitting ? "SAVING..." : "CONTINUE TO PAYMENT"}
+                  {submitting ? "SAVING..." : date ? `CONTINUE TO PAYMENT · ${formatDateDisplay(date)}` : "CONTINUE TO PAYMENT"}
                   {!submitting && (
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
