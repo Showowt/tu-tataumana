@@ -23,22 +23,22 @@ const BOOKING_RULES = [
 
 const scheduleByDay: Record<number, { time: string; name: string }[]> = {
   1: [
-    { time: "9:30 AM", name: "Yoga Conscious" },
-    { time: "7:15 PM", name: "Yoga Conscious" },
+    { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa" },
+    { time: "7:15 PM", name: "Yoga Flow - Open Vinyasa" },
   ],
   2: [
     { time: "9:30 AM", name: "Back Care Yoga" },
-    { time: "7:15 PM", name: "Hip Opener · Hatha" },
+    { time: "7:15 PM", name: "Hatha" },
   ],
   3: [
-    { time: "9:30 AM", name: "Yoga Conscious" },
+    { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa" },
     { time: "10:45 AM", name: "Pilates" },
     { time: "7:15 PM", name: "Open Flow" },
   ],
   4: [
     { time: "9:30 AM", name: "Yoga Intro · Power Up" },
     { time: "5:30 PM", name: "Sound Healing" },
-    { time: "7:15 PM", name: "Hip Opener" },
+    { time: "7:15 PM", name: "Hatha" },
   ],
   5: [
     { time: "10:00 AM", name: "Power Yoga · Postura" },
@@ -49,7 +49,7 @@ const scheduleByDay: Record<number, { time: string; name: string }[]> = {
     { time: "6:00 PM", name: "Inner Journey · Meditation" },
   ],
   0: [
-    { time: "9:00 AM", name: "Just Hatha Flow" },
+    { time: "9:00 AM", name: "Power Yoga" },
     { time: "10:30 AM", name: "Inner Journey · Meditation" },
   ],
 };

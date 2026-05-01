@@ -75,6 +75,7 @@ const services = [
 interface ScheduleClass {
   time: string;
   name: string;
+  note?: string;
 }
 
 interface ScheduleDay {
@@ -92,8 +93,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "MON",
     dayIndex: 1,
     classes: [
-      { time: "9:30 AM", name: "Yoga Conscious" },
-      { time: "7:15 PM", name: "Yoga Conscious" },
+      { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa" },
+      { time: "7:15 PM", name: "Yoga Flow - Open Vinyasa" },
     ],
   },
   {
@@ -103,7 +104,7 @@ const weeklySchedule: ScheduleDay[] = [
     dayIndex: 2,
     classes: [
       { time: "9:30 AM", name: "Back Care Yoga" },
-      { time: "7:15 PM", name: "Hip Opener · Hatha" },
+      { time: "7:15 PM", name: "Hatha" },
     ],
   },
   {
@@ -112,7 +113,7 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "WED",
     dayIndex: 3,
     classes: [
-      { time: "9:30 AM", name: "Yoga Conscious" },
+      { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa" },
       { time: "10:45 AM", name: "Pilates" },
       { time: "7:15 PM", name: "Open Flow" },
     ],
@@ -125,7 +126,7 @@ const weeklySchedule: ScheduleDay[] = [
     classes: [
       { time: "9:30 AM", name: "Yoga Intro · Power Up" },
       { time: "5:30 PM", name: "Sound Healing" },
-      { time: "7:15 PM", name: "Hip Opener" },
+      { time: "7:15 PM", name: "Hatha" },
     ],
   },
   {
@@ -145,7 +146,7 @@ const weeklySchedule: ScheduleDay[] = [
     dayIndex: 6,
     classes: [
       { time: "11:00 AM", name: "Sun Salutation" },
-      { time: "6:00 PM", name: "Inner Journey · Meditation" },
+      { time: "6:00 PM", name: "Inner Journey · Meditation", note: "(solo en español)" },
     ],
   },
   {
@@ -154,8 +155,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "SUN",
     dayIndex: 0,
     classes: [
-      { time: "9:00 AM", name: "Just Hatha Flow" },
-      { time: "10:30 AM", name: "Inner Journey · Meditation" },
+      { time: "9:00 AM", name: "Power Yoga" },
+      { time: "10:30 AM", name: "Inner Journey · Meditation", note: "(solo en español)" },
     ],
   },
 ];
@@ -192,7 +193,7 @@ const testimonials = [
 ];
 
 // ─── Workshop event target: May 1, 2026, 5:30 PM Colombia (UTC-5) ────────
-const WORKSHOP_TARGET = new Date("2026-05-01T22:30:00Z"); // 5:30 PM COT = 22:30 UTC
+const WORKSHOP_TARGET = new Date("2026-05-22T23:00:00Z"); // 6:00 PM COT = 23:00 UTC
 
 // ─── Scroll reveal hook ──────────────────────────────────────────────────────
 
@@ -391,18 +392,28 @@ export default function Home() {
             {L(t.heroSubtitle) as string}
           </p>
 
-          <button
-            onClick={() => openBooking()}
-            className="mt-10 px-10 py-4 border border-white/30 text-white font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-white hover:text-charcoal transition-all duration-500"
+          <div
+            className="mt-10 flex flex-col sm:flex-row gap-4"
             style={{
               opacity: heroLoaded ? 1 : 0,
               transform: heroLoaded ? "translateY(0)" : "translateY(16px)",
               transition:
-                "opacity 1.2s ease 1.2s, transform 1.2s ease 1.2s, background-color 0.5s, color 0.5s, border-color 0.5s",
+                "opacity 1.2s ease 1.2s, transform 1.2s ease 1.2s",
             }}
           >
-            {L(t.bookSession) as string}
-          </button>
+            <button
+              onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
+              className="px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/30 text-white font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-white hover:text-charcoal transition-all duration-500"
+            >
+              {L(t.heroBookTata) as string}
+            </button>
+            <button
+              onClick={() => document.getElementById("schedule")?.scrollIntoView({ behavior: "smooth" })}
+              className="px-8 py-4 border border-gold/50 text-gold font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-gold hover:text-charcoal transition-all duration-500"
+            >
+              {L(t.heroYogaClasses) as string}
+            </button>
+          </div>
 
           <div
             className="absolute bottom-10 left-1/2 -translate-x-1/2"
@@ -433,16 +444,20 @@ export default function Home() {
       <section className="py-12 border-b border-charcoal/5">
         <div className="max-w-5xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-center gap-6 sm:gap-12 md:gap-16 flex-wrap">
-            {["VOGUE", "FORBES", "CARIBBEAN JOURNAL", "DINERS"].map(
-              (press) => (
-                <span
-                  key={press}
-                  className="press-logo font-[family-name:var(--font-display)] text-charcoal text-sm md:text-base tracking-[0.2em] font-light select-none"
-                >
-                  {press}
-                </span>
-              )
-            )}
+            {[
+              { name: "VOGUE", url: "https://www.vogue.com/article/cartagena-wellness-destination" },
+              { name: "DINERS", url: "https://revistadiners.com.co/estilo-de-vida/casa-carolina-el-patrimonio-historico-de-cartagena-que-renacio-junto-a-su-duena/" },
+            ].map((press) => (
+              <a
+                key={press.name}
+                href={press.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="press-logo font-[family-name:var(--font-display)] text-charcoal text-sm md:text-base tracking-[0.2em] font-light select-none hover:text-rose-deep transition-colors duration-300"
+              >
+                {press.name}
+              </a>
+            ))}
           </div>
         </div>
       </section>
@@ -852,7 +867,7 @@ export default function Home() {
                   </p>
                 </div>
                 <button
-                  onClick={() => openBooking()}
+                  onClick={() => document.getElementById("schedule-grid")?.scrollIntoView({ behavior: "smooth" })}
                   className="hidden sm:block px-6 py-3 rounded-full border border-white/20 text-white font-[family-name:var(--font-body)] text-xs tracking-[0.2em] hover:bg-white hover:text-charcoal transition-all duration-500"
                 >
                   {L(t.bookNow) as string}
@@ -862,6 +877,7 @@ export default function Home() {
           </div>
 
           {/* Schedule grid */}
+          <div id="schedule-grid"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {weeklySchedule.map((day, dayIdx) => {
               const nextDate = getNextDateForDay(day.dayIndex);
@@ -904,7 +920,7 @@ export default function Home() {
                             {cls.time}
                           </span>
                           <span className={`font-[family-name:var(--font-display)] text-[15px] transition-colors duration-300 ${isClosed ? "text-white/25 line-through" : "text-white/70 group-hover:text-rose-soft"}`}>
-                            {cls.name}
+                            {cls.name}{cls.note && <span className="text-gold/60 text-xs ml-1.5">{cls.note}</span>}
                           </span>
                         </div>
                         {!isClosed && (
@@ -930,18 +946,26 @@ export default function Home() {
           {/* Pricing cards */}
           <div className="fade-in mt-12 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
             {[
-              { label: "WALK-IN CLASS", cop: "$80,000", usd: "$22", sub: lang === "en" ? "Single class" : "Clase individual" },
-              { label: "PROMO 2x1", cop: "$80,000", usd: "$22", sub: lang === "en" ? "Bring a friend" : "Trae un amigo" },
-              { label: "MARTES INDUSTRIA", cop: "$45,000", usd: "$12", sub: lang === "en" ? "Tuesdays only" : "Solo martes" },
-              { label: "VIERNES OPEN FLOW", cop: "$45,000", usd: "$12", sub: lang === "en" ? "Fridays only" : "Solo viernes" },
-              { label: "PROMO MES MUJER", cop: "$160,000", usd: "$43", sub: lang === "en" ? "Special promo" : "Promo especial" },
-              { label: "TU INTRO PACK", cop: "$160,000", usd: "$43", sub: lang === "en" ? "4 classes" : "4 clases" },
+              { label: "WALK-IN CLASS", cop: "$80,000", usd: "$22", sub: lang === "en" ? "Single class" : "Clase individual", featured: false },
+              { label: "PROMO 2x1", cop: "$80,000", usd: "$22", sub: lang === "en" ? "Bring a friend" : "Trae un amigo", featured: false },
+              { label: "MARTES INDUSTRIA", cop: "$45,000", usd: "$12", sub: lang === "en" ? "Tuesdays only" : "Solo martes", featured: false },
+              { label: "VIERNES OPEN FLOW", cop: "$45,000", usd: "$12", sub: lang === "en" ? "Fridays only" : "Solo viernes", featured: false },
+              { label: "MAYO MES MAMÁ", cop: "$160,000", usd: "$43", sub: lang === "en" ? "Mother's Month · 4 classes" : "Mes de las Madres · 4 clases", featured: true },
             ].map((promo) => (
               <div
                 key={promo.label}
-                className="schedule-promo-card rounded-2xl border border-gold/10 bg-white/[0.03] p-4 sm:p-5 text-center hover:border-gold/30 hover:bg-white/[0.06] transition-all duration-500"
+                className={`schedule-promo-card rounded-2xl border p-4 sm:p-5 text-center transition-all duration-500 ${
+                  promo.featured
+                    ? "border-gold/40 bg-gold/[0.08] col-span-2 sm:col-span-1 ring-1 ring-gold/20"
+                    : "border-gold/10 bg-white/[0.03] hover:border-gold/30 hover:bg-white/[0.06]"
+                }`}
               >
-                <p className="font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] text-gold/70 mb-2">
+                {promo.featured && (
+                  <span className="inline-block mb-2 px-2 py-0.5 bg-gold/20 text-gold text-[7px] tracking-[0.2em] rounded-full font-[family-name:var(--font-body)]">
+                    {lang === "en" ? "PROMO OF THE MONTH" : "PROMO DEL MES"}
+                  </span>
+                )}
+                <p className={`font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] mb-2 ${promo.featured ? "text-gold" : "text-gold/70"}`}>
                   {promo.label}
                 </p>
                 <p className="font-[family-name:var(--font-display)] text-xl sm:text-2xl text-white">
@@ -1344,12 +1368,20 @@ export default function Home() {
           >
             {L(t.finalCta) as string}
           </h2>
-          <button
-            onClick={() => openBooking()}
-            className="fade-in fade-in-delay-2 mt-10 px-12 py-5 bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-rose transition-colors duration-500 rounded-full"
-          >
-            {L(t.bookYourSession) as string}
-          </button>
+          <div className="fade-in fade-in-delay-2 mt-10 flex flex-col sm:flex-row gap-4">
+            <button
+              onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
+              className="px-10 py-5 bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-rose transition-colors duration-500 rounded-full"
+            >
+              {L(t.enquireWithTata) as string}
+            </button>
+            <button
+              onClick={() => document.getElementById("schedule")?.scrollIntoView({ behavior: "smooth" })}
+              className="px-10 py-5 border-2 border-gold text-gold font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-gold hover:text-charcoal transition-colors duration-500 rounded-full"
+            >
+              {L(t.bookYourClass) as string}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -1482,6 +1514,21 @@ export default function Home() {
                 <br />
                 {L(t.cartagena) as string}
               </p>
+              <div className="mt-4">
+                <p className="font-[family-name:var(--font-body)] text-[9px] tracking-[0.15em] text-gold/70 mb-2">
+                  JUSTBYOGA BY TUISYOU
+                </p>
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3924.0!2d-75.5506!3d10.4236!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTDCsDI1JzI1LjAiTiA3NcKwMzMnMDIuMiJX!5e0!3m2!1sen!2sco!4v1"
+                  width="100%"
+                  height="160"
+                  style={{ border: 0, borderRadius: "8px", opacity: 0.9 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="JUSTBYOGA BY TUISYOU - Casa Carolina, Cartagena"
+                />
+              </div>
             </div>
           </div>
 

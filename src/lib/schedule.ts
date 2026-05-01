@@ -6,32 +6,34 @@
 export interface ScheduleClass {
   time: string;
   name: string;
+  /** Optional note displayed next to class name, e.g. "(solo en español)" */
+  note?: string;
 }
 
 export const CAPACITY = 10;
 
 export const SCHEDULE: Record<number, ScheduleClass[]> = {
   0: [ // Sunday
-    { time: "9:00 AM", name: "Just Hatha Flow" },
-    { time: "10:30 AM", name: "Inner Journey · Meditation" },
+    { time: "9:00 AM", name: "Power Yoga" },
+    { time: "10:30 AM", name: "Inner Journey · Meditation", note: "(solo en español)" },
   ],
   1: [ // Monday
-    { time: "9:30 AM", name: "Yoga Conscious" },
-    { time: "7:15 PM", name: "Yoga Conscious" },
+    { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa" },
+    { time: "7:15 PM", name: "Yoga Flow - Open Vinyasa" },
   ],
   2: [ // Tuesday
     { time: "9:30 AM", name: "Back Care Yoga" },
-    { time: "7:15 PM", name: "Hip Opener · Hatha" },
+    { time: "7:15 PM", name: "Hatha" },
   ],
   3: [ // Wednesday
-    { time: "9:30 AM", name: "Yoga Conscious" },
+    { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa" },
     { time: "10:45 AM", name: "Pilates" },
     { time: "7:15 PM", name: "Open Flow" },
   ],
   4: [ // Thursday
     { time: "9:30 AM", name: "Yoga Intro · Power Up" },
     { time: "5:30 PM", name: "Sound Healing" },
-    { time: "7:15 PM", name: "Hip Opener" },
+    { time: "7:15 PM", name: "Hatha" },
   ],
   5: [ // Friday
     { time: "10:00 AM", name: "Power Yoga · Postura" },
@@ -39,7 +41,7 @@ export const SCHEDULE: Record<number, ScheduleClass[]> = {
   ],
   6: [ // Saturday
     { time: "11:00 AM", name: "Sun Salutation" },
-    { time: "6:00 PM", name: "Inner Journey · Meditation" },
+    { time: "6:00 PM", name: "Inner Journey · Meditation", note: "(solo en español)" },
   ],
 };
 

@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     template: "%s | TU. by Tata Umana",
   },
   description:
-    "Book yoga classes, sound healing, Reiki, energy therapy & sacred ceremonies in Cartagena, Colombia. 30 years of practice. Featured in Vogue & Forbes. Private sessions from $23 USD at Casa Carolina. JustbYoga daily classes.",
+    "Book yoga classes, sound healing, Reiki, energy therapy & sacred ceremonies in Cartagena, Colombia. 30 years of practice. Featured in Vogue & Diners. Private sessions from $23 USD at Casa Carolina. JustbYoga daily classes.",
   keywords: [
     // Brand
     "Tata Umana",

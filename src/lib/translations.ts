@@ -8,6 +8,8 @@ export const t = {
     es: "Yoga \u00B7 Sanaci\u00F3n Sonora \u00B7 Reiki \u00B7 PNL \u00B7 Ceremonias \u00B7 Retiros",
   },
   bookSession: { en: "BOOK A SESSION", es: "RESERVA TU SESI\u00D3N" },
+  heroBookTata: { en: "BOOK A SESSION WITH TATA", es: "RESERVA CON TATA" },
+  heroYogaClasses: { en: "JUSTB YOGA CLASSES", es: "CLASES JUSTB YOGA" },
 
   // Philosophy
   philosophy: {
@@ -40,7 +42,8 @@ export const t = {
     en: "One-on-one experiences tailored to your unique path \u2014 in person or virtual",
     es: "Experiencias personalizadas para tu camino \u00FAnico \u2014 presencial o virtual",
   },
-  book: { en: "BOOK", es: "RESERVAR" },
+  book: { en: "ENQUIRE", es: "CONSULTAR" },
+  bookClass: { en: "BOOK YOUR CLASS", es: "RESERVA TU CLASE" },
   yoga10Pack: { en: "Yoga 10-Session Pack", es: "Yoga Pack 10 Sesiones" },
   yoga10PackSub: {
     en: "Save with 10 personalized yoga sessions",
@@ -54,8 +57,8 @@ export const t = {
 
   // Schedule
   scheduleLabel: {
-    en: "JUST B YOGA BY TU \u00B7 CASA CAROLINA",
-    es: "JUST B YOGA BY TU \u00B7 CASA CAROLINA",
+    en: "JUST B YOGA BY TUISYOU \u00B7 CASA CAROLINA",
+    es: "JUST B YOGA BY TUISYOU \u00B7 CASA CAROLINA",
   },
   scheduleTitle1: { en: "Weekly Group", es: "Clases Grupales" },
   scheduleTitle2: { en: "Classes", es: "Semanales" },
@@ -112,6 +115,8 @@ export const t = {
     es: "Lo \u00FAnico entre t\u00FA y tu transformaci\u00F3n es una decisi\u00F3n.",
   },
   bookYourSession: { en: "BOOK YOUR SESSION", es: "RESERVA TU SESI\u00D3N" },
+  enquireWithTata: { en: "ENQUIRE WITH TUISYOU", es: "CONSULTAR CON TUISYOU" },
+  bookYourClass: { en: "BOOK YOUR CLASS", es: "RESERVA TU CLASE" },
 
   // Footer
   connect: { en: "CONNECT", es: "CONECTA" },
@@ -158,24 +163,37 @@ export const t = {
     es: "EVENTO ESPECIAL \u00B7 JUSTBYOGA",
   },
   workshopTitle: {
-    en: "Facial Yoga & Ayurveda",
-    es: "Yoga Facial & Ayurveda",
+    en: "TU Naturaleza",
+    es: "TU Naturaleza",
   },
   workshopSubtitle: {
-    en: "Marmic Activation & Dosha Reconnection",
-    es: "Activaci\u00F3n M\u00E1rmica & Reconectar con tu Dosha",
+    en: "Sound Healing Experience",
+    es: "Experiencia de Sanaci\u00F3n Sonora",
   },
   workshopDate: {
-    en: "May 1, 2026 \u00B7 5:30 \u2013 7:30 PM",
-    es: "1 de Mayo, 2026 \u00B7 5:30 \u2013 7:30 PM",
+    en: "May 22, 2026 \u00B7 6:00 PM",
+    es: "22 de Mayo, 2026 \u00B7 6:00 PM",
   },
   workshopLocation: {
     en: "JustbYoga at Casa Carolina, Cartagena",
     es: "JustbYoga en Casa Carolina, Cartagena",
   },
   workshopCelebration: {
-    en: "1st Anniversary Celebration \u00B7 Mother\u2019s Month",
-    es: "Celebraci\u00F3n 1er Aniversario \u00B7 Mes de las Madres",
+    en: "SPECIAL EVENT",
+    es: "EVENTO ESPECIAL",
+  },
+  // Mother's Month promo
+  mayPromoTitle: {
+    en: "Mayo Mes Mam\u00E1",
+    es: "Mayo Mes Mam\u00E1",
+  },
+  mayPromoSubtitle: {
+    en: "Mother\u2019s Month Special",
+    es: "Especial Mes de las Madres",
+  },
+  mayPromoDesc: {
+    en: "Celebrate the month of mothers with a special wellness experience. Gift yourself or someone you love.",
+    es: "Celebra el mes de las madres con una experiencia especial de bienestar. Reg\u00E1late o regala a alguien que amas.",
   },
   workshopPresale: { en: "PRESALE", es: "PREVENTA" },
   workshopRegular: { en: "REGULAR", es: "REGULAR" },

@@ -98,10 +98,8 @@ MY CURRENT ROLE:
 - Founder of JustbYoga by TUisYOU — my daily yoga class program
 
 WHERE I'VE BEEN FEATURED:
-- Vogue (Cartagena wellness destination feature)
-- Forbes (Colombian wellness entrepreneurs)
-- Caribbean Journal (best wellness experiences)
-- Diners Magazine Colombia
+- Vogue (Cartagena wellness destination feature): https://www.vogue.com/article/cartagena-wellness-destination
+- Diners Magazine Colombia: https://revistadiners.com.co/estilo-de-vida/casa-carolina-el-patrimonio-historico-de-cartagena-que-renacio-junto-a-su-duena/
 - Multiple international podcast interviews
 - Guest instructor at retreat centers worldwide
 
@@ -129,22 +127,22 @@ WEEKLY CLASS SCHEDULE (ACTUAL — use this to tell people what's happening on sp
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 MONDAY (Lunes):
-  9:30 AM — Yoga Conscious
-  7:15 PM — Yoga Conscious
+  9:30 AM — Yoga Flow - Open Vinyasa
+  7:15 PM — Yoga Flow - Open Vinyasa
 
 TUESDAY (Martes) — SPECIAL: $45,000 COP (Martes de Industria):
   9:30 AM — Back Care Yoga
-  7:15 PM — Hip Opener · Hatha
+  7:15 PM — Hatha
 
 WEDNESDAY (Miércoles):
-  9:30 AM — Yoga Conscious
+  9:30 AM — Yoga Flow - Open Vinyasa
   10:45 AM — Pilates
   7:15 PM — Open Flow
 
 THURSDAY (Jueves):
   9:30 AM — Yoga Intro · Power Up
   5:30 PM — Sound Healing
-  7:15 PM — Hip Opener
+  7:15 PM — Hatha
 
 FRIDAY (Viernes) — SPECIAL: $45,000 COP:
   10:00 AM — Power Yoga · Postura
@@ -152,11 +150,11 @@ FRIDAY (Viernes) — SPECIAL: $45,000 COP:
 
 SATURDAY (Sábado):
   11:00 AM — Sun Salutation
-  6:00 PM — Inner Journey · Meditation
+  6:00 PM — Inner Journey · Meditation (solo en español)
 
 SUNDAY (Domingo):
-  9:00 AM — Just Hatha Flow
-  10:30 AM — Inner Journey · Meditation
+  9:00 AM — Power Yoga
+  10:30 AM — Inner Journey · Meditation (solo en español)
 
 ALL GROUP CLASSES (2026 Pricing):
 Walk-in class: $80,000 COP per class
@@ -165,7 +163,6 @@ Viernes (Friday): $45,000 COP
 Promo 2x1: $80,000 COP (bring a friend!)
 
 CLASS PACKS (2026):
-TU Intro Pack: $160,000 COP (4 classes)
 Just Flow Pack: $295,000 COP (6 classes)
 TU Healing Pack: $420,000 COP (8 classes)
 TU Equilibrium Pack: $630,000 COP (12 classes)
