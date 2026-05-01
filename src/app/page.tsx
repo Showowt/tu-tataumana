@@ -382,7 +382,7 @@ export default function Home() {
             style={{
               fontSize: "clamp(2rem, 5vw, 3.5rem)",
               fontWeight: 300,
-              letterSpacing: "0.02em",
+              letterSpacing: "-0.03em",
               lineHeight: 1.2,
               opacity: heroLoaded ? 1 : 0,
               transform: heroLoaded ? "translateY(0)" : "translateY(16px)",
@@ -417,13 +417,13 @@ export default function Home() {
           >
             <button
               onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/30 text-white font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-white hover:text-charcoal transition-all duration-500"
+              className="btn-tactile px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/30 text-white font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-white hover:text-charcoal transition-all duration-500"
             >
               {L(t.heroBookTata) as string}
             </button>
             <button
               onClick={() => document.getElementById("schedule")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-8 py-4 border border-gold/50 text-gold font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-gold hover:text-charcoal transition-all duration-500"
+              className="btn-tactile px-8 py-4 border border-gold/50 text-gold font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-gold hover:text-charcoal transition-all duration-500"
             >
               {L(t.heroYogaClasses) as string}
             </button>
@@ -517,7 +517,7 @@ export default function Home() {
                       href="https://checkout.wompi.co/l/h3WPfP"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-gold text-charcoal font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-white transition-all duration-500 rounded-full"
+                      className="btn-tactile w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-gold text-charcoal font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-white transition-all duration-500 rounded-full"
                     >
                       {L(t.workshopReserve) as string}
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -546,7 +546,7 @@ export default function Home() {
                   <div className="mt-auto">
                     <button
                       onClick={() => openBooking(lang === "en" ? "Mayo Mes Mamá — 4 Classes" : "Mayo Mes Mamá — 4 Clases")}
-                      className="w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-rose-soft text-white font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-white hover:text-charcoal transition-all duration-500 rounded-full"
+                      className="btn-tactile w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-rose-soft text-white font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-white hover:text-charcoal transition-all duration-500 rounded-full"
                     >
                       {lang === "en" ? "RESERVE PROMO" : "RESERVAR PROMO"}
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -946,9 +946,10 @@ export default function Home() {
               { label: "VIERNES OPEN FLOW", cop: "$45,000", usd: "$12", sub: lang === "en" ? "Fridays only" : "Solo viernes", featured: false },
               { label: "MAYO MES MAMÁ", cop: "$160,000", usd: "$43", sub: lang === "en" ? "Mother's Month · 4 classes" : "Mes de las Madres · 4 clases", featured: true },
             ].map((promo) => (
-              <div
+              <button
                 key={promo.label}
-                className={`schedule-promo-card rounded-2xl border p-4 sm:p-5 text-center transition-all duration-500 ${
+                onClick={() => openBooking(promo.label)}
+                className={`btn-tactile schedule-promo-card rounded-2xl border p-4 sm:p-5 text-center transition-all duration-500 cursor-pointer ${
                   promo.featured
                     ? "border-gold bg-gold/[0.15] col-span-2 sm:col-span-1 ring-2 ring-gold/30 shadow-lg shadow-gold/10"
                     : "border-gold/10 bg-white/[0.03] hover:border-gold/30 hover:bg-white/[0.06]"
@@ -968,7 +969,10 @@ export default function Home() {
                 <p className="font-[family-name:var(--font-body)] text-[10px] sm:text-xs text-white/30 mt-1">
                   COP &middot; {promo.usd} USD &middot; {promo.sub}
                 </p>
-              </div>
+                <p className="font-[family-name:var(--font-body)] text-[9px] tracking-[0.15em] text-gold/50 mt-3 hover:text-gold transition-colors">
+                  {lang === "en" ? "BOOK NOW" : "RESERVAR"}
+                </p>
+              </button>
             ))}
           </div>
 
@@ -980,9 +984,10 @@ export default function Home() {
               { label: "TU EQUILIBRIUM", cop: "$630,000", usd: "$170", sub: lang === "en" ? "12 classes" : "12 clases" },
               { label: "TU LIFE PACK", cop: "$1,050,000", usd: "$284", sub: "Unlimited" },
             ].map((promo) => (
-              <div
+              <button
                 key={promo.label}
-                className="schedule-promo-card rounded-2xl border border-gold/10 bg-white/[0.03] p-4 sm:p-5 text-center hover:border-gold/30 hover:bg-white/[0.06] transition-all duration-500"
+                onClick={() => openBooking(promo.label)}
+                className="btn-tactile schedule-promo-card rounded-2xl border border-gold/10 bg-white/[0.03] p-4 sm:p-5 text-center hover:border-gold/30 hover:bg-white/[0.06] transition-all duration-500 cursor-pointer"
               >
                 <p className="font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] text-gold/70 mb-2">
                   {promo.label}
@@ -993,7 +998,10 @@ export default function Home() {
                 <p className="font-[family-name:var(--font-body)] text-[10px] sm:text-xs text-white/30 mt-1">
                   COP &middot; {promo.usd} USD &middot; {promo.sub}
                 </p>
-              </div>
+                <p className="font-[family-name:var(--font-body)] text-[9px] tracking-[0.15em] text-gold/50 mt-3 hover:text-gold transition-colors">
+                  {lang === "en" ? "BOOK NOW" : "RESERVAR"}
+                </p>
+              </button>
             ))}
           </div>
 
@@ -1175,7 +1183,7 @@ export default function Home() {
 
           <button
             onClick={() => openBooking()}
-            className="fade-in fade-in-delay-3 inline-flex items-center gap-3 px-12 py-5 bg-white text-charcoal font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-rose hover:text-white transition-all duration-500 rounded-full"
+            className="btn-tactile fade-in fade-in-delay-3 inline-flex items-center gap-3 px-12 py-5 bg-white text-charcoal font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-rose hover:text-white transition-all duration-500 rounded-full"
           >
             {L(t.bookSession) as string}
             <svg
@@ -1278,7 +1286,7 @@ export default function Home() {
                     </span>
                     <button
                       onClick={() => openBooking(retreat.title)}
-                      className="font-[family-name:var(--font-body)] text-sm tracking-[0.15em] text-rose hover:text-charcoal transition-colors py-2"
+                      className="btn-tactile font-[family-name:var(--font-body)] text-sm tracking-[0.15em] text-rose hover:text-charcoal transition-colors py-2"
                     >
                       {L(t.inquire) as string}
                     </button>
@@ -1293,7 +1301,7 @@ export default function Home() {
       {/* ━━━ TESTIMONIALS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="py-24 md:py-32 bg-cream-warm">
         <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
-          <div className="relative min-h-[200px] flex items-center justify-center">
+          <div className="relative min-h-[200px] flex items-center justify-center quote-accent">
             {testimonials.map((testimonial, i) => (
               <div
                 key={testimonial.name}
@@ -1367,13 +1375,13 @@ export default function Home() {
           <div className="fade-in fade-in-delay-2 mt-10 flex flex-col sm:flex-row gap-4">
             <button
               onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-10 py-5 bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-rose transition-colors duration-500 rounded-full"
+              className="btn-tactile px-10 py-5 bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-rose transition-colors duration-500 rounded-full"
             >
               {L(t.enquireWithTata) as string}
             </button>
             <button
               onClick={() => document.getElementById("schedule")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-10 py-5 border-2 border-gold text-gold font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-gold hover:text-charcoal transition-colors duration-500 rounded-full"
+              className="btn-tactile px-10 py-5 border-2 border-gold text-gold font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-gold hover:text-charcoal transition-colors duration-500 rounded-full"
             >
               {L(t.bookYourClass) as string}
             </button>
@@ -1559,7 +1567,7 @@ export default function Home() {
             </div>
             <button
               onClick={() => openBooking()}
-              className="w-full sm:w-auto px-8 py-3.5 bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.2em] hover:bg-rose transition-colors duration-300 rounded-full"
+              className="btn-tactile w-full sm:w-auto px-8 py-3.5 bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.2em] hover:bg-rose transition-colors duration-300 rounded-full"
             >
               {L(t.bookNow) as string}
             </button>
