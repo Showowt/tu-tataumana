@@ -461,3 +461,128 @@ section {
     opacity: 1 !important;
   }
 }
+
+/* ============================================================
+   CINEMA ENGINE v2 — Smooth Scroll + Advanced Reveals
+   ============================================================ */
+
+/* Lenis smooth scroll base */
+html.lenis, html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+/* Text split reveal — words animate in one by one */
+.text-reveal .word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(20px) rotateX(-10deg);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.text-reveal.visible .word {
+  opacity: 1;
+  transform: translateY(0) rotateX(0);
+}
+/* Each word gets a stagger delay via nth-child */
+.text-reveal.visible .word:nth-child(1) { transition-delay: 0s; }
+.text-reveal.visible .word:nth-child(2) { transition-delay: 0.05s; }
+.text-reveal.visible .word:nth-child(3) { transition-delay: 0.1s; }
+.text-reveal.visible .word:nth-child(4) { transition-delay: 0.15s; }
+.text-reveal.visible .word:nth-child(5) { transition-delay: 0.2s; }
+.text-reveal.visible .word:nth-child(6) { transition-delay: 0.25s; }
+.text-reveal.visible .word:nth-child(7) { transition-delay: 0.3s; }
+.text-reveal.visible .word:nth-child(8) { transition-delay: 0.35s; }
+
+/* Image clip reveal — wipes in from edge on scroll */
+.clip-reveal {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.clip-reveal.visible {
+  clip-path: inset(0 0 0 0);
+}
+.clip-reveal-left {
+  clip-path: inset(0 0 0 100%);
+  transition: clip-path 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.clip-reveal-left.visible {
+  clip-path: inset(0 0 0 0);
+}
+.clip-reveal-up {
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.clip-reveal-up.visible {
+  clip-path: inset(0 0 0 0);
+}
+
+/* Parallax float — subtle drift on idle */
+@keyframes floatDrift {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+.float-drift {
+  animation: floatDrift 6s ease-in-out infinite;
+}
+.float-drift-slow {
+  animation: floatDrift 8s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+/* Magnetic hover — element follows cursor slightly */
+.magnetic-hover {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Line draw animation for decorative lines */
+@keyframes lineDraw {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.line-draw {
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.line-draw.visible {
+  animation: lineDraw 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Soft blur-in for text */
+@keyframes blurIn {
+  from { opacity: 0; filter: blur(8px); }
+  to { opacity: 1; filter: blur(0); }
+}
+.blur-in {
+  opacity: 0;
+}
+.blur-in.visible {
+  animation: blurIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.blur-in-delay-1.visible { animation-delay: 0.15s; }
+.blur-in-delay-2.visible { animation-delay: 0.3s; }
+.blur-in-delay-3.visible { animation-delay: 0.45s; }
+
+/* Reduced motion override for v2 */
+@media (prefers-reduced-motion: reduce) {
+  .text-reveal .word,
+  .clip-reveal,
+  .clip-reveal-left,
+  .clip-reveal-up,
+  .float-drift,
+  .float-drift-slow,
+  .line-draw,
+  .blur-in {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    clip-path: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
+}

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import Lenis from "lenis";
 import BookingModal from "@/components/BookingModal";
 import { t, type Lang } from "@/lib/translations";
 
@@ -245,7 +246,7 @@ function useScrollReveal() {
       { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
     );
 
-    const children = el.querySelectorAll(".fade-in");
+    const children = el.querySelectorAll(".fade-in, .clip-reveal, .clip-reveal-left, .clip-reveal-up, .blur-in, .line-draw, .text-reveal, .stagger-reveal");
     children.forEach((child) => observer.observe(child));
 
     return () => observer.disconnect();
@@ -282,6 +283,21 @@ export default function Home() {
   useEffect(() => {
     const timer = setTimeout(() => setHeroLoaded(true), 300);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Lenis smooth scroll — buttery scroll feel
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+    return () => lenis.destroy();
   }, []);
 
   // Show sticky bar after scrolling past hero
@@ -599,7 +615,7 @@ export default function Home() {
       <section className="py-16 md:py-20">
         <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
           <p
-            className="fade-in font-[family-name:var(--font-display)] text-charcoal leading-relaxed"
+            className="blur-in font-[family-name:var(--font-display)] text-charcoal leading-relaxed"
             style={{
               fontSize: "clamp(1.25rem, 2.5vw, 1.75rem)",
               fontWeight: 300,
@@ -609,8 +625,8 @@ export default function Home() {
           >
             {L(t.philosophy) as string}
           </p>
-          <div className="fade-in fade-in-delay-2 mt-10 flex items-center justify-center gap-4">
-            <div className="h-px w-12 bg-rose/30" />
+          <div className="blur-in blur-in-delay-2 mt-10 flex items-center justify-center gap-4">
+            <div className="h-px w-12 bg-rose/30 line-draw" />
             <span className="font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-charcoal/40">
               TATA UMANA
             </span>
@@ -739,7 +755,7 @@ export default function Home() {
             </div>
 
             {/* Upper right — sound healing experience with headphones */}
-            <div className="fade-in fade-in-delay-2 md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto editorial-tilt-right">
+            <div className="clip-reveal md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto editorial-tilt-right">
               <Image
                 src="/practice-1.jpg"
                 alt="Sound healing experience with headphones at TUISYOU wellness event in Cartagena Colombia"
@@ -751,7 +767,7 @@ export default function Home() {
             </div>
 
             {/* Lower right — Tata leading group yoga session */}
-            <div className="fade-in fade-in-delay-3 md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto editorial-tilt-left">
+            <div className="clip-reveal-left md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto editorial-tilt-left">
               <Image
                 src="/practice-2.jpg"
                 alt="Tata Umana leading yoga and sound healing session at TUISYOU wellness event in Cartagena Colombia"
