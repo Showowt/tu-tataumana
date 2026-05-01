@@ -51,11 +51,15 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase
     .from("tu_passes")
     .select("*")
-    .or(`phone.eq.${normalizedPhone},phone.eq.+${normalizedPhone}`)
+    .eq("phone", normalizedPhone)
     .eq("status", "active")
     .order("created_at", { ascending: false });
 
   if (error) {
+    // Table doesn't exist yet — return empty, not 500
+    if (error.code === "42P01" || error.message?.includes("does not exist")) {
+      return NextResponse.json({ passes: [] });
+    }
     console.error("[passes] Fetch error:", error);
     return NextResponse.json(
       { error: "Failed to check passes" },
@@ -113,12 +117,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate expiration (30 days for packs, end of month for unlimited)
+    // Calculate expiration
     const expiresAt = new Date();
     if (passInfo.total === -1) {
-      // Unlimited: expires end of current month
-      expiresAt.setMonth(expiresAt.getMonth() + 1);
-      expiresAt.setDate(0); // Last day of current month
+      // Unlimited: expires end of NEXT calendar month from purchase
+      expiresAt.setDate(1); // Go to 1st of current month
+      expiresAt.setMonth(expiresAt.getMonth() + 2); // Go to 1st of month after next
+      expiresAt.setDate(0); // Back to last day of next month
       expiresAt.setHours(23, 59, 59, 999);
     } else {
       // Packs: 90 days to use all classes
@@ -198,9 +203,7 @@ export async function PATCH(request: NextRequest) {
       query = query.eq("id", pass_id);
     } else {
       const normalizedPhone = phone.replace(/[\s\-\+]/g, "");
-      query = query.or(
-        `phone.eq.${normalizedPhone},phone.eq.+${normalizedPhone}`
-      );
+      query = query.eq("phone", normalizedPhone);
     }
 
     const { data: passes, error: fetchErr } = await query

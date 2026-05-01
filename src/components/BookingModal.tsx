@@ -176,11 +176,13 @@ export default function BookingModal({
     ? `${service} @ ${selectedTime}`
     : service;
 
-  // Check for active class pass when phone number changes
+  // Check for active class pass when phone number changes (debounced)
   useEffect(() => {
-    if (phone.length >= 10) {
+    if (phone.length < 10) { setActivePass(null); return; }
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
       const normalized = phone.replace(/[\s\-\+]/g, "");
-      fetch(`/api/passes?phone=${encodeURIComponent(normalized)}`)
+      fetch(`/api/passes?phone=${encodeURIComponent(normalized)}`, { signal: controller.signal })
         .then((r) => r.json())
         .then((data) => {
           if (data.passes && data.passes.length > 0) {
@@ -194,10 +196,9 @@ export default function BookingModal({
             setActivePass(null);
           }
         })
-        .catch(() => setActivePass(null));
-    } else {
-      setActivePass(null);
-    }
+        .catch((err) => { if (err.name !== "AbortError") setActivePass(null); });
+    }, 500);
+    return () => { clearTimeout(timer); controller.abort(); };
   }, [phone]);
 
   const fetchClosedDates = useCallback(async () => {

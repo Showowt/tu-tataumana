@@ -115,15 +115,22 @@ export async function POST(request: Request) {
         const notExpired = !pass.expires_at || new Date(pass.expires_at) > new Date();
 
         if (hasRemaining && notExpired) {
-          // Decrement the pass
+          // Atomic decrement — prevents race condition with concurrent bookings
           const newUsed = pass.classes_used + 1;
-          await supabase
+          let updateQuery = supabase
             .from("tu_passes")
             .update({ classes_used: newUsed, updated_at: new Date().toISOString() })
-            .eq("id", pass.id);
+            .eq("id", pass.id)
+            .eq("classes_used", pass.classes_used); // Optimistic lock: only update if count hasn't changed
 
-          const remaining = isUnlimited ? "Unlimited" : pass.total_classes - newUsed;
-          passInfo = ` [PASS: ${pass.pass_type} — ${remaining} classes remaining]`;
+          const { data: updated, error: updateErr } = await updateQuery.select().single();
+
+          if (updated && !updateErr) {
+            const remaining = isUnlimited ? "Unlimited" : pass.total_classes - newUsed;
+            passInfo = ` [PASS: ${pass.pass_type} — ${remaining} classes remaining]`;
+          } else {
+            console.warn("[Bookings] Pass race condition — concurrent booking detected, pass not decremented");
+          }
         }
       }
     } catch (e) {
