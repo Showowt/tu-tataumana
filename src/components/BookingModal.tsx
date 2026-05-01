@@ -746,10 +746,10 @@ export default function BookingModal({
               </div>
 
               {/* Payment-specific instructions */}
-              {selectedPayment === "wompi" ? (
-                <div className="rounded-2xl border border-[#25D366]/20 bg-[#25D366]/[0.04] p-5 mb-5">
+              {selectedPayment === "wompi" && (
+                <div className="rounded-2xl border border-gold/20 bg-gold/[0.03] p-5 mb-4">
                   <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 leading-relaxed">
-                    Your card payment through Wompi confirms your spot instantly. If the checkout didn&apos;t open,{" "}
+                    Your card payment through Wompi confirms your spot. If the checkout didn&apos;t open,{" "}
                     <a
                       href="https://checkout.wompi.co/l/h3WPfP"
                       target="_blank"
@@ -759,81 +759,90 @@ export default function BookingModal({
                       click here to pay now
                     </a>.
                   </p>
-                </div>
-              ) : selectedPayment ? (
-                <div className="rounded-2xl border border-gold/20 bg-gold/[0.03] p-5 mb-5">
-                  <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.2em] text-gold/70 font-medium mb-3">
-                    NEXT STEP
+                  <p className="font-[family-name:var(--font-body)] text-[10px] text-charcoal/40 mt-2">
+                    +4% processing fee applies / +4% comisión de procesamiento
                   </p>
+                </div>
+              )}
 
-                  {selectedPayment === "nequi" && (
-                    <div className="space-y-3">
-                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 leading-relaxed">
-                        Open your Nequi app and send payment to:
-                      </p>
-                      <div className="bg-white rounded-xl p-4 text-center">
-                        <p className="font-mono text-xl text-charcoal font-medium">3185083035</p>
-                        <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-1">Include your name: {name}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedPayment === "bancolombia" && (
-                    <div className="space-y-3">
-                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 leading-relaxed">
-                        Transfer via Bancolombia app:
-                      </p>
-                      <div className="bg-white rounded-xl p-4 space-y-2">
-                        <div className="flex justify-between">
-                          <span className="font-[family-name:var(--font-body)] text-xs text-charcoal/40">Type</span>
-                          <span className="font-[family-name:var(--font-body)] text-sm text-charcoal">Cuenta de Ahorros</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-[family-name:var(--font-body)] text-xs text-charcoal/40">Account</span>
-                          <span className="font-mono text-sm text-charcoal font-medium">207-859047-00</span>
-                        </div>
-                        <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 pt-1">Include your name as reference</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedPayment === "zelle" && (
-                    <div className="space-y-3">
-                      <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 leading-relaxed">
-                        Send via Zelle or PayPal to:
-                      </p>
-                      <div className="bg-white rounded-xl p-4 text-center">
-                        <p className="font-mono text-xl text-charcoal font-medium">+1 917 453 8307</p>
-                        <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-1">Include your name: {name}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mt-4 pt-4 border-t border-gold/10">
-                    <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/50 leading-relaxed">
-                      After paying, send your receipt via WhatsApp to confirm:
-                    </p>
-                    <a
-                      href={`https://wa.me/573185083035?text=${encodeURIComponent(`Hi Tata! I just paid for ${bookingService}${date ? ` on ${formatDateDisplay(date)}` : ""}. My name is ${name}. Sending receipt now!`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-[#25D366] text-white font-[family-name:var(--font-body)] text-sm tracking-[0.1em] hover:bg-[#20bd5a] transition-colors"
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                        <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 0 1-4.29-1.243L4 20l1.243-3.71A8 8 0 1 1 12 20z"/>
-                      </svg>
-                      SEND RECEIPT VIA WHATSAPP
-                    </a>
+              {selectedPayment === "nequi" && (
+                <div className="rounded-2xl border border-gold/20 bg-gold/[0.03] p-5 mb-4">
+                  <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.2em] text-gold/70 font-medium mb-3">NEXT STEP</p>
+                  <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 mb-3">Open your Nequi app and send payment to:</p>
+                  <div className="bg-white rounded-xl p-4 text-center">
+                    <p className="font-mono text-xl text-charcoal font-medium">3185083035</p>
+                    <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-1">Include your name: {name}</p>
                   </div>
                 </div>
-              ) : (
-                <div className="rounded-2xl border border-charcoal/8 bg-white p-5 mb-5">
+              )}
+
+              {selectedPayment === "bancolombia" && (
+                <div className="rounded-2xl border border-gold/20 bg-gold/[0.03] p-5 mb-4">
+                  <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.2em] text-gold/70 font-medium mb-3">NEXT STEP</p>
+                  <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 mb-3">Transfer via Bancolombia app:</p>
+                  <div className="bg-white rounded-xl p-4 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="font-[family-name:var(--font-body)] text-xs text-charcoal/40">Type</span>
+                      <span className="font-[family-name:var(--font-body)] text-sm text-charcoal">Cuenta de Ahorros</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-[family-name:var(--font-body)] text-xs text-charcoal/40">Account</span>
+                      <span className="font-mono text-sm text-charcoal font-medium">207-859047-00</span>
+                    </div>
+                    <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 pt-1">Include your name as reference</p>
+                  </div>
+                </div>
+              )}
+
+              {selectedPayment === "zelle" && (
+                <div className="rounded-2xl border border-gold/20 bg-gold/[0.03] p-5 mb-4">
+                  <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.2em] text-gold/70 font-medium mb-3">NEXT STEP</p>
+                  <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 mb-3">Send via Zelle or PayPal to:</p>
+                  <div className="bg-white rounded-xl p-4 text-center">
+                    <p className="font-mono text-xl text-charcoal font-medium">+1 917 453 8307</p>
+                    <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-1">Include your name: {name}</p>
+                  </div>
+                </div>
+              )}
+
+              {!selectedPayment && (
+                <div className="rounded-2xl border border-charcoal/8 bg-white p-5 mb-4">
                   <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 leading-relaxed">
                     Pay in cash (COP or USD) when you arrive at Casa Carolina. Arrive 10 minutes early for your class.
                   </p>
                 </div>
               )}
+
+              {/* WhatsApp Confirmation — ALWAYS shown for ALL payment methods */}
+              <div className="rounded-2xl border-2 border-[#25D366]/30 bg-[#25D366]/[0.04] p-5 mb-5">
+                <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.2em] text-[#25D366]/70 font-medium mb-3">
+                  CONFIRM YOUR BOOKING
+                </p>
+                <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/60 leading-relaxed mb-4">
+                  {selectedPayment === "wompi"
+                    ? "Send Tata a message to confirm your booking and get class details:"
+                    : "Send your payment receipt and confirm your booking:"}
+                </p>
+                <a
+                  href={`https://wa.me/573185083035?text=${encodeURIComponent(
+                    selectedPayment === "wompi"
+                      ? `Hola Tata! Acabo de reservar y pagar con tarjeta para ${bookingService}${date ? ` el ${formatDateDisplay(date)}` : ""}${selectedTime ? ` a las ${selectedTime}` : ""}. Mi nombre es ${name}. Quedo atenta a la confirmación!\n\nHi Tata! I just booked and paid by card for ${bookingService}${date ? ` on ${formatDateDisplay(date)}` : ""}${selectedTime ? ` at ${selectedTime}` : ""}. My name is ${name}. Looking forward to confirmation!`
+                      : `Hola Tata! Reservé ${bookingService}${date ? ` el ${formatDateDisplay(date)}` : ""}${selectedTime ? ` a las ${selectedTime}` : ""}. Mi nombre es ${name}. ${!selectedPayment ? "Pagaré en efectivo al llegar." : "Ya envié el pago, adjunto comprobante."}\n\nHi Tata! I booked ${bookingService}${date ? ` on ${formatDateDisplay(date)}` : ""}${selectedTime ? ` at ${selectedTime}` : ""}. My name is ${name}. ${!selectedPayment ? "I'll pay cash on arrival." : "Payment sent, receipt attached."}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-[#25D366] text-white font-[family-name:var(--font-body)] text-sm tracking-[0.15em] hover:bg-[#20bd5a] transition-colors btn-tactile"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                    <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 0 1-4.29-1.243L4 20l1.243-3.71A8 8 0 1 1 12 20z"/>
+                  </svg>
+                  CONFIRM VIA WHATSAPP
+                </a>
+                <p className="font-[family-name:var(--font-body)] text-[10px] text-charcoal/30 text-center mt-3">
+                  Tata will personally confirm your spot within minutes
+                </p>
+              </div>
 
               <button
                 onClick={onClose}
