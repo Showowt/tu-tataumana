@@ -246,6 +246,19 @@ export const t = {
     es: "Facilitaci\u00F3n grupal personalizada, trabajo energ\u00E9tico, ejercicios de integraci\u00F3n",
   },
 
+  // Meet Our Teachers
+  teachersLabel: { en: "JUST B YOGA BY TUISYOU", es: "JUST B YOGA BY TUISYOU" },
+  teachersTitle1: { en: "Meet Our", es: "Conoce a Nuestros" },
+  teachersTitle2: { en: "Teachers", es: "Teachers" },
+  teachersClosing: {
+    en: "Each teacher, a different energy to connect with you.",
+    es: "Cada teacher, una energ\u00EDa distinta para conectar contigo.",
+  },
+  teachersClosingSub: {
+    en: "Discover who will inspire your next practice.",
+    es: "Descubre qui\u00E9n te inspirar\u00E1 en tu pr\u00F3xima pr\u00E1ctica.",
+  },
+
   // Service descriptions
   serviceDescriptions: {
     en: {

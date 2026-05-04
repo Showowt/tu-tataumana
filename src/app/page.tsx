@@ -202,6 +202,52 @@ function isClassBookable(dateStr: string, timeStr: string): boolean {
   return (classMinutes - nowMinutes) >= 120;
 }
 
+// ─── Teachers ─────────────────────────────────────────────────────────────────
+
+interface Teacher {
+  name: string;
+  role: { en: string; es: string };
+  bio: { en: string; es: string };
+  image: string;
+  specialties: string[];
+  isLead: boolean;
+}
+
+const teachers: Teacher[] = [
+  {
+    name: "Tata",
+    role: { en: "Founder & Lead Teacher", es: "Fundadora & Teacher Principal" },
+    bio: {
+      es: "Guardiana de espacios sagrados, gu\u00EDa del alma y del cuerpo que recuerda. Tata te acompa\u00F1a a trav\u00E9s del yoga, la energ\u00EDa, el toque y la palabra, a volver a ti \u2014 a tu verdad, a tu poder, a tu centro. Su ense\u00F1anza es medicina: suave pero firme, m\u00EDstica pero presente, amorosa pero clara. En cada clase, Tata abre portales donde el cuerpo respira, el coraz\u00F3n se calma y el alma florece.",
+      en: "Guardian of sacred spaces, guide of the soul and the body that remembers. Tata walks with you through yoga, energy, touch and word, back to yourself \u2014 to your truth, your power, your center. Her teaching is medicine: gentle yet firm, mystical yet present, loving yet clear. In every class, Tata opens portals where the body breathes, the heart calms and the soul blooms.",
+    },
+    image: "/teacher-tata.jpg",
+    specialties: ["Sound Healing", "Reiki", "Kundalini", "Vinyasa", "Ceremonies"],
+    isLead: true,
+  },
+  {
+    name: "Alejandro",
+    role: { en: "Teacher", es: "Teacher" },
+    bio: {
+      es: "Dedicado, luminoso y con una voz que gu\u00EDa desde el alma. Ale te acompa\u00F1a a crecer en tu pr\u00E1ctica personal con la dulzura de su presencia y la claridad de su ense\u00F1anza. Desde el Hatha y en Vinyasa, su enfoque integra respiraci\u00F3n, fuerza, fluidez y autoconocimiento. Con Ale, la pr\u00E1ctica se convierte en un espacio \u00EDntimo de evoluci\u00F3n y amor propio.",
+      en: "Dedicated, luminous, with a voice that guides from the soul. Ale walks with you as you grow in your personal practice with the sweetness of his presence and the clarity of his teaching. From Hatha to Vinyasa, his approach integrates breath, strength, flow and self-knowledge. With Ale, the practice becomes an intimate space of evolution and self-love.",
+    },
+    image: "/teacher-alejandro.jpg",
+    specialties: ["Hatha", "Vinyasa"],
+    isLead: false,
+  },
+  {
+    name: "Harold",
+    role: { en: "Teacher", es: "Teacher" },
+    bio: {
+      es: "Mentor de coraz\u00F3n amplio, y presencia firme. Su gu\u00EDa combina sabidur\u00EDa t\u00E9cnica, mirada amorosa y una entrega profunda al camino del yoga y del servicio. Con cada palabra, y ajuste, Harold inspira confianza, compromiso y conexi\u00F3n real con el cuerpo y el alma.",
+      en: "A mentor with a wide-open heart and a steady presence. His guidance combines technical wisdom, a loving gaze, and a deep devotion to the path of yoga and service. With every word and adjustment, Harold inspires trust, commitment, and real connection with body and soul.",
+    },
+    image: "/teacher-harold.jpg",
+    specialties: ["Yoga", "Alignment"],
+    isLead: false,
+  },
+];
 const testimonials = [
   {
     quote:
@@ -1174,6 +1220,129 @@ export default function Home() {
       </section>
 
       <div className="py-4"><div className="divider-gold" /></div>
+
+      {/* ━━━ MEET OUR TEACHERS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section id="teachers" className="py-28 md:py-36 bg-white">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+          {/* Section header */}
+          <div className="text-center mb-20 md:mb-28">
+            <p className="fade-in font-[family-name:var(--font-body)] text-[10px] tracking-[0.4em] text-gold mb-5">
+              JUST B YOGA BY TUISYOU
+            </p>
+            <h2
+              className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-charcoal"
+              style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 300, lineHeight: 1.1 }}
+            >
+              {L(t.teachersTitle1) as string}{" "}
+              <span className="italic text-rose">{L(t.teachersTitle2) as string}</span>
+            </h2>
+          </div>
+
+          {/* ── TATA — Lead Teacher ── */}
+          <div className="fade-in mb-28 md:mb-36">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+              {/* Image */}
+              <div className="lg:col-span-7">
+                <div className="glass-frame aspect-[3/4]">
+                  <Image
+                    src={teachers[0].image}
+                    alt={`${teachers[0].name} — ${teachers[0].role[lang]}, JustbYoga by TUISYOU`}
+                    fill
+                    className="object-cover"
+                    style={{ objectPosition: "center 20%" }}
+                    sizes="(max-width: 1024px) 100vw, 58vw"
+                    priority
+                  />
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="lg:col-span-5">
+                <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-gold mb-4">
+                  {teachers[0].role[lang].toUpperCase()}
+                </p>
+                <h3
+                  className="font-[family-name:var(--font-display)] text-charcoal mb-8"
+                  style={{ fontSize: "clamp(2.8rem, 4.5vw, 4rem)", fontWeight: 300, lineHeight: 1 }}
+                >
+                  {teachers[0].name}
+                </h3>
+
+                <p className="font-[family-name:var(--font-body)] text-[15px] text-charcoal/50 leading-[1.9] mb-10">
+                  {teachers[0].bio[lang]}
+                </p>
+
+                <div className="flex flex-wrap gap-2.5 mb-10">
+                  {teachers[0].specialties.map((s) => (
+                    <span
+                      key={s}
+                      className="px-4 py-2 border border-charcoal/8 font-[family-name:var(--font-body)] text-[10px] tracking-[0.15em] text-charcoal/40"
+                    >
+                      {s.toUpperCase()}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="h-px flex-1 bg-charcoal/8" />
+                  <span className="font-[family-name:var(--font-body)] text-[9px] tracking-[0.3em] text-charcoal/25">
+                    30+ {lang === "en" ? "YEARS" : "A\u00D1OS"}
+                  </span>
+                  <div className="h-px flex-1 bg-charcoal/8" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Alejandro & Harold ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-12">
+            {teachers.filter((tc) => !tc.isLead).map((teacher, i) => (
+              <div key={teacher.name} className={`fade-in fade-in-delay-${i + 1}`}>
+                <div className="glass-frame aspect-[3/4] mb-8">
+                  <Image
+                    src={teacher.image}
+                    alt={`${teacher.name} — ${teacher.role[lang]}, JustbYoga by TUISYOU`}
+                    fill
+                    className="object-cover"
+                    style={{ objectPosition: "center 20%" }}
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
+                </div>
+                <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-gold mb-3">
+                  {teacher.role[lang].toUpperCase()}
+                </p>
+                <h3
+                  className="font-[family-name:var(--font-display)] text-charcoal mb-5"
+                  style={{ fontSize: "clamp(2rem, 3vw, 2.5rem)", fontWeight: 300 }}
+                >
+                  {teacher.name}
+                </h3>
+                <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/45 leading-[1.9]">
+                  {teacher.bio[lang]}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Closing statement ── */}
+          <div className="fade-in mt-28 md:mt-36 text-center max-w-2xl mx-auto">
+            <div className="h-px w-16 bg-rose/30 mx-auto mb-10" />
+            <p
+              className="font-[family-name:var(--font-display)] text-charcoal/70 italic leading-relaxed"
+              style={{ fontSize: "clamp(1.15rem, 2vw, 1.4rem)", fontWeight: 300 }}
+            >
+              {L(t.teachersClosing) as string}
+            </p>
+            <p
+              className="font-[family-name:var(--font-display)] text-charcoal mt-3 italic"
+              style={{ fontSize: "clamp(1.3rem, 2.5vw, 1.7rem)", fontWeight: 400 }}
+            >
+              {L(t.teachersClosingSub) as string}
+            </p>
+            <div className="h-px w-16 bg-rose/30 mx-auto mt-10" />
+          </div>
+        </div>
+      </section>
 
       {/* ━━━ PAYMENT METHODS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section id="payment" className="py-20 md:py-28 bg-cream-warm">
