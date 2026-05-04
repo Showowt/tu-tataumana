@@ -1,599 +1,543 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { formatTime } from "@/lib/constants/business-rules";
 
-interface ClosedDate {
-  date: string;
-  reason: string | null;
-}
-
-interface Pass {
-  id: number;
-  phone: string;
-  name: string | null;
-  pass_type: string;
-  total_classes: number;
-  classes_used: number;
-  classes_remaining: number | string;
-  is_unlimited: boolean;
-  status: string;
-  expires_at: string | null;
-  payment_confirmed: boolean;
-  payment_method: string | null;
-  created_at: string;
-}
-
-interface Booking {
-  id: number;
+interface SessionDef {
   name: string;
-  phone: string;
-  service: string;
-  preferred_date: string | null;
-  class_time: string | null;
-  status: string;
-  created_at: string;
+  name_es: string;
+  style: string;
 }
 
-const PASS_TYPES = [
-  { value: "MAYO MES MAMÁ", label: "Mayo Mes Mamá", classes: 4, price: "$160,000" },
-  { value: "JUST FLOW PACK", label: "Just Flow Pack", classes: 6, price: "$295,000" },
-  { value: "TU HEALING PACK", label: "TU Healing Pack", classes: 8, price: "$420,000" },
-  { value: "TU EQUILIBRIUM", label: "TU Equilibrium", classes: 12, price: "$630,000" },
-  { value: "TU LIFE PACK", label: "TU Life Pack (Unlimited)", classes: -1, price: "$1,050,000" },
-];
+interface TodaySession {
+  id: string;
+  session_date: string;
+  start_time: string;
+  teacher: string;
+  capacity: number;
+  enrolled: number;
+  status: string;
+  definition: SessionDef;
+}
 
-type Tab = "passes" | "bookings" | "schedule";
+interface RosterStudent {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  notes: string | null;
+}
 
-export default function AdminPage() {
-  const [adminKey, setAdminKey] = useState("");
-  const [authenticated, setAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>("passes");
+interface RosterBooking {
+  id: string;
+  status: string;
+  checked_in: boolean;
+  checked_in_at: string | null;
+  pack_id: string | null;
+  created_at: string;
+  student: RosterStudent;
+}
 
-  // Schedule state
-  const [closedDates, setClosedDates] = useState<ClosedDate[]>([]);
-  const [newDate, setNewDate] = useState("");
-  const [reason, setReason] = useState("");
+interface DashboardData {
+  date: string;
+  today: {
+    sessions: TodaySession[];
+    total_sessions: number;
+    confirmed_bookings: number;
+    checked_in: number;
+    total_capacity: number;
+    total_enrolled: number;
+  };
+  overview: {
+    total_students: number;
+    active_packs: number;
+    week_revenue_cop: number;
+  };
+}
 
-  // Pass state
-  const [passes, setPasses] = useState<Pass[]>([]);
-  const [newPassPhone, setNewPassPhone] = useState("");
-  const [newPassName, setNewPassName] = useState("");
-  const [newPassType, setNewPassType] = useState("");
-  const [newPassPayment, setNewPassPayment] = useState("");
-  const [lookupPhone, setLookupPhone] = useState("");
-  const [lookupResult, setLookupResult] = useState<Pass[] | null>(null);
+export default function AdminDashboard() {
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Bookings state
-  const [bookings, setBookings] = useState<Booking[]>([]);
-
-  const [loading, setLoading] = useState(false);
+  // Roster expansion
+  const [expandedSession, setExpandedSession] = useState<string | null>(null);
+  const [roster, setRoster] = useState<RosterBooking[]>([]);
+  const [rosterLoading, setRosterLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
-  const fetchClosedDates = useCallback(async () => {
-    const res = await fetch("/api/admin/closed-dates");
-    const json = await res.json();
-    setClosedDates(json.data || []);
-  }, []);
-
-  const fetchBookings = useCallback(async () => {
-    const res = await fetch("/api/bookings");
-    const json = await res.json();
-    setBookings(json.data || []);
-  }, []);
-
-  const fetchAllPasses = useCallback(async () => {
-    // Fetch passes for all known phones from recent bookings
-    const bookRes = await fetch("/api/bookings");
-    const bookJson = await bookRes.json();
-    const phones = new Set<string>();
-    (bookJson.data || []).forEach((b: Booking) => {
-      if (b.phone) phones.add(b.phone.replace(/[\s\-\+]/g, ""));
-    });
-
-    const allPasses: Pass[] = [];
-    for (const phone of phones) {
-      try {
-        const res = await fetch(`/api/passes?phone=${encodeURIComponent(phone)}`);
-        const json = await res.json();
-        if (json.passes) {
-          allPasses.push(
-            ...json.passes.map((p: Pass) => ({ ...p, phone }))
-          );
+  const loadDashboard = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/dashboard");
+      if (!res.ok) {
+        if (res.status === 401) {
+          setError("No autorizado. Inicia sesión como admin.");
+          setLoading(false);
+          return;
         }
-      } catch {
-        // skip
+        throw new Error("Failed to load");
       }
+      const data = await res.json();
+      setDashboard(data);
+    } catch {
+      setError("Error cargando dashboard");
     }
-    setPasses(allPasses);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    if (authenticated) {
-      fetchClosedDates();
-      fetchBookings();
-      fetchAllPasses();
-    }
-  }, [authenticated, fetchClosedDates, fetchBookings, fetchAllPasses]);
+    loadDashboard();
+  }, [loadDashboard]);
 
-  const showMessage = (msg: string) => {
-    setMessage(msg);
-    setTimeout(() => setMessage(""), 4000);
-  };
-
-  // Schedule actions
-  const closeDate = async () => {
-    if (!newDate) return;
-    setLoading(true);
-    await fetch("/api/admin/closed-dates", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: newDate, reason: reason || null, adminKey }),
-    });
-    setNewDate("");
-    setReason("");
-    await fetchClosedDates();
-    setLoading(false);
-  };
-
-  const reopenDate = async (date: string) => {
-    setLoading(true);
-    await fetch("/api/admin/closed-dates", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, adminKey }),
-    });
-    await fetchClosedDates();
-    setLoading(false);
-  };
-
-  // Pass actions
-  const createPass = async () => {
-    if (!newPassPhone || !newPassType) return;
-    setLoading(true);
+  const loadRoster = useCallback(async (sessionId: string) => {
+    setRosterLoading(true);
     try {
-      const res = await fetch("/api/passes", {
+      const res = await fetch(
+        `/api/admin/session-roster?session_id=${sessionId}`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setRoster(data.bookings || []);
+      }
+    } catch {
+      // fail silently
+    }
+    setRosterLoading(false);
+  }, []);
+
+  function toggleSession(sessionId: string) {
+    if (expandedSession === sessionId) {
+      setExpandedSession(null);
+      setRoster([]);
+    } else {
+      setExpandedSession(sessionId);
+      loadRoster(sessionId);
+    }
+  }
+
+  async function handleCheckIn(bookingId: string) {
+    setActionLoading(bookingId);
+    try {
+      const res = await fetch("/api/admin/check-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ booking_id: bookingId, action: "check_in" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage(data.error || "Error");
+      } else {
+        showMessage("Check-in OK");
+        if (expandedSession) await loadRoster(expandedSession);
+        await loadDashboard();
+      }
+    } catch {
+      showMessage("Error de conexión");
+    }
+    setActionLoading(null);
+  }
+
+  async function handleNoShow(bookingId: string) {
+    setActionLoading(bookingId);
+    try {
+      const res = await fetch("/api/admin/check-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ booking_id: bookingId, action: "no_show" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage(data.error || "Error");
+      } else {
+        showMessage("No-show marcado");
+        if (expandedSession) await loadRoster(expandedSession);
+        await loadDashboard();
+      }
+    } catch {
+      showMessage("Error de conexión");
+    }
+    setActionLoading(null);
+  }
+
+  async function handleUndoCheckIn(bookingId: string) {
+    setActionLoading(bookingId);
+    try {
+      const res = await fetch("/api/admin/check-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phone: newPassPhone,
-          name: newPassName || null,
-          pass_type: newPassType,
-          payment_method: newPassPayment || null,
+          booking_id: bookingId,
+          action: "undo_check_in",
         }),
       });
-      const json = await res.json();
-      if (json.pass) {
-        showMessage(`Pass created for ${newPassPhone}`);
-        setNewPassPhone("");
-        setNewPassName("");
-        setNewPassType("");
-        setNewPassPayment("");
-        await fetchAllPasses();
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage(data.error || "Error");
       } else {
-        showMessage(`Error: ${json.error}`);
+        showMessage("Check-in deshecho");
+        if (expandedSession) await loadRoster(expandedSession);
+        await loadDashboard();
       }
     } catch {
-      showMessage("Failed to create pass");
+      showMessage("Error de conexión");
     }
-    setLoading(false);
-  };
+    setActionLoading(null);
+  }
 
-  const lookupPass = async () => {
-    if (!lookupPhone) return;
-    setLoading(true);
+  async function handleCompleteSession(sessionId: string) {
+    if (!confirm("¿Completar esta sesión? Los no confirmados se marcarán como no-show.")) return;
+    setActionLoading(sessionId);
     try {
-      const normalized = lookupPhone.replace(/[\s\-\+]/g, "");
-      const res = await fetch(`/api/passes?phone=${encodeURIComponent(normalized)}`);
-      const json = await res.json();
-      setLookupResult(json.passes || []);
+      const res = await fetch("/api/admin/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "complete", session_id: sessionId }),
+      });
+      if (res.ok) {
+        showMessage("Sesión completada");
+        await loadDashboard();
+        setExpandedSession(null);
+      }
     } catch {
-      setLookupResult([]);
+      showMessage("Error");
     }
-    setLoading(false);
-  };
+    setActionLoading(null);
+  }
 
-  const getToday = () => new Date().toISOString().split("T")[0];
+  async function handleCancelSession(sessionId: string) {
+    if (!confirm("¿Cancelar esta sesión? Se reembolsarán todos los créditos.")) return;
+    setActionLoading(sessionId);
+    try {
+      const res = await fetch("/api/admin/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "cancel",
+          session_id: sessionId,
+          reason: "Cancelada por admin",
+        }),
+      });
+      if (res.ok) {
+        showMessage("Sesión cancelada");
+        await loadDashboard();
+        setExpandedSession(null);
+      }
+    } catch {
+      showMessage("Error");
+    }
+    setActionLoading(null);
+  }
 
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr + "T12:00:00");
-    return d.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  function showMessage(msg: string) {
+    setMessage(msg);
+    setTimeout(() => setMessage(""), 3000);
+  }
 
-  const formatDateTime = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  };
+  function formatCOP(amount: number): string {
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminKey.trim()) setAuthenticated(true);
-  };
-
-  if (!authenticated) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center px-6">
-        <form onSubmit={handleLogin} className="w-full max-w-sm space-y-6">
-          <div className="text-center">
-            <h1 className="font-[family-name:var(--font-display)] text-3xl text-charcoal mb-2">
-              TU. Admin
-            </h1>
-            <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40">
-              Management dashboard for Tata
-            </p>
-          </div>
-          <input
-            type="password"
-            placeholder="Admin key"
-            value={adminKey}
-            onChange={(e) => setAdminKey(e.target.value)}
-            required
-            className="w-full px-5 py-4 rounded-2xl border border-charcoal/8 bg-white font-[family-name:var(--font-body)] text-charcoal placeholder:text-charcoal/25 focus:border-rose/30 focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="w-full py-4 rounded-2xl bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.2em] hover:bg-rose transition-colors"
-          >
-            ENTER
-          </button>
-        </form>
+      <div className="flex items-center justify-center py-20">
+        <div className="w-6 h-6 border-2 border-[#B87777] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
+  if (error) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-20 text-center">
+        <p className="text-sm text-red-500">{error}</p>
+        <a
+          href="/login?redirect=/admin"
+          className="inline-block mt-4 px-6 py-2 bg-[#2C2C2C] text-white text-xs tracking-[0.15em] uppercase"
+        >
+          Iniciar Sesión
+        </a>
+      </div>
+    );
+  }
+
+  if (!dashboard) return null;
+
+  const { today, overview } = dashboard;
+
   return (
-    <div className="min-h-screen bg-cream">
-      <div className="max-w-3xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="font-[family-name:var(--font-display)] text-3xl text-charcoal">
-            TU. Admin Dashboard
-          </h1>
-          <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 mt-1">
-            Manage passes, bookings, and schedule
-          </p>
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      {/* Toast */}
+      {message && (
+        <div className="fixed top-4 left-4 right-4 z-50 bg-[#2C2C2C] text-white text-sm px-4 py-3 text-center md:left-auto md:right-4 md:max-w-sm">
+          {message}
         </div>
+      )}
 
-        {/* Success message */}
-        {message && (
-          <div className="mb-6 p-4 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/20">
-            <p className="font-[family-name:var(--font-body)] text-sm text-[#25D366]">{message}</p>
+      {/* Header */}
+      <div>
+        <h1
+          className="text-2xl text-[#2C2C2C]"
+          style={{ fontFamily: "Cormorant Garamond, serif" }}
+        >
+          Hoy
+        </h1>
+        <p className="text-xs text-[#2C2C2C]/40 mt-0.5">
+          {new Date(dashboard.date).toLocaleDateString("es-CO", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-2">
+        <StatCard label="Clases Hoy" value={today.total_sessions} />
+        <StatCard label="Confirmadas" value={today.confirmed_bookings} accent />
+        <StatCard label="Check-in" value={today.checked_in} />
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <StatCard label="Alumnos" value={overview.total_students} />
+        <StatCard label="Packs Activos" value={overview.active_packs} />
+        <StatCard
+          label="Semana"
+          value={overview.week_revenue_cop > 0 ? formatCOP(overview.week_revenue_cop) : "$0"}
+          small
+        />
+      </div>
+
+      {/* Today's Sessions */}
+      <section>
+        <h2 className="text-[10px] tracking-[0.2em] text-[#B87777] uppercase mb-3">
+          Sesiones de Hoy
+        </h2>
+
+        {today.sessions.length === 0 ? (
+          <div className="bg-white border border-[#2C2C2C]/5 p-8 text-center">
+            <p className="text-sm text-[#2C2C2C]/40">
+              No hay clases programadas hoy
+            </p>
           </div>
-        )}
+        ) : (
+          <div className="space-y-2">
+            {today.sessions.map((s) => {
+              const def = s.definition;
+              const isExpanded = expandedSession === s.id;
+              const isCancelled = s.status === "cancelled";
+              const isCompleted = s.status === "completed";
+              const spotsLeft = s.capacity - s.enrolled;
 
-        {/* Tab navigation */}
-        <div className="flex gap-1 mb-8 bg-charcoal/5 rounded-2xl p-1">
-          {([
-            { key: "passes" as Tab, label: "Class Passes" },
-            { key: "bookings" as Tab, label: "Bookings" },
-            { key: "schedule" as Tab, label: "Schedule" },
-          ]).map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-3 rounded-xl font-[family-name:var(--font-body)] text-sm tracking-[0.1em] transition-all ${
-                activeTab === tab.key
-                  ? "bg-white text-charcoal shadow-sm"
-                  : "text-charcoal/40 hover:text-charcoal/60"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* ━━━ PASSES TAB ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {activeTab === "passes" && (
-          <div className="space-y-8">
-            {/* Create new pass */}
-            <div className="bg-white rounded-2xl border border-charcoal/5 p-6">
-              <p className="font-[family-name:var(--font-body)] text-xs tracking-[0.2em] text-gold mb-4">
-                CREATE NEW PASS
-              </p>
-              <div className="space-y-3">
-                <input
-                  type="tel"
-                  placeholder="Client WhatsApp number (e.g. 573185083035)"
-                  value={newPassPhone}
-                  onChange={(e) => setNewPassPhone(e.target.value)}
-                  className="w-full px-5 py-3.5 rounded-xl border border-charcoal/8 bg-cream font-[family-name:var(--font-body)] text-charcoal placeholder:text-charcoal/25 focus:border-rose/30 focus:outline-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Client name"
-                  value={newPassName}
-                  onChange={(e) => setNewPassName(e.target.value)}
-                  className="w-full px-5 py-3.5 rounded-xl border border-charcoal/8 bg-cream font-[family-name:var(--font-body)] text-charcoal placeholder:text-charcoal/25 focus:border-rose/30 focus:outline-none"
-                />
-                <select
-                  value={newPassType}
-                  onChange={(e) => setNewPassType(e.target.value)}
-                  className="w-full px-5 py-3.5 rounded-xl border border-charcoal/8 bg-cream font-[family-name:var(--font-body)] text-charcoal appearance-none cursor-pointer focus:border-rose/30 focus:outline-none"
-                >
-                  <option value="">Select pass type</option>
-                  {PASS_TYPES.map((pt) => (
-                    <option key={pt.value} value={pt.value}>
-                      {pt.label} — {pt.classes === -1 ? "Unlimited" : `${pt.classes} classes`} — {pt.price} COP
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={newPassPayment}
-                  onChange={(e) => setNewPassPayment(e.target.value)}
-                  className="w-full px-5 py-3.5 rounded-xl border border-charcoal/8 bg-cream font-[family-name:var(--font-body)] text-charcoal appearance-none cursor-pointer focus:border-rose/30 focus:outline-none"
-                >
-                  <option value="">Payment method (optional)</option>
-                  <option value="wompi">Wompi (Card)</option>
-                  <option value="nequi">Nequi</option>
-                  <option value="bancolombia">Bancolombia</option>
-                  <option value="zelle">Zelle / PayPal</option>
-                  <option value="cash">Cash</option>
-                </select>
-                <button
-                  onClick={createPass}
-                  disabled={!newPassPhone || !newPassType || loading}
-                  className="w-full py-3.5 rounded-xl bg-gold text-charcoal font-[family-name:var(--font-body)] text-sm tracking-[0.15em] hover:bg-charcoal hover:text-white transition-colors disabled:opacity-40"
-                >
-                  {loading ? "CREATING..." : "CREATE PASS"}
-                </button>
-              </div>
-            </div>
-
-            {/* Lookup pass by phone */}
-            <div className="bg-white rounded-2xl border border-charcoal/5 p-6">
-              <p className="font-[family-name:var(--font-body)] text-xs tracking-[0.2em] text-charcoal/40 mb-4">
-                CHECK CLIENT BALANCE
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="tel"
-                  placeholder="Client phone number"
-                  value={lookupPhone}
-                  onChange={(e) => setLookupPhone(e.target.value)}
-                  className="flex-1 px-5 py-3.5 rounded-xl border border-charcoal/8 bg-cream font-[family-name:var(--font-body)] text-charcoal placeholder:text-charcoal/25 focus:border-rose/30 focus:outline-none"
-                />
-                <button
-                  onClick={lookupPass}
-                  disabled={!lookupPhone || loading}
-                  className="px-6 py-3.5 rounded-xl bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.1em] hover:bg-rose transition-colors disabled:opacity-40"
-                >
-                  CHECK
-                </button>
-              </div>
-              {lookupResult !== null && (
-                <div className="mt-4">
-                  {lookupResult.length === 0 ? (
-                    <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 p-4 bg-cream rounded-xl text-center">
-                      No active passes found for this number
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {lookupResult.map((p) => (
-                        <div key={p.id} className="p-4 bg-[#25D366]/5 border border-[#25D366]/20 rounded-xl">
-                          <div className="flex items-center justify-between">
-                            <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
-                              {p.pass_type}
-                            </p>
-                            <span className={`px-3 py-1 rounded-full text-xs font-[family-name:var(--font-body)] ${
-                              p.is_unlimited
-                                ? "bg-gold/20 text-gold"
-                                : Number(p.classes_remaining) > 0
-                                  ? "bg-[#25D366]/20 text-[#25D366]"
-                                  : "bg-rose/20 text-rose"
-                            }`}>
-                              {p.is_unlimited ? "Unlimited" : `${p.classes_remaining} remaining`}
+              return (
+                <div key={s.id}>
+                  {/* Session card */}
+                  <button
+                    onClick={() => !isCancelled && toggleSession(s.id)}
+                    disabled={isCancelled}
+                    className={`w-full text-left bg-white border p-4 transition-colors ${
+                      isCancelled
+                        ? "border-red-200 opacity-50"
+                        : isCompleted
+                          ? "border-green-200"
+                          : isExpanded
+                            ? "border-[#B87777]/30"
+                            : "border-[#2C2C2C]/5 active:bg-[#FAF8F5]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-[#2C2C2C]">
+                            {formatTime(s.start_time)}
+                          </span>
+                          {isCompleted && (
+                            <span className="text-[8px] tracking-wider text-green-600 bg-green-50 px-2 py-0.5 uppercase">
+                              Completada
                             </span>
-                          </div>
-                          <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-1">
-                            Used: {p.classes_used} / {p.is_unlimited ? "∞" : p.total_classes}
-                          </p>
+                          )}
+                          {isCancelled && (
+                            <span className="text-[8px] tracking-wider text-red-400 bg-red-50 px-2 py-0.5 uppercase">
+                              Cancelada
+                            </span>
+                          )}
                         </div>
-                      ))}
+                        <p className="text-sm text-[#2C2C2C] mt-0.5">
+                          {def?.name_es || def?.name || "—"}
+                        </p>
+                        <p className="text-xs text-[#2C2C2C]/40">
+                          {s.teacher} · {def?.style || ""}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p
+                          className="text-xl text-[#B87777]"
+                          style={{
+                            fontFamily: "Cormorant Garamond, serif",
+                          }}
+                        >
+                          {s.enrolled}/{s.capacity}
+                        </p>
+                        <p
+                          className={`text-[9px] uppercase ${
+                            spotsLeft <= 0
+                              ? "text-red-400"
+                              : spotsLeft <= 3
+                                ? "text-amber-500"
+                                : "text-[#2C2C2C]/30"
+                          }`}
+                        >
+                          {spotsLeft <= 0
+                            ? "Lleno"
+                            : `${spotsLeft} cupos`}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Expanded roster */}
+                  {isExpanded && (
+                    <div className="bg-[#FAF8F5] border-x border-b border-[#B87777]/20 p-4 space-y-3">
+                      {rosterLoading ? (
+                        <div className="flex justify-center py-4">
+                          <div className="w-4 h-4 border-2 border-[#B87777] border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      ) : roster.length === 0 ? (
+                        <p className="text-xs text-[#2C2C2C]/40 text-center py-4">
+                          Sin reservas
+                        </p>
+                      ) : (
+                        <>
+                          {roster
+                            .filter((b) => b.status !== "cancelled")
+                            .map((b) => (
+                              <div
+                                key={b.id}
+                                className="bg-white border border-[#2C2C2C]/5 p-3 flex items-center gap-3"
+                              >
+                                {/* Student info */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-[#2C2C2C] truncate">
+                                    {b.student?.full_name || "—"}
+                                  </p>
+                                  <p className="text-[10px] text-[#2C2C2C]/30 truncate">
+                                    {b.student?.phone || b.student?.email || ""}
+                                  </p>
+                                </div>
+
+                                {/* Status + Actions */}
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {b.checked_in ? (
+                                    <>
+                                      <span className="text-[9px] tracking-wider text-green-600 bg-green-50 px-2 py-1 uppercase">
+                                        OK
+                                      </span>
+                                      <button
+                                        onClick={() =>
+                                          handleUndoCheckIn(b.id)
+                                        }
+                                        disabled={actionLoading === b.id}
+                                        className="text-[9px] text-[#2C2C2C]/20 hover:text-red-400 transition-colors disabled:opacity-30"
+                                      >
+                                        deshacer
+                                      </button>
+                                    </>
+                                  ) : b.status === "no_show" ? (
+                                    <span className="text-[9px] tracking-wider text-red-400 bg-red-50 px-2 py-1 uppercase">
+                                      No asistió
+                                    </span>
+                                  ) : b.status === "confirmed" ? (
+                                    <>
+                                      <button
+                                        onClick={() =>
+                                          handleCheckIn(b.id)
+                                        }
+                                        disabled={actionLoading === b.id}
+                                        className="px-4 py-2 bg-[#2C2C2C] text-white text-[10px] tracking-[0.1em] uppercase active:bg-[#B87777] transition-colors disabled:opacity-30"
+                                      >
+                                        {actionLoading === b.id
+                                          ? "..."
+                                          : "Check-in"}
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          handleNoShow(b.id)
+                                        }
+                                        disabled={actionLoading === b.id}
+                                        className="text-[9px] text-red-300 hover:text-red-500 transition-colors disabled:opacity-30"
+                                      >
+                                        NS
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <span className="text-[9px] text-[#2C2C2C]/30 uppercase">
+                                      {b.status}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                        </>
+                      )}
+
+                      {/* Session actions */}
+                      {!isCompleted && !isCancelled && (
+                        <div className="flex gap-2 pt-2 border-t border-[#2C2C2C]/5">
+                          <button
+                            onClick={() => handleCompleteSession(s.id)}
+                            disabled={actionLoading === s.id}
+                            className="flex-1 py-2 bg-green-600 text-white text-[10px] tracking-[0.1em] uppercase active:bg-green-700 transition-colors disabled:opacity-30"
+                          >
+                            Completar Sesión
+                          </button>
+                          <button
+                            onClick={() => handleCancelSession(s.id)}
+                            disabled={actionLoading === s.id}
+                            className="py-2 px-4 border border-red-200 text-red-400 text-[10px] tracking-[0.1em] uppercase hover:bg-red-50 transition-colors disabled:opacity-30"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-
-            {/* Active passes list */}
-            <div>
-              <p className="font-[family-name:var(--font-body)] text-xs tracking-[0.2em] text-charcoal/40 mb-4">
-                ALL ACTIVE PASSES ({passes.length})
-              </p>
-              {passes.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-charcoal/5 p-8 text-center">
-                  <p className="font-[family-name:var(--font-body)] text-charcoal/30">
-                    No active passes yet. Create one above.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {passes.map((pass) => (
-                    <div
-                      key={pass.id}
-                      className="bg-white rounded-2xl border border-charcoal/5 p-5 flex items-center justify-between"
-                    >
-                      <div>
-                        <p className="font-[family-name:var(--font-display)] text-lg text-charcoal">
-                          {pass.name || pass.phone}
-                        </p>
-                        <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-0.5">
-                          {pass.pass_type} · {pass.phone}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <span className={`px-3 py-1 rounded-full text-xs font-[family-name:var(--font-body)] ${
-                          pass.is_unlimited
-                            ? "bg-gold/20 text-gold"
-                            : Number(pass.classes_remaining) > 0
-                              ? "bg-[#25D366]/20 text-[#25D366]"
-                              : "bg-rose/20 text-rose"
-                        }`}>
-                          {pass.is_unlimited ? "Unlimited" : `${pass.classes_remaining} left`}
-                        </span>
-                        <p className="font-[family-name:var(--font-body)] text-[10px] text-charcoal/25 mt-1">
-                          {pass.classes_used} used
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+              );
+            })}
           </div>
         )}
+      </section>
+    </div>
+  );
+}
 
-        {/* ━━━ BOOKINGS TAB ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {activeTab === "bookings" && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <p className="font-[family-name:var(--font-body)] text-xs tracking-[0.2em] text-charcoal/40">
-                RECENT BOOKINGS ({bookings.length})
-              </p>
-              <button
-                onClick={fetchBookings}
-                className="font-[family-name:var(--font-body)] text-xs text-rose hover:text-charcoal transition-colors"
-              >
-                REFRESH
-              </button>
-            </div>
-            {bookings.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-charcoal/5 p-8 text-center">
-                <p className="font-[family-name:var(--font-body)] text-charcoal/30">
-                  No bookings yet.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {bookings.map((booking) => (
-                  <div
-                    key={booking.id}
-                    className="bg-white rounded-2xl border border-charcoal/5 p-5"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-[family-name:var(--font-display)] text-lg text-charcoal">
-                          {booking.name}
-                        </p>
-                        <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 mt-0.5">
-                          {booking.service}
-                        </p>
-                        <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/30 mt-1">
-                          {booking.phone}
-                          {booking.preferred_date && ` · ${formatDate(booking.preferred_date)}`}
-                          {booking.class_time && ` · ${booking.class_time}`}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <span className="px-3 py-1 rounded-full bg-gold/10 text-gold text-xs font-[family-name:var(--font-body)]">
-                          {booking.status}
-                        </span>
-                        <p className="font-[family-name:var(--font-body)] text-[10px] text-charcoal/25 mt-2">
-                          {formatDateTime(booking.created_at)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ━━━ SCHEDULE TAB ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {activeTab === "schedule" && (
-          <div className="space-y-8">
-            {/* Close a new date */}
-            <div className="bg-white rounded-2xl border border-charcoal/5 p-6">
-              <p className="font-[family-name:var(--font-body)] text-xs tracking-[0.2em] text-charcoal/40 mb-4">
-                CLOSE A DATE
-              </p>
-              <div className="space-y-3">
-                <input
-                  type="date"
-                  value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
-                  min={getToday()}
-                  className="w-full px-5 py-3.5 rounded-xl border border-charcoal/8 bg-cream font-[family-name:var(--font-body)] text-charcoal focus:border-rose/30 focus:outline-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Reason (optional)"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  className="w-full px-5 py-3.5 rounded-xl border border-charcoal/8 bg-cream font-[family-name:var(--font-body)] text-charcoal placeholder:text-charcoal/25 focus:border-rose/30 focus:outline-none"
-                />
-                <button
-                  onClick={closeDate}
-                  disabled={!newDate || loading}
-                  className="w-full py-3.5 rounded-xl bg-rose text-white font-[family-name:var(--font-body)] text-sm tracking-[0.15em] hover:bg-charcoal transition-colors disabled:opacity-40"
-                >
-                  {loading ? "SAVING..." : "CLOSE THIS DATE"}
-                </button>
-              </div>
-            </div>
-
-            {/* Closed dates */}
-            <div>
-              <p className="font-[family-name:var(--font-body)] text-xs tracking-[0.2em] text-charcoal/40 mb-4">
-                CLOSED DATES ({closedDates.length})
-              </p>
-              {closedDates.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-charcoal/5 p-8 text-center">
-                  <p className="font-[family-name:var(--font-body)] text-charcoal/30">
-                    No dates closed. All classes are open.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {closedDates.map((cd) => (
-                    <div
-                      key={cd.date}
-                      className="bg-white rounded-2xl border border-rose/10 p-5 flex items-center justify-between"
-                    >
-                      <div>
-                        <p className="font-[family-name:var(--font-display)] text-lg text-charcoal">
-                          {formatDate(cd.date)}
-                        </p>
-                        {cd.reason && (
-                          <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 mt-0.5">
-                            {cd.reason}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => reopenDate(cd.date)}
-                        disabled={loading}
-                        className="px-5 py-2 rounded-full border border-charcoal/10 font-[family-name:var(--font-body)] text-xs tracking-[0.1em] text-charcoal/50 hover:border-charcoal/30 transition-all"
-                      >
-                        REOPEN
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Back to site */}
-        <div className="mt-12 text-center">
-          <a
-            href="/"
-            className="font-[family-name:var(--font-body)] text-sm text-charcoal/30 hover:text-charcoal transition-colors"
-          >
-            &larr; Back to website
-          </a>
-        </div>
-      </div>
+function StatCard({
+  label,
+  value,
+  accent,
+  small,
+}: {
+  label: string;
+  value: string | number;
+  accent?: boolean;
+  small?: boolean;
+}) {
+  return (
+    <div className="bg-white border border-[#2C2C2C]/5 p-3">
+      <p className="text-[9px] tracking-[0.15em] text-[#2C2C2C]/40 uppercase mb-1">
+        {label}
+      </p>
+      <p
+        className={`${small ? "text-sm" : "text-xl"} ${accent ? "text-[#B87777]" : "text-[#2C2C2C]"}`}
+        style={{ fontFamily: "Cormorant Garamond, serif" }}
+      >
+        {value}
+      </p>
     </div>
   );
 }

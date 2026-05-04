@@ -1,0 +1,6 @@
+-- WellnessOS v1.0 RLS Policies — Applied 2026-05-04
+-- RLS enabled on all 8 new tables with policies:
+--   Public read: tu_class_definitions, tu_class_sessions, tu_events
+--   Own data: tu_students, tu_class_bookings, tu_packs, tu_attendance, tu_transactions
+--   Admin full: all tables via tu_is_admin()
+-- Applied via Supabase MCP — this file is for reference/version control.

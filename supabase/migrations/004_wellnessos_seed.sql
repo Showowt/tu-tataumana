@@ -1,0 +1,4 @@
+-- WellnessOS v1.0 Seed Data — Applied 2026-05-04
+-- 16 class definitions (Mon-Sun, 3 teachers: Tata, Alejandro, Harold)
+-- 2 events (TU Naturaleza May 22, Full Moon Ceremony June 3)
+-- Applied via Supabase MCP — this file is for reference/version control.
