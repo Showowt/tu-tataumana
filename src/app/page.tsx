@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import Lenis from "lenis";
+import { createBrowserClient } from "@supabase/ssr";
 import BookingModal from "@/components/BookingModal";
 import { t, type Lang } from "@/lib/translations";
 
@@ -327,6 +329,7 @@ export default function Home() {
   const [lang, setLang] = useState<Lang>("en");
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [closedDates, setClosedDates] = useState<string[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const sectionsRef = useScrollReveal();
 
   const L = useCallback(
@@ -419,6 +422,17 @@ export default function Home() {
       .catch(() => {});
   }, []);
 
+  // Check auth state
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+    supabase.auth.getUser().then(({ data }) => {
+      setIsLoggedIn(!!data.user);
+    });
+  }, []);
+
   const openBooking = useCallback(
     (serviceName?: string, date?: string, time?: string) => {
       setPreselectedService(serviceName || "");
@@ -433,15 +447,34 @@ export default function Home() {
 
   return (
     <main ref={sectionsRef} className="w-full overflow-x-hidden">
-      {/* ━━━ LANGUAGE TOGGLE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <button
-        onClick={() => setLang(lang === "en" ? "es" : "en")}
-        className="fixed top-4 right-4 z-[60] px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white font-[family-name:var(--font-body)] text-xs tracking-[0.15em] hover:bg-white/20 transition-all duration-300"
-        style={{ minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
-        aria-label="Toggle language"
-      >
-        {lang === "en" ? "ES" : "EN"}
-      </button>
+      {/* ━━━ TOP NAV — Login + Language ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <div className="fixed top-4 right-4 z-[60] flex items-center gap-2">
+        <Link
+          href={isLoggedIn ? "/portal" : "/login"}
+          className={`px-4 py-1.5 rounded-full backdrop-blur-md border font-[family-name:var(--font-body)] text-xs tracking-[0.15em] no-underline transition-all duration-500 ${
+            showStickyBar
+              ? "bg-charcoal/5 border-charcoal/10 text-charcoal hover:bg-charcoal/10"
+              : "bg-white/10 border-white/20 text-white hover:bg-white/20"
+          }`}
+          style={{ minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
+        >
+          {isLoggedIn
+            ? lang === "en" ? "My Account" : "Mi Cuenta"
+            : lang === "en" ? "Sign In" : "Entrar"}
+        </Link>
+        <button
+          onClick={() => setLang(lang === "en" ? "es" : "en")}
+          className={`px-3 py-1.5 rounded-full backdrop-blur-md border font-[family-name:var(--font-body)] text-xs tracking-[0.15em] transition-all duration-500 ${
+            showStickyBar
+              ? "bg-charcoal/5 border-charcoal/10 text-charcoal hover:bg-charcoal/10"
+              : "bg-white/10 border-white/20 text-white hover:bg-white/20"
+          }`}
+          style={{ minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
+          aria-label="Toggle language"
+        >
+          {lang === "en" ? "ES" : "EN"}
+        </button>
+      </div>
 
       {/* ━━━ HERO — Fullscreen Cinematic Video ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="relative h-screen w-full overflow-hidden bg-black">
