@@ -77,6 +77,8 @@ interface ScheduleClass {
   time: string;
   name: string;
   note?: string;
+  teacher?: string;
+  desc?: { es: string; en: string };
 }
 
 interface ScheduleDay {
@@ -94,8 +96,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "MON",
     dayIndex: 1,
     classes: [
-      { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa" },
-      { time: "7:15 PM", name: "Yoga Flow - Open Vinyasa" },
+      { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa", teacher: "Tata", desc: { es: "Fluye con intención. Movimiento, respiración y energía para empezar el día.", en: "Flow with intention. Movement, breath and energy to start the day." } },
+      { time: "7:15 PM", name: "Yoga Flow - Open Vinyasa", teacher: "Tata", desc: { es: "Vinyasa creativo para soltar tensiones y reconectar contigo.", en: "Creative vinyasa to release tension and reconnect with yourself." } },
     ],
   },
   {
@@ -104,8 +106,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "TUE",
     dayIndex: 2,
     classes: [
-      { time: "9:30 AM", name: "Back Care Yoga" },
-      { time: "7:15 PM", name: "Hatha" },
+      { time: "9:30 AM", name: "Back Care Yoga", teacher: "Betty", desc: { es: "Cuida tu espalda, mejora tu postura y alivia tensiones.", en: "Care for your back, improve your posture and relieve tension." } },
+      { time: "7:15 PM", name: "Hatha", teacher: "Tata", desc: { es: "Posturas conscientes y respiración para cultivar equilibrio y calma.", en: "Conscious postures and breathing to cultivate balance and calm." } },
     ],
   },
   {
@@ -114,9 +116,9 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "WED",
     dayIndex: 3,
     classes: [
-      { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa" },
-      { time: "10:45 AM", name: "Pilates" },
-      { time: "7:15 PM", name: "Open Flow" },
+      { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa", teacher: "Tata", desc: { es: "Una práctica dinámica para despertar el cuerpo y enfocar la mente.", en: "A dynamic practice to awaken the body and focus the mind." } },
+      { time: "10:45 AM", name: "Pilates", teacher: "Violeta", desc: { es: "Fortalece, alinea y tonifica tu cuerpo desde el centro.", en: "Strengthen, align and tone your body from the core." } },
+      { time: "7:15 PM", name: "Open Flow", teacher: "Tata", desc: { es: "Secuencias fluidas para liberar, expandir y equilibrar tu energía.", en: "Fluid sequences to release, expand and balance your energy." } },
     ],
   },
   {
@@ -125,9 +127,9 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "THU",
     dayIndex: 4,
     classes: [
-      { time: "9:30 AM", name: "Yoga Intro · Power Up" },
-      { time: "5:30 PM", name: "Sound Healing" },
-      { time: "7:15 PM", name: "Hatha" },
+      { time: "9:30 AM", name: "Yoga Intro · Power Up", teacher: "Betty", desc: { es: "Activa tu cuerpo y mente con una práctica poderosa y revitalizante.", en: "Activate your body and mind with a powerful and revitalizing practice." } },
+      { time: "5:30 PM", name: "Sound Healing", teacher: "Tata", desc: { es: "Relájate profundamente y armoniza tu energía con sonidos sanadores.", en: "Deeply relax and harmonize your energy with healing sounds." } },
+      { time: "7:15 PM", name: "Hatha", teacher: "Tata", desc: { es: "Una práctica clásica para conectar cuerpo, mente y respiración.", en: "A classic practice to connect body, mind and breath." } },
     ],
   },
   {
@@ -136,8 +138,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "FRI",
     dayIndex: 5,
     classes: [
-      { time: "10:00 AM", name: "Power Yoga · Postura" },
-      { time: "7:00 PM", name: "Open Flow" },
+      { time: "10:00 AM", name: "Power Yoga · Postura", teacher: "Violeta", desc: { es: "Fuerza, alineación y presencia para activar tu poder interior.", en: "Strength, alignment and presence to activate your inner power." } },
+      { time: "7:00 PM", name: "Open Flow", teacher: "Tata", desc: { es: "Fluye, suelta y recarga tu energía para cerrar la semana en balance.", en: "Flow, release and recharge your energy to close the week in balance." } },
     ],
   },
   {
@@ -146,8 +148,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "SAT",
     dayIndex: 6,
     classes: [
-      { time: "11:00 AM", name: "Sun Salutation" },
-      { time: "6:00 PM", name: "Inner Journey · Meditation", note: "(solo en español)" },
+      { time: "11:00 AM", name: "Sun Salutation", teacher: "Tata", desc: { es: "Salud al sol: movimiento consciente para despertar y agradecer.", en: "Sun salute: conscious movement to awaken and give thanks." } },
+      { time: "6:00 PM", name: "Inner Journey · Meditation", note: "(solo en español)", teacher: "Álvaro", desc: { es: "Meditación guiada para volver a ti y encontrar paz interior.", en: "Guided meditation to return to yourself and find inner peace." } },
     ],
   },
   {
@@ -156,8 +158,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "SUN",
     dayIndex: 0,
     classes: [
-      { time: "9:00 AM", name: "Power Yoga" },
-      { time: "10:30 AM", name: "Inner Journey · Meditation", note: "(solo en español)" },
+      { time: "9:00 AM", name: "Power Yoga", teacher: "Tata", desc: { es: "Práctica energética para fortalecer el cuerpo y calmar la mente.", en: "Energetic practice to strengthen the body and calm the mind." } },
+      { time: "10:30 AM", name: "Inner Journey · Meditation", note: "(solo en español)", teacher: "Álvaro", desc: { es: "Un viaje hacia adentro a través de la meditación y la quietud.", en: "A journey inward through meditation and stillness." } },
     ],
   },
 ];
@@ -221,30 +223,41 @@ const teachers: Teacher[] = [
       es: "Guardiana de espacios sagrados, gu\u00EDa del alma y del cuerpo que recuerda. Tata te acompa\u00F1a a trav\u00E9s del yoga, la energ\u00EDa, el toque y la palabra, a volver a ti \u2014 a tu verdad, a tu poder, a tu centro. Su ense\u00F1anza es medicina: suave pero firme, m\u00EDstica pero presente, amorosa pero clara. En cada clase, Tata abre portales donde el cuerpo respira, el coraz\u00F3n se calma y el alma florece.",
       en: "Guardian of sacred spaces, guide of the soul and the body that remembers. Tata walks with you through yoga, energy, touch and word, back to yourself \u2014 to your truth, your power, your center. Her teaching is medicine: gentle yet firm, mystical yet present, loving yet clear. In every class, Tata opens portals where the body breathes, the heart calms and the soul blooms.",
     },
-    image: "/teacher-tata.jpg",
+    image: "/practice-2.jpg",
     specialties: ["Sound Healing", "Reiki", "Kundalini", "Vinyasa", "Ceremonies"],
     isLead: true,
   },
   {
-    name: "Alejandro",
+    name: "Betty Quintana",
     role: { en: "Teacher", es: "Teacher" },
     bio: {
-      es: "Dedicado, luminoso y con una voz que gu\u00EDa desde el alma. Ale te acompa\u00F1a a crecer en tu pr\u00E1ctica personal con la dulzura de su presencia y la claridad de su ense\u00F1anza. Desde el Hatha y en Vinyasa, su enfoque integra respiraci\u00F3n, fuerza, fluidez y autoconocimiento. Con Ale, la pr\u00E1ctica se convierte en un espacio \u00EDntimo de evoluci\u00F3n y amor propio.",
-      en: "Dedicated, luminous, with a voice that guides from the soul. Ale walks with you as you grow in your personal practice with the sweetness of his presence and the clarity of his teaching. From Hatha to Vinyasa, his approach integrates breath, strength, flow and self-knowledge. With Ale, the practice becomes an intimate space of evolution and self-love.",
+      es: "Psic\u00F3loga e instructora de yoga, Betty gu\u00EDa una pr\u00E1ctica consciente para volver al cuerpo y al momento presente. Sus clases integran meditaci\u00F3n y reprogramaci\u00F3n mental, invitando a soltar el control, reconectar con tu autenticidad y habitarte con m\u00E1s amor.",
+      en: "Psychologist and yoga instructor, Betty guides a conscious practice to return to the body and the present moment. Her classes integrate meditation and mental reprogramming, inviting you to release control, reconnect with your authenticity and inhabit yourself with more love.",
     },
-    image: "/teacher-alejandro.jpg",
-    specialties: ["Hatha", "Vinyasa"],
+    image: "/class-seated.jpg",
+    specialties: ["Meditation", "Psychology", "Yoga"],
     isLead: false,
   },
   {
-    name: "Harold",
+    name: "Violeta",
     role: { en: "Teacher", es: "Teacher" },
     bio: {
-      es: "Mentor de coraz\u00F3n amplio, y presencia firme. Su gu\u00EDa combina sabidur\u00EDa t\u00E9cnica, mirada amorosa y una entrega profunda al camino del yoga y del servicio. Con cada palabra, y ajuste, Harold inspira confianza, compromiso y conexi\u00F3n real con el cuerpo y el alma.",
-      en: "A mentor with a wide-open heart and a steady presence. His guidance combines technical wisdom, a loving gaze, and a deep devotion to the path of yoga and service. With every word and adjustment, Harold inspires trust, commitment, and real connection with body and soul.",
+      es: "Artista del movimiento y creadora visual, Violeta explora la danza y la sensibilidad del cuerpo en conexi\u00F3n con la tierra, teniendo el yoga como su eje central. Su pr\u00E1ctica integra el trabajo con la fascia y el movimiento consciente, creando espacios donde la presencia, la suavidad y la expresi\u00F3n se encuentran.",
+      en: "Movement artist and visual creator, Violeta explores dance and body sensitivity in connection with the earth, with yoga as her central axis. Her practice integrates fascia work and conscious movement, creating spaces where presence, softness and expression meet.",
     },
-    image: "/teacher-harold.jpg",
-    specialties: ["Yoga", "Alignment"],
+    image: "/practice-1.jpg",
+    specialties: ["Movement", "Fascia", "Dance"],
+    isLead: false,
+  },
+  {
+    name: "\u00C1lvaro",
+    role: { en: "Teacher", es: "Teacher" },
+    bio: {
+      es: "A trav\u00E9s de la meditaci\u00F3n y la palabra consciente, \u00C1lvaro gu\u00EDa espacios de conexi\u00F3n profunda con el ser y la salud mental. Integrando su mirada desde la ontolog\u00EDa, acompa\u00F1a procesos de comprensi\u00F3n, liberaci\u00F3n y transformaci\u00F3n interior. Sus encuentros invitan a pausar, respirar y reconectar con lo esencial, cultivando paz, claridad y presencia.",
+      en: "Through meditation and conscious word, \u00C1lvaro guides spaces of deep connection with being and mental health. Integrating his perspective from ontology, he accompanies processes of understanding, liberation and inner transformation. His sessions invite you to pause, breathe and reconnect with the essential, cultivating peace, clarity and presence.",
+    },
+    image: "/class-savasana.jpg",
+    specialties: ["Meditation", "Ontology", "Mindfulness"],
     isLead: false,
   },
 ];
@@ -419,7 +432,7 @@ export default function Home() {
   const workshopPassed = WORKSHOP_TARGET.getTime() <= Date.now();
 
   return (
-    <main ref={sectionsRef} className="w-full">
+    <main ref={sectionsRef} className="w-full overflow-x-hidden">
       {/* ━━━ LANGUAGE TOGGLE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <button
         onClick={() => setLang(lang === "en" ? "es" : "en")}
@@ -1075,19 +1088,39 @@ export default function Home() {
                             cls.time
                           )
                         }
-                        className={`w-full px-5 py-3.5 flex items-center justify-between group transition-all duration-300 ${!bookable ? "cursor-not-allowed" : "hover:bg-white/[0.04]"}`}
+                        className={`w-full px-5 py-4 flex items-start gap-4 group transition-all duration-300 text-left ${!bookable ? "cursor-not-allowed" : "hover:bg-white/[0.04]"}`}
                       >
-                        <div className="flex items-center gap-4">
-                          <span className={`font-[family-name:var(--font-body)] text-sm w-[72px] text-left tabular-nums ${!bookable ? "text-white/15" : "text-white/25"}`}>
-                            {cls.time}
+                        {/* Time */}
+                        <span className={`font-[family-name:var(--font-body)] text-sm w-[76px] tabular-nums shrink-0 pt-0.5 ${!bookable ? "text-white/15" : "text-gold/50"}`}>
+                          {cls.time}
+                        </span>
+
+                        {/* Class info */}
+                        <span className="flex-1 min-w-0">
+                          {/* Row 1: Class name + teacher */}
+                          <span className="flex flex-wrap items-baseline gap-x-2">
+                            <span className={`font-[family-name:var(--font-display)] text-[15px] md:text-base transition-colors duration-300 ${!bookable ? "text-white/25" : "text-white/80 group-hover:text-rose-soft"}`}>
+                              {cls.name}
+                            </span>
+                            {cls.note && <span className={`text-[11px] ${!bookable ? "text-white/10" : "text-gold/50"}`}>{cls.note}</span>}
+                            {cls.teacher && (
+                              <span className={`font-[family-name:var(--font-display)] italic text-[13px] ${!bookable ? "text-white/10" : "text-white/25"}`}>
+                                con {cls.teacher}
+                              </span>
+                            )}
                           </span>
-                          <span className={`font-[family-name:var(--font-display)] text-[15px] transition-colors duration-300 ${!bookable ? "text-white/25" : "text-white/70 group-hover:text-rose-soft"}`}>
-                            {cls.name}{cls.note && <span className="text-gold/60 text-xs ml-1.5">{cls.note}</span>}
-                          </span>
-                        </div>
+                          {/* Row 2: Description */}
+                          {cls.desc && (
+                            <span className={`block mt-1 font-[family-name:var(--font-body)] text-[11px] md:text-[12px] leading-relaxed ${!bookable ? "text-white/8" : "text-white/25"}`}>
+                              {cls.desc[lang]}
+                            </span>
+                          )}
+                        </span>
+
+                        {/* Arrow */}
                         {bookable && (
                         <svg
-                          className="w-3.5 h-3.5 text-white/0 group-hover:text-gold/60 transition-all duration-300 group-hover:translate-x-0.5"
+                          className="w-3.5 h-3.5 shrink-0 mt-1 text-white/0 group-hover:text-gold/60 transition-all duration-300 group-hover:translate-x-0.5"
                           fill="none"
                           viewBox="0 0 24 24"
                           strokeWidth={1.5}
@@ -1223,7 +1256,7 @@ export default function Home() {
 
       {/* ━━━ MEET OUR TEACHERS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section id="teachers" className="py-28 md:py-36 bg-white">
-        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+        <div className="w-full max-w-6xl mx-auto px-6 lg:px-8">
           {/* Section header */}
           <div className="text-center mb-20 md:mb-28">
             <p className="fade-in font-[family-name:var(--font-body)] text-[10px] tracking-[0.4em] text-gold mb-5">
@@ -1238,26 +1271,26 @@ export default function Home() {
             </h2>
           </div>
 
-          {/* ── TATA — Lead Teacher ── */}
-          <div className="fade-in mb-28 md:mb-36">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          {/* ── TATA — Lead Teacher Hero ── */}
+          <div className="fade-in mb-24 md:mb-32">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
               {/* Image */}
-              <div className="lg:col-span-7">
-                <div className="glass-frame aspect-[3/4]">
+              <div className="w-full">
+                <div className="relative aspect-[4/5] rounded-sm overflow-hidden">
                   <Image
                     src={teachers[0].image}
-                    alt={`${teachers[0].name} — ${teachers[0].role[lang]}, JustbYoga by TUISYOU`}
+                    alt={`${teachers[0].name} — ${teachers[0].role[lang]}`}
                     fill
                     className="object-cover"
                     style={{ objectPosition: "center 20%" }}
-                    sizes="(max-width: 1024px) 100vw, 58vw"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                     priority
                   />
                 </div>
               </div>
 
               {/* Content */}
-              <div className="lg:col-span-5">
+              <div className="text-center lg:text-left">
                 <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-gold mb-4">
                   {teachers[0].role[lang].toUpperCase()}
                 </p>
@@ -1272,7 +1305,7 @@ export default function Home() {
                   {teachers[0].bio[lang]}
                 </p>
 
-                <div className="flex flex-wrap gap-2.5 mb-10">
+                <div className="flex flex-wrap justify-center lg:justify-start gap-2.5 mb-10">
                   {teachers[0].specialties.map((s) => (
                     <span
                       key={s}
@@ -1294,30 +1327,42 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ── Alejandro & Harold ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-12">
+          {/* ── Other Teachers — Clean Compact Cards ── */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {teachers.filter((tc) => !tc.isLead).map((teacher, i) => (
-              <div key={teacher.name} className={`fade-in fade-in-delay-${i + 1}`}>
-                <div className="glass-frame aspect-[3/4] mb-8">
+              <div
+                key={teacher.name}
+                className={`fade-in fade-in-delay-${i + 1} group`}
+              >
+                {/* Photo */}
+                <div className="relative aspect-[3/4] rounded-sm overflow-hidden mb-5">
                   <Image
                     src={teacher.image}
-                    alt={`${teacher.name} — ${teacher.role[lang]}, JustbYoga by TUISYOU`}
+                    alt={`${teacher.name} — ${teacher.role[lang]}`}
                     fill
-                    className="object-cover"
-                    style={{ objectPosition: "center 20%" }}
-                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-700"
+                    style={{ objectPosition: "center 30%" }}
+                    sizes="(max-width: 768px) 100vw, 33vw"
                   />
+                  {/* Subtle warm overlay at bottom */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#2C2C2C]/40 via-transparent to-transparent" />
+
+                  {/* Name on image */}
+                  <div className="absolute bottom-4 left-5 right-5">
+                    <h3
+                      className="font-[family-name:var(--font-display)] text-white"
+                      style={{ fontSize: "clamp(1.6rem, 2.5vw, 2.2rem)", fontWeight: 300, lineHeight: 1.1 }}
+                    >
+                      {teacher.name}
+                    </h3>
+                    <p className="font-[family-name:var(--font-body)] text-[9px] tracking-[0.2em] text-white/60 mt-1">
+                      {teacher.specialties.join(" · ").toUpperCase()}
+                    </p>
+                  </div>
                 </div>
-                <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-gold mb-3">
-                  {teacher.role[lang].toUpperCase()}
-                </p>
-                <h3
-                  className="font-[family-name:var(--font-display)] text-charcoal mb-5"
-                  style={{ fontSize: "clamp(2rem, 3vw, 2.5rem)", fontWeight: 300 }}
-                >
-                  {teacher.name}
-                </h3>
-                <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/45 leading-[1.9]">
+
+                {/* Bio below photo */}
+                <p className="font-[family-name:var(--font-body)] text-[12px] text-charcoal/50 leading-[1.8] px-1">
                   {teacher.bio[lang]}
                 </p>
               </div>
@@ -1325,7 +1370,7 @@ export default function Home() {
           </div>
 
           {/* ── Closing statement ── */}
-          <div className="fade-in mt-28 md:mt-36 text-center max-w-2xl mx-auto">
+          <div className="fade-in mt-24 md:mt-32 text-center max-w-2xl mx-auto">
             <div className="h-px w-16 bg-rose/30 mx-auto mb-10" />
             <p
               className="font-[family-name:var(--font-display)] text-charcoal/70 italic leading-relaxed"
@@ -1799,6 +1844,12 @@ export default function Home() {
                   className="block font-[family-name:var(--font-body)] text-sm text-charcoal/50 hover:text-rose transition-colors py-1"
                 >
                   tata@tuisyou.com
+                </a>
+                <a
+                  href="/portal"
+                  className="block font-[family-name:var(--font-body)] text-sm text-charcoal/50 hover:text-rose transition-colors py-1"
+                >
+                  {lang === "en" ? "My Account" : "Mi Cuenta"}
                 </a>
               </div>
             </div>

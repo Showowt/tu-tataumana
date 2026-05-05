@@ -1,21 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-import { useSearchParams } from "next/navigation";
+import { createBrowserClient } from "@supabase/ssr";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
+import { ADMIN_EMAILS } from "@/lib/constants/business-rules";
 
 function LoginForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const redirect = searchParams.get("redirect") || "/portal";
   const errorParam = searchParams.get("error");
 
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"password" | "magic">("password");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState(
@@ -27,13 +26,25 @@ function LoginForm() {
   );
   const [lang, setLang] = useState<"es" | "en">("es");
 
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+
   const t = {
     title: { en: "Sign In", es: "Iniciar Sesión" },
-    subtitle: {
+    subtitlePassword: {
+      en: "Enter your email and password",
+      es: "Ingresa tu email y contraseña",
+    },
+    subtitleMagic: {
       en: "Enter your email to receive a magic link",
       es: "Ingresa tu email para recibir un enlace mágico",
     },
     emailPlaceholder: { en: "your@email.com", es: "tu@email.com" },
+    passwordPlaceholder: { en: "Password", es: "Contraseña" },
+    signIn: { en: "Sign In", es: "Iniciar Sesión" },
+    signingIn: { en: "Signing in...", es: "Entrando..." },
     sendLink: { en: "Send Magic Link", es: "Enviar Enlace Mágico" },
     sending: { en: "Sending...", es: "Enviando..." },
     checkEmail: {
@@ -46,13 +57,49 @@ function LoginForm() {
     },
     sendAnother: { en: "Send another link", es: "Enviar otro enlace" },
     backToSite: { en: "Back to site", es: "Volver al sitio" },
-    noAccount: {
-      en: "No account needed — we'll create one automatically.",
-      es: "No necesitas cuenta — la creamos automáticamente.",
+    useMagicLink: {
+      en: "Use magic link instead",
+      es: "Usar enlace mágico",
+    },
+    usePassword: {
+      en: "Use password instead",
+      es: "Usar contraseña",
+    },
+    invalidCredentials: {
+      en: "Invalid email or password",
+      es: "Email o contraseña incorrectos",
+    },
+    sendError: {
+      en: "Failed to send link. Try again.",
+      es: "Error al enviar el enlace. Intenta de nuevo.",
     },
   };
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handlePasswordLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+
+    if (authError) {
+      console.error("[login]", authError.message);
+      setError(t.invalidCredentials[lang]);
+      setLoading(false);
+      return;
+    }
+
+    // Determine redirect: admins go to /admin
+    const isAdmin = ADMIN_EMAILS.includes(email.trim().toLowerCase());
+    const dest = isAdmin && redirect === "/portal" ? "/admin" : redirect;
+    router.push(dest);
+    router.refresh();
+  }
+
+  async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -70,11 +117,7 @@ function LoginForm() {
 
     if (authError) {
       console.error("[login]", authError.message);
-      setError(
-        lang === "es"
-          ? "Error al enviar el enlace. Intenta de nuevo."
-          : "Failed to send link. Try again.",
-      );
+      setError(t.sendError[lang]);
       return;
     }
 
@@ -123,24 +166,29 @@ function LoginForm() {
         </div>
 
         {!sent ? (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="text-center mb-6">
-              <h2
-                className="text-xl text-[#2C2C2C] mb-2"
-                style={{ fontFamily: "Cormorant Garamond, serif" }}
-              >
-                {t.title[lang]}
-              </h2>
-              <p className="text-sm text-[#2C2C2C]/60">{t.subtitle[lang]}</p>
-            </div>
-
-            {error && (
-              <div className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-sm text-center">
-                {error}
+          <>
+            <form
+              onSubmit={mode === "password" ? handlePasswordLogin : handleMagicLink}
+              className="space-y-4"
+            >
+              <div className="text-center mb-6">
+                <h2
+                  className="text-xl text-[#2C2C2C] mb-2"
+                  style={{ fontFamily: "Cormorant Garamond, serif" }}
+                >
+                  {t.title[lang]}
+                </h2>
+                <p className="text-sm text-[#2C2C2C]/60">
+                  {mode === "password" ? t.subtitlePassword[lang] : t.subtitleMagic[lang]}
+                </p>
               </div>
-            )}
 
-            <div>
+              {error && (
+                <div className="text-sm text-red-600 bg-red-50 px-4 py-3 text-center">
+                  {error}
+                </div>
+              )}
+
               <input
                 type="email"
                 value={email}
@@ -151,24 +199,46 @@ function LoginForm() {
                 className="w-full px-4 py-3 border border-[#2C2C2C]/10 bg-white text-[#2C2C2C] placeholder:text-[#2C2C2C]/30 text-sm focus:outline-none focus:border-[#B87777] transition-colors"
                 style={{ fontFamily: "Outfit, sans-serif" }}
               />
+
+              {mode === "password" && (
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={t.passwordPlaceholder[lang]}
+                  required
+                  className="w-full px-4 py-3 border border-[#2C2C2C]/10 bg-white text-[#2C2C2C] placeholder:text-[#2C2C2C]/30 text-sm focus:outline-none focus:border-[#B87777] transition-colors"
+                  style={{ fontFamily: "Outfit, sans-serif" }}
+                />
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || !email || (mode === "password" && !password)}
+                className="w-full py-3 bg-[#2C2C2C] text-white text-xs tracking-[0.2em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ fontFamily: "Outfit, sans-serif" }}
+              >
+                {mode === "password"
+                  ? loading ? t.signingIn[lang] : t.signIn[lang]
+                  : loading ? t.sending[lang] : t.sendLink[lang]}
+              </button>
+            </form>
+
+            {/* Toggle between password and magic link */}
+            <div className="text-center mt-4">
+              <button
+                onClick={() => {
+                  setMode(mode === "password" ? "magic" : "password");
+                  setError("");
+                }}
+                className="text-xs text-[#B87777] underline underline-offset-4 hover:text-[#2C2C2C] transition-colors"
+              >
+                {mode === "password" ? t.useMagicLink[lang] : t.usePassword[lang]}
+              </button>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading || !email}
-              className="w-full py-3 bg-[#2C2C2C] text-white text-xs tracking-[0.2em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ fontFamily: "Outfit, sans-serif" }}
-            >
-              {loading ? t.sending[lang] : t.sendLink[lang]}
-            </button>
-
-            <p className="text-center text-xs text-[#2C2C2C]/40">
-              {t.noAccount[lang]}
-            </p>
-          </form>
+          </>
         ) : (
           <div className="text-center space-y-6">
-            {/* Checkmark */}
             <div className="w-16 h-16 mx-auto rounded-full bg-[#B87777]/10 flex items-center justify-center">
               <svg
                 className="w-8 h-8 text-[#B87777]"

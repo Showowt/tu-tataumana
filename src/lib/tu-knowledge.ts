@@ -127,34 +127,54 @@ WEEKLY CLASS SCHEDULE (ACTUAL — use this to tell people what's happening on sp
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 MONDAY (Lunes):
-  9:30 AM — Yoga Flow - Open Vinyasa
-  7:15 PM — Yoga Flow - Open Vinyasa
+  9:30 AM — Yoga Flow - Open Vinyasa (con Tata) — Fluye con intención. Movimiento, respiración y energía para empezar el día.
+  7:15 PM — Yoga Flow - Open Vinyasa (con Tata) — Vinyasa creativo para soltar tensiones y reconectar contigo.
 
 TUESDAY (Martes) — SPECIAL: $45,000 COP (Martes de Industria):
-  9:30 AM — Back Care Yoga
-  7:15 PM — Hatha
+  9:30 AM — Back Care Yoga (con Betty) — Cuida tu espalda, mejora tu postura y alivia tensiones.
+  7:15 PM — Hatha (con Tata) — Posturas conscientes y respiración para cultivar equilibrio y calma.
 
 WEDNESDAY (Miércoles):
-  9:30 AM — Yoga Flow - Open Vinyasa
-  10:45 AM — Pilates
-  7:15 PM — Open Flow
+  9:30 AM — Yoga Flow - Open Vinyasa (con Tata) — Una práctica dinámica para despertar el cuerpo y enfocar la mente.
+  10:45 AM — Pilates (con Violeta) — Fortalece, alinea y tonifica tu cuerpo desde el centro.
+  7:15 PM — Open Flow (con Tata) — Secuencias fluidas para liberar, expandir y equilibrar tu energía.
 
 THURSDAY (Jueves):
-  9:30 AM — Yoga Intro · Power Up
-  5:30 PM — Sound Healing
-  7:15 PM — Hatha
+  9:30 AM — Yoga Intro · Power Up (con Betty) — Activa tu cuerpo y mente con una práctica poderosa y revitalizante.
+  5:30 PM — Sound Healing (con Tata) — Relájate profundamente y armoniza tu energía con sonidos sanadores.
+  7:15 PM — Hatha (con Tata) — Una práctica clásica para conectar cuerpo, mente y respiración.
 
 FRIDAY (Viernes) — SPECIAL: $45,000 COP:
-  10:00 AM — Power Yoga · Postura
-  7:00 PM — Open Flow
+  10:00 AM — Power Yoga · Postura (con Violeta) — Fuerza, alineación y presencia para activar tu poder interior.
+  7:00 PM — Open Flow (con Tata) — Fluye, suelta y recarga tu energía para cerrar la semana en balance.
 
 SATURDAY (Sábado):
-  11:00 AM — Sun Salutation
-  6:00 PM — Inner Journey · Meditation (solo en español)
+  11:00 AM — Sun Salutation (con Tata) — Salud al sol: movimiento consciente para despertar y agradecer.
+  6:00 PM — Inner Journey · Meditation (con Álvaro, solo en español) — Meditación guiada para volver a ti y encontrar paz interior.
 
 SUNDAY (Domingo):
-  9:00 AM — Power Yoga
-  10:30 AM — Inner Journey · Meditation (solo en español)
+  9:00 AM — Power Yoga (con Tata) — Práctica energética para fortalecer el cuerpo y calmar la mente.
+  10:30 AM — Inner Journey · Meditation (con Álvaro, solo en español) — Un viaje hacia adentro a través de la meditación y la quietud.
+
+CLASS DESCRIPTIONS (for recommending the right class):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Yoga Flow / Open Vinyasa: Dynamic, flowing sequences linking breath to movement. Great for all levels. Builds heat, flexibility, and focus.
+- Back Care Yoga: Therapeutic practice targeting the spine, posture, and tension relief. Perfect for desk workers or anyone with back issues.
+- Hatha: Classical yoga — conscious postures held with intentional breathing. Cultivates balance, calm, and body-mind connection. Great for beginners.
+- Pilates: Core-centered practice to strengthen, align, and tone. Focuses on precision and control from the center of the body.
+- Open Flow: Free-flowing sequences to release, expand, and balance energy. Less structured, more intuitive — go with the flow.
+- Yoga Intro · Power Up: Accessible yet powerful practice to activate body and mind. Perfect entry point for newcomers or those wanting revitalization.
+- Sound Healing: Deep relaxation through healing sounds (singing bowls, etc). Harmonizes energy and calms the nervous system. No movement required.
+- Power Yoga · Postura: Strength-focused practice with emphasis on alignment and presence. Activates inner power and builds physical confidence.
+- Sun Salutation: Conscious movement to greet the day with gratitude. Flowing sun salutation sequences to awaken and energize.
+- Inner Journey · Meditation: Guided meditation for inner peace and reconnection with self. A journey inward through stillness and conscious word. Solo en español.
+- Power Yoga: Energetic practice combining strength and calm. Builds physical power while quieting the mind.
+
+TEACHERS:
+- Tata (Founder & Lead Teacher, 30+ years): Sound Healing, Reiki, Kundalini, Vinyasa, Ceremonies. Teaches most classes.
+- Betty Quintana: Psychologist and yoga instructor. Integrates meditation and mental reprogramming. Teaches Back Care Yoga and Yoga Intro.
+- Violeta: Movement artist. Explores dance, fascia work, and conscious movement. Teaches Pilates and Power Yoga · Postura.
+- Álvaro: Guides meditation and ontology-based connection. Teaches Inner Journey · Meditation.
 
 ALL GROUP CLASSES (2026 Pricing):
 Walk-in class: $80,000 COP per class

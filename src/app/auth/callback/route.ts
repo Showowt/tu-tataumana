@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { ADMIN_EMAILS } from "@/lib/constants/business-rules";
+import { notifyNewAccount } from "@/lib/telegram";
 
 /**
  * GET /auth/callback
@@ -78,6 +79,12 @@ export async function GET(request: NextRequest) {
         insertError.message,
       );
       // Don't block login — profile can be created later
+    } else {
+      notifyNewAccount({
+        name: user.user_metadata?.full_name || user.email.split("@")[0],
+        email: user.email,
+        source: "magic_link",
+      }).catch(() => {});
     }
 
     // Redirect admins to admin panel

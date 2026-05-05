@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin, getAdminClient } from "@/lib/admin-auth";
 import { z } from "zod";
 import { getPackDefinition, calculateExpiration } from "@/lib/constants/packs";
+import { notifyNewMembership } from "@/lib/telegram";
 
 /**
  * GET /api/admin/pack
@@ -116,6 +117,23 @@ export async function POST(request: NextRequest) {
   if (error) {
     console.error("[admin/pack POST]", error.message);
     return NextResponse.json({ error: "Failed to create pack" }, { status: 500 });
+  }
+
+  // Get student info for Telegram notification
+  const { data: student } = await supabase
+    .from("tu_students")
+    .select("full_name, email")
+    .eq("id", parsed.data.student_id)
+    .single();
+
+  if (student) {
+    notifyNewMembership({
+      studentName: student.full_name,
+      email: student.email,
+      packType: parsed.data.pack_type,
+      totalClasses: packDef.totalClasses,
+      paymentMethod: parsed.data.payment_method || "cash",
+    }).catch(() => {});
   }
 
   return NextResponse.json({ data }, { status: 201 });

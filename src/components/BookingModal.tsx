@@ -133,6 +133,52 @@ function formatDateDisplay(dateStr: string) {
   return `${dayName}, ${month} ${date}`;
 }
 
+/**
+ * Find the next available class after a given date.
+ * Looks up to 14 days ahead, prefers the same class name if possible.
+ */
+function getNextAvailableClass(
+  bookedDateStr: string,
+  bookedClassName: string,
+): { date: string; dateDisplay: string; time: string; name: string } | null {
+  const bookedDate = new Date(bookedDateStr + "T12:00:00");
+
+  // First pass: find the next occurrence of the SAME class
+  for (let offset = 1; offset <= 14; offset++) {
+    const nextDate = new Date(bookedDate);
+    nextDate.setDate(nextDate.getDate() + offset);
+    const dateStr = nextDate.toISOString().split("T")[0];
+    const dayClasses = getClassesForDate(dateStr);
+    const sameClass = dayClasses.find((c) => c.name === bookedClassName);
+    if (sameClass) {
+      return {
+        date: dateStr,
+        dateDisplay: formatDateDisplay(dateStr),
+        time: sameClass.time,
+        name: sameClass.name,
+      };
+    }
+  }
+
+  // Second pass: find ANY available class
+  for (let offset = 1; offset <= 14; offset++) {
+    const nextDate = new Date(bookedDate);
+    nextDate.setDate(nextDate.getDate() + offset);
+    const dateStr = nextDate.toISOString().split("T")[0];
+    const dayClasses = getClassesForDate(dateStr);
+    if (dayClasses.length > 0) {
+      return {
+        date: dateStr,
+        dateDisplay: formatDateDisplay(dateStr),
+        time: dayClasses[0].time,
+        name: dayClasses[0].name,
+      };
+    }
+  }
+
+  return null;
+}
+
 export default function BookingModal({
   isOpen,
   onClose,
@@ -1006,9 +1052,53 @@ export default function BookingModal({
                 </p>
               </div>
 
+              {/* ━━━ NEXT AVAILABLE CLASS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+              {(() => {
+                const nextClass = date && service
+                  ? getNextAvailableClass(date, service.split(" @ ")[0])
+                  : null;
+                if (!nextClass) return null;
+                return (
+                  <div className="rounded-2xl border-2 border-rose/20 bg-rose/[0.03] p-5 mb-5">
+                    <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.25em] text-rose/60 font-medium mb-3">
+                      KEEP YOUR PRACTICE GOING
+                    </p>
+                    <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/60 mb-4">
+                      Your next class is ready — lock in your spot now!
+                    </p>
+                    <div className="bg-white rounded-xl p-4 mb-4">
+                      <p className="font-[family-name:var(--font-display)] text-lg text-charcoal">
+                        {nextClass.dateDisplay}
+                      </p>
+                      <p className="font-[family-name:var(--font-body)] text-sm text-rose mt-0.5">
+                        {nextClass.name} &middot; {nextClass.time}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDate(nextClass.date);
+                        setService(nextClass.name);
+                        setSelectedTime(nextClass.time);
+                        setRulesAccepted(false);
+                        setSelectedPayment(null);
+                        setSubmitting(false);
+                        setStep("form");
+                      }}
+                      className="w-full py-4 rounded-2xl bg-rose text-white font-[family-name:var(--font-body)] text-sm tracking-[0.2em] hover:bg-charcoal transition-colors duration-500 flex items-center justify-center gap-3"
+                    >
+                      BOOK NEXT CLASS
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                      </svg>
+                    </button>
+                  </div>
+                );
+              })()}
+
               <button
                 onClick={onClose}
-                className="w-full py-4 rounded-2xl bg-charcoal text-white font-[family-name:var(--font-body)] text-sm tracking-[0.2em] hover:bg-rose transition-colors duration-500"
+                className="w-full py-4 rounded-2xl border border-charcoal/10 text-charcoal/50 font-[family-name:var(--font-body)] text-sm tracking-[0.2em] hover:bg-charcoal hover:text-white transition-colors duration-500"
               >
                 DONE
               </button>

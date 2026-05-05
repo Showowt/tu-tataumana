@@ -177,6 +177,44 @@ export async function notifyChatLeadScore(data: {
   await sendTelegramMessage(lines.join("\n"));
 }
 
+export async function notifyNewMembership(data: {
+  studentName: string;
+  email: string;
+  packType: string;
+  totalClasses: number;
+  paymentMethod?: string;
+}): Promise<void> {
+  const lines = [
+    "<b>NEW MEMBERSHIP ACTIVATED</b>",
+    "",
+    `<b>Student:</b> ${escapeHtml(data.studentName)}`,
+    `<b>Email:</b> ${data.email}`,
+    `<b>Pack:</b> ${escapeHtml(data.packType)}`,
+    `<b>Classes:</b> ${data.totalClasses}`,
+    data.paymentMethod ? `<b>Payment:</b> ${escapeHtml(data.paymentMethod)}` : "",
+    "",
+    "Member can now book classes from the portal.",
+  ].filter(Boolean);
+
+  await sendTelegramMessage(lines.join("\n"));
+}
+
+export async function notifyNewAccount(data: {
+  name: string;
+  email: string;
+  source: string;
+}): Promise<void> {
+  const lines = [
+    "<b>NEW ACCOUNT CREATED</b>",
+    "",
+    `<b>Name:</b> ${escapeHtml(data.name)}`,
+    `<b>Email:</b> ${data.email}`,
+    `<b>Source:</b> ${data.source}`,
+  ];
+
+  await sendTelegramMessage(lines.join("\n"));
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")

@@ -102,6 +102,7 @@ export const STUDIO_ADDRESS =
 /** Admin emails — these get admin role on signup */
 export const ADMIN_EMAILS = [
   "tataumana@gmail.com",
+  "tata@tuisyou.com",
   "machinemindconsulting@gmail.com",
 ];
 
