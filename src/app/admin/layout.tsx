@@ -1,13 +1,16 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { createBrowserClient } from "@supabase/ssr";
 
 const tabs = [
-  { href: "/admin", label: "Hoy", icon: "◉" },
-  { href: "/admin/sessions", label: "Clases", icon: "▦" },
-  { href: "/admin/students", label: "Alumnos", icon: "◎" },
-  { href: "/admin/packs", label: "Packs", icon: "◆" },
+  { href: "/admin", label: "Hoy", icon: "\u25C9" },
+  { href: "/admin/sessions", label: "Clases", icon: "\u25A6" },
+  { href: "/admin/students", label: "Alumnos", icon: "\u25CE" },
+  { href: "/admin/packs", label: "Packs", icon: "\u25C6" },
+  { href: "/admin/payments", label: "Pagos", icon: "\u25C8" },
 ];
 
 export default function AdminLayout({
@@ -16,6 +19,22 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
+      await supabase.auth.signOut();
+      router.push("/");
+    } catch {
+      setLoggingOut(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] pb-16 md:pb-0">
@@ -43,6 +62,13 @@ export default function AdminLayout({
           >
             Sitio
           </Link>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="text-[9px] tracking-[0.15em] text-red-300 uppercase hover:text-red-500 transition-colors disabled:opacity-30"
+          >
+            {loggingOut ? "..." : "Salir"}
+          </button>
         </div>
       </header>
 

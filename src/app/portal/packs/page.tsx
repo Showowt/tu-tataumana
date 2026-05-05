@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getActivePacks, getPromoPacks, type PackDefinition } from "@/lib/constants/packs";
+import PackPaymentModal from "@/components/PackPaymentModal";
 
 interface OwnedPack {
   id: string;
@@ -18,6 +19,7 @@ interface OwnedPack {
 export default function PacksPage() {
   const [ownedPacks, setOwnedPacks] = useState<OwnedPack[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPack, setSelectedPack] = useState<PackDefinition | null>(null);
   const lang = "es";
 
   useEffect(() => {
@@ -128,12 +130,6 @@ export default function PacksPage() {
       ? Math.round(pack.priceCop / pack.totalClasses)
       : null;
 
-    const whatsappMsg = encodeURIComponent(
-      lang === "es"
-        ? `Hola, quiero comprar el pack ${pack.name.es}. ¿Cómo puedo pagar?`
-        : `Hi, I want to buy the ${pack.name.en} pack. How can I pay?`,
-    );
-
     return (
       <div
         className={`border p-4 ${
@@ -167,14 +163,12 @@ export default function PacksPage() {
               {perClass && ` · ${formatCOP(perClass)}/${lang === "es" ? "clase" : "class"}`}
             </p>
           </div>
-          <a
-            href={`https://wa.me/573001234567?text=${whatsappMsg}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => setSelectedPack(pack)}
             className="text-[10px] tracking-[0.15em] uppercase px-4 py-1.5 bg-[#2C2C2C] text-white hover:bg-[#B87777] transition-colors"
           >
             {lang === "es" ? "Comprar" : "Buy"}
-          </a>
+          </button>
         </div>
         <p className="text-[9px] text-[#2C2C2C]/20 mt-2">
           {pack.expirationDays} {lang === "es" ? "días de validez" : "days validity"}
@@ -240,6 +234,15 @@ export default function PacksPage() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* Payment Modal */}
+      {selectedPack && (
+        <PackPaymentModal
+          pack={selectedPack}
+          onClose={() => setSelectedPack(null)}
+          lang={lang}
+        />
       )}
     </div>
   );

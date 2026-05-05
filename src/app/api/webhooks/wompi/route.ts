@@ -13,7 +13,7 @@ import {
   WOMPI_EVENTS_SECRET,
   type WompiWebhookEvent,
 } from "@/lib/wompi";
-import { notifyPaymentReceived } from "@/lib/telegram";
+import { notifyPaymentReceived, notifyNewMembership } from "@/lib/telegram";
 import { getPackDefinition, calculateExpiration } from "@/lib/constants/packs";
 import { ADMIN_EMAILS } from "@/lib/constants/business-rules";
 import { createClient } from "@supabase/supabase-js";
@@ -51,10 +51,27 @@ function parsePackType(reference: string, metadata?: Record<string, unknown>): s
 }
 
 /**
+ * Map Wompi status string to our transaction status.
+ */
+function mapWompiStatus(
+  wompiStatus: string,
+): "pending" | "approved" | "declined" | "voided" | "error" {
+  const statusMap: Record<string, "pending" | "approved" | "declined" | "voided" | "error"> = {
+    PENDING: "pending",
+    APPROVED: "approved",
+    DECLINED: "declined",
+    VOIDED: "voided",
+    ERROR: "error",
+  };
+  return statusMap[wompiStatus] || "error";
+}
+
+/**
  * Auto-onboard flow for approved payments:
  * 1. Record transaction
  * 2. Find or create student
  * 3. Create pack if pack_type identified
+ * 4. Notify Tata of new membership
  */
 async function handleApprovedPayment(
   transaction: WompiWebhookEvent["data"]["transaction"],
@@ -62,28 +79,30 @@ async function handleApprovedPayment(
   const supabase = getServiceSupabase();
   const email = transaction.customer_email;
   const name = transaction.customer_data?.full_name || email?.split("@")[0] || "Unknown";
+  const packType = parsePackType(transaction.reference);
 
-  // 1. Record transaction (upsert by reference)
+  // 1. Record transaction (upsert by wompi_reference for idempotency)
   const { data: txRecord } = await supabase
     .from("tu_transactions")
     .upsert(
       {
-        reference: transaction.reference,
+        wompi_reference: transaction.reference,
         amount: transaction.amount_in_cents,
         currency: transaction.currency,
         payment_method: transaction.payment_method_type || "card",
         status: "approved",
-        wompi_transaction_id: transaction.id,
-        wompi_status: transaction.status,
+        wompi_id: transaction.id,
         description: `Wompi payment - ${transaction.reference}`,
+        related_pack_type: packType || null,
         metadata: {
+          wompi_status: transaction.status,
           customer_email: email,
           customer_name: name,
           payment_method_type: transaction.payment_method_type,
           finalized_at: transaction.finalized_at,
         },
       },
-      { onConflict: "reference" },
+      { onConflict: "wompi_reference" },
     )
     .select("id")
     .single();
@@ -96,7 +115,7 @@ async function handleApprovedPayment(
   // 2. Find or create student
   let { data: student } = await supabase
     .from("tu_students")
-    .select("id")
+    .select("id, full_name, email")
     .eq("email", email.toLowerCase())
     .single();
 
@@ -111,7 +130,7 @@ async function handleApprovedPayment(
         role: isAdmin ? "admin" : "student",
         preferred_lang: "es",
       })
-      .select("id")
+      .select("id, full_name, email")
       .single();
 
     if (studentErr) {
@@ -133,7 +152,6 @@ async function handleApprovedPayment(
   }
 
   // 3. Create pack if pack type is identifiable
-  const packType = parsePackType(transaction.reference);
   if (packType) {
     const packDef = getPackDefinition(packType);
     if (packDef) {
@@ -147,13 +165,26 @@ async function handleApprovedPayment(
         status: "active",
         expires_at: calculateExpiration(packDef.expirationDays).toISOString(),
         payment_method: "wompi",
-        transaction_id: txRecord?.id || null,
+        wompi_transaction_id: transaction.id,
       });
 
       if (packErr) {
         console.error("[webhook] Pack creation failed:", packErr.message);
       } else {
         console.log("[webhook] Auto-created pack:", packType, "for", email);
+
+        // 4. Notify Tata of new membership activation
+        try {
+          await notifyNewMembership({
+            studentName: student.full_name || name,
+            email: student.email || email,
+            packType: packDef.name.en,
+            totalClasses: packDef.totalClasses,
+            paymentMethod: "Wompi",
+          });
+        } catch (notifyErr) {
+          console.error("[webhook] Membership notification failed:", notifyErr);
+        }
       }
     }
   }
@@ -166,23 +197,25 @@ async function recordTransaction(
   transaction: WompiWebhookEvent["data"]["transaction"],
 ): Promise<void> {
   const supabase = getServiceSupabase();
+  const packType = parsePackType(transaction.reference);
 
   await supabase.from("tu_transactions").upsert(
     {
-      reference: transaction.reference,
+      wompi_reference: transaction.reference,
       amount: transaction.amount_in_cents,
       currency: transaction.currency,
       payment_method: transaction.payment_method_type || "unknown",
-      status: transaction.status.toLowerCase() as "pending" | "declined" | "voided" | "error",
-      wompi_transaction_id: transaction.id,
-      wompi_status: transaction.status,
+      status: mapWompiStatus(transaction.status),
+      wompi_id: transaction.id,
       description: `Wompi ${transaction.status} - ${transaction.reference}`,
+      related_pack_type: packType || null,
       metadata: {
+        wompi_status: transaction.status,
         customer_email: transaction.customer_email,
         status_message: transaction.status_message,
       },
     },
-    { onConflict: "reference" },
+    { onConflict: "wompi_reference" },
   );
 }
 

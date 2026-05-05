@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 
 interface StudentData {
   id: string;
@@ -175,9 +176,10 @@ export default function AdminStudentsPage() {
             {students.length} {students.length === 1 ? "alumno" : "alumnos"}
           </p>
           {students.map((s) => (
-            <div
+            <Link
               key={s.id}
-              className="bg-white border border-[#2C2C2C]/5 p-4"
+              href={`/admin/students/${s.id}`}
+              className="block bg-white border border-[#2C2C2C]/5 p-4 hover:border-[#B87777]/30 transition-colors"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -215,7 +217,7 @@ export default function AdminStudentsPage() {
                   {s.notes}
                 </p>
               )}
-            </div>
+            </Link>
           ))}
         </div>
       )}
