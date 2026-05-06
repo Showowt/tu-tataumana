@@ -98,8 +98,9 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "MON",
     dayIndex: 1,
     classes: [
-      { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa", teacher: "Tata", desc: { es: "Fluye con intención. Movimiento, respiración y energía para empezar el día.", en: "Flow with intention. Movement, breath and energy to start the day." } },
-      { time: "7:15 PM", name: "Yoga Flow - Open Vinyasa", teacher: "Tata", desc: { es: "Vinyasa creativo para soltar tensiones y reconectar contigo.", en: "Creative vinyasa to release tension and reconnect with yourself." } },
+      { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa", teacher: "Harold", desc: { es: "Fluye con intención. Movimiento, respiración y energía para empezar el día.", en: "Flow with intention. Movement, breath and energy to start the day." } },
+      { time: "11:00 AM", name: "Yoga Flow", teacher: "Karla", desc: { es: "Una práctica fluida para conectar cuerpo y mente.", en: "A flowing practice to connect body and mind." } },
+      { time: "7:15 PM", name: "Yoga Flow - Open Vinyasa", teacher: "Violeta", desc: { es: "Vinyasa creativo para soltar tensiones y reconectar contigo.", en: "Creative vinyasa to release tension and reconnect with yourself." } },
     ],
   },
   {
@@ -108,8 +109,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "TUE",
     dayIndex: 2,
     classes: [
-      { time: "9:30 AM", name: "Back Care Yoga", teacher: "Betty", desc: { es: "Cuida tu espalda, mejora tu postura y alivia tensiones.", en: "Care for your back, improve your posture and relieve tension." } },
-      { time: "7:15 PM", name: "Hatha", teacher: "Tata", desc: { es: "Posturas conscientes y respiración para cultivar equilibrio y calma.", en: "Conscious postures and breathing to cultivate balance and calm." } },
+      { time: "9:30 AM", name: "Back Care Yoga", teacher: "Tata", desc: { es: "Cuida tu espalda, mejora tu postura y alivia tensiones.", en: "Care for your back, improve your posture and relieve tension." } },
+      { time: "7:15 PM", name: "Hatha", teacher: "Alejandro", desc: { es: "Posturas conscientes y respiración para cultivar equilibrio y calma.", en: "Conscious postures and breathing to cultivate balance and calm." } },
     ],
   },
   {
@@ -118,9 +119,9 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "WED",
     dayIndex: 3,
     classes: [
-      { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa", teacher: "Tata", desc: { es: "Una práctica dinámica para despertar el cuerpo y enfocar la mente.", en: "A dynamic practice to awaken the body and focus the mind." } },
-      { time: "10:45 AM", name: "Pilates", teacher: "Violeta", desc: { es: "Fortalece, alinea y tonifica tu cuerpo desde el centro.", en: "Strengthen, align and tone your body from the core." } },
-      { time: "7:15 PM", name: "Open Flow", teacher: "Tata", desc: { es: "Secuencias fluidas para liberar, expandir y equilibrar tu energía.", en: "Fluid sequences to release, expand and balance your energy." } },
+      { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa", teacher: "Harold", desc: { es: "Una práctica dinámica para despertar el cuerpo y enfocar la mente.", en: "A dynamic practice to awaken the body and focus the mind." } },
+      { time: "10:45 AM", name: "Pilates", teacher: "Harold", desc: { es: "Fortalece, alinea y tonifica tu cuerpo desde el centro.", en: "Strengthen, align and tone your body from the core." } },
+      { time: "7:15 PM", name: "Open Flow", teacher: "Violeta", desc: { es: "Secuencias fluidas para liberar, expandir y equilibrar tu energía.", en: "Fluid sequences to release, expand and balance your energy." } },
     ],
   },
   {
@@ -129,9 +130,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "THU",
     dayIndex: 4,
     classes: [
-      { time: "9:30 AM", name: "Yoga Intro · Power Up", teacher: "Betty", desc: { es: "Activa tu cuerpo y mente con una práctica poderosa y revitalizante.", en: "Activate your body and mind with a powerful and revitalizing practice." } },
-      { time: "5:30 PM", name: "Sound Healing", teacher: "Tata", desc: { es: "Relájate profundamente y armoniza tu energía con sonidos sanadores.", en: "Deeply relax and harmonize your energy with healing sounds." } },
-      { time: "7:15 PM", name: "Hatha", teacher: "Tata", desc: { es: "Una práctica clásica para conectar cuerpo, mente y respiración.", en: "A classic practice to connect body, mind and breath." } },
+      { time: "9:30 AM", name: "Yoga Intro · Power Up", teacher: "Tata", desc: { es: "Activa tu cuerpo y mente con una práctica poderosa y revitalizante.", en: "Activate your body and mind with a powerful and revitalizing practice." } },
+      { time: "7:15 PM", name: "Hatha", teacher: "Alejandro", desc: { es: "Una práctica clásica para conectar cuerpo, mente y respiración.", en: "A classic practice to connect body, mind and breath." } },
     ],
   },
   {
@@ -140,8 +140,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "FRI",
     dayIndex: 5,
     classes: [
-      { time: "10:00 AM", name: "Power Yoga · Postura", teacher: "Violeta", desc: { es: "Fuerza, alineación y presencia para activar tu poder interior.", en: "Strength, alignment and presence to activate your inner power." } },
-      { time: "7:00 PM", name: "Open Flow", teacher: "Tata", desc: { es: "Fluye, suelta y recarga tu energía para cerrar la semana en balance.", en: "Flow, release and recharge your energy to close the week in balance." } },
+      { time: "10:00 AM", name: "Power Yoga · Postura", teacher: "Tata", desc: { es: "Fuerza, alineación y presencia para activar tu poder interior.", en: "Strength, alignment and presence to activate your inner power." } },
+      { time: "7:00 PM", name: "Open Flow", teacher: "Betty & Violeta", desc: { es: "Fluye, suelta y recarga tu energía para cerrar la semana en balance.", en: "Flow, release and recharge your energy to close the week in balance." } },
     ],
   },
   {
@@ -160,7 +160,7 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "SUN",
     dayIndex: 0,
     classes: [
-      { time: "9:00 AM", name: "Power Yoga", teacher: "Tata", desc: { es: "Práctica energética para fortalecer el cuerpo y calmar la mente.", en: "Energetic practice to strengthen the body and calm the mind." } },
+      { time: "9:00 AM", name: "Power Yoga", teacher: "Alejandro", desc: { es: "Práctica energética para fortalecer el cuerpo y calmar la mente.", en: "Energetic practice to strengthen the body and calm the mind." } },
       { time: "10:30 AM", name: "Inner Journey · Meditation", note: "(solo en español)", teacher: "Álvaro", desc: { es: "Un viaje hacia adentro a través de la meditación y la quietud.", en: "A journey inward through meditation and stillness." } },
     ],
   },
@@ -260,6 +260,39 @@ const teachers: Teacher[] = [
     },
     image: "/class-savasana.jpg",
     specialties: ["Meditation", "Ontology", "Mindfulness"],
+    isLead: false,
+  },
+  {
+    name: "Harold",
+    role: { en: "Teacher", es: "Teacher" },
+    bio: {
+      es: "Harold lleva la energía del movimiento consciente a cada clase, guiando prácticas dinámicas que fortalecen el cuerpo y enfocan la mente. Su enseñanza combina disciplina y fluidez para una experiencia transformadora.",
+      en: "Harold brings the energy of conscious movement to every class, guiding dynamic practices that strengthen the body and focus the mind. His teaching combines discipline and fluidity for a transformative experience.",
+    },
+    image: "/class-seated.jpg",
+    specialties: ["Vinyasa", "Pilates", "Yoga Flow"],
+    isLead: false,
+  },
+  {
+    name: "Alejandro",
+    role: { en: "Teacher", es: "Teacher" },
+    bio: {
+      es: "Alejandro guía prácticas que combinan fuerza y calma, invitando a cada estudiante a explorar su potencial a través de posturas conscientes y respiración profunda.",
+      en: "Alejandro guides practices that combine strength and calm, inviting each student to explore their potential through conscious postures and deep breathing.",
+    },
+    image: "/class-savasana.jpg",
+    specialties: ["Hatha", "Power Yoga", "Yoga"],
+    isLead: false,
+  },
+  {
+    name: "Karla",
+    role: { en: "Teacher", es: "Teacher" },
+    bio: {
+      es: "Karla crea espacios de práctica amorosos y accesibles, donde cada persona puede conectar con su cuerpo y encontrar equilibrio a su propio ritmo.",
+      en: "Karla creates loving and accessible practice spaces where each person can connect with their body and find balance at their own pace.",
+    },
+    image: "/practice-1.jpg",
+    specialties: ["Yoga Flow", "Yoga"],
     isLead: false,
   },
 ];
@@ -1179,6 +1212,7 @@ export default function Home() {
               { label: "PROMO 2x1", cop: "$80,000", usd: "$22", sub: lang === "en" ? "Bring a friend" : "Trae un amigo", featured: false },
               { label: "MARTES INDUSTRIA", cop: "$45,000", usd: "$12", sub: lang === "en" ? "Tuesdays only" : "Solo martes", featured: false },
               { label: "VIERNES OPEN FLOW", cop: "$45,000", usd: "$12", sub: lang === "en" ? "Fridays only" : "Solo viernes", featured: false },
+              { label: "PRIVATE SESSION", cop: "$190,000", usd: "$51", sub: lang === "en" ? "One on One Experience" : "Experiencia Uno a Uno", featured: false },
               { label: "MAYO MES MAMÁ", cop: "$160,000", usd: "$43", sub: lang === "en" ? "Mother's Month · 4 classes" : "Mes de las Madres · 4 clases", featured: true },
             ].map((promo) => (
               <button

@@ -127,33 +127,33 @@ WEEKLY CLASS SCHEDULE (ACTUAL — use this to tell people what's happening on sp
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 MONDAY (Lunes):
-  9:30 AM — Yoga Flow - Open Vinyasa (con Tata) — Fluye con intención. Movimiento, respiración y energía para empezar el día.
-  7:15 PM — Yoga Flow - Open Vinyasa (con Tata) — Vinyasa creativo para soltar tensiones y reconectar contigo.
+  9:30 AM — Yoga Flow - Open Vinyasa (con Harold) — Fluye con intención. Movimiento, respiración y energía para empezar el día.
+  11:00 AM — Yoga Flow (con Karla) — Una práctica fluida para conectar cuerpo y mente.
+  7:15 PM — Yoga Flow - Open Vinyasa (con Violeta) — Vinyasa creativo para soltar tensiones y reconectar contigo.
 
 TUESDAY (Martes) — SPECIAL: $45,000 COP (Martes de Industria):
-  9:30 AM — Back Care Yoga (con Betty) — Cuida tu espalda, mejora tu postura y alivia tensiones.
-  7:15 PM — Hatha (con Tata) — Posturas conscientes y respiración para cultivar equilibrio y calma.
+  9:30 AM — Back Care Yoga (con Tata) — Cuida tu espalda, mejora tu postura y alivia tensiones.
+  7:15 PM — Hatha (con Alejandro) — Posturas conscientes y respiración para cultivar equilibrio y calma.
 
 WEDNESDAY (Miércoles):
-  9:30 AM — Yoga Flow - Open Vinyasa (con Tata) — Una práctica dinámica para despertar el cuerpo y enfocar la mente.
-  10:45 AM — Pilates (con Violeta) — Fortalece, alinea y tonifica tu cuerpo desde el centro.
-  7:15 PM — Open Flow (con Tata) — Secuencias fluidas para liberar, expandir y equilibrar tu energía.
+  9:30 AM — Yoga Flow - Open Vinyasa (con Harold) — Una práctica dinámica para despertar el cuerpo y enfocar la mente.
+  10:45 AM — Pilates (con Harold) — Fortalece, alinea y tonifica tu cuerpo desde el centro.
+  7:15 PM — Open Flow (con Violeta) — Secuencias fluidas para liberar, expandir y equilibrar tu energía.
 
 THURSDAY (Jueves):
-  9:30 AM — Yoga Intro · Power Up (con Betty) — Activa tu cuerpo y mente con una práctica poderosa y revitalizante.
-  5:30 PM — Sound Healing (con Tata) — Relájate profundamente y armoniza tu energía con sonidos sanadores.
-  7:15 PM — Hatha (con Tata) — Una práctica clásica para conectar cuerpo, mente y respiración.
+  9:30 AM — Yoga Intro · Power Up (con Tata) — Activa tu cuerpo y mente con una práctica poderosa y revitalizante.
+  7:15 PM — Hatha (con Alejandro) — Una práctica clásica para conectar cuerpo, mente y respiración.
 
 FRIDAY (Viernes) — SPECIAL: $45,000 COP:
-  10:00 AM — Power Yoga · Postura (con Violeta) — Fuerza, alineación y presencia para activar tu poder interior.
-  7:00 PM — Open Flow (con Tata) — Fluye, suelta y recarga tu energía para cerrar la semana en balance.
+  10:00 AM — Power Yoga · Postura (con Tata) — Fuerza, alineación y presencia para activar tu poder interior.
+  7:00 PM — Open Flow (con Betty & Violeta) — Fluye, suelta y recarga tu energía para cerrar la semana en balance.
 
 SATURDAY (Sábado):
   11:00 AM — Sun Salutation (con Tata) — Salud al sol: movimiento consciente para despertar y agradecer.
   6:00 PM — Inner Journey · Meditation (con Álvaro, solo en español) — Meditación guiada para volver a ti y encontrar paz interior.
 
 SUNDAY (Domingo):
-  9:00 AM — Power Yoga (con Tata) — Práctica energética para fortalecer el cuerpo y calmar la mente.
+  9:00 AM — Power Yoga (con Alejandro) — Práctica energética para fortalecer el cuerpo y calmar la mente.
   10:30 AM — Inner Journey · Meditation (con Álvaro, solo en español) — Un viaje hacia adentro a través de la meditación y la quietud.
 
 CLASS DESCRIPTIONS (for recommending the right class):
@@ -171,10 +171,13 @@ CLASS DESCRIPTIONS (for recommending the right class):
 - Power Yoga: Energetic practice combining strength and calm. Builds physical power while quieting the mind.
 
 TEACHERS:
-- Tata (Founder & Lead Teacher, 30+ years): Sound Healing, Reiki, Kundalini, Vinyasa, Ceremonies. Teaches most classes.
-- Betty Quintana: Psychologist and yoga instructor. Integrates meditation and mental reprogramming. Teaches Back Care Yoga and Yoga Intro.
-- Violeta: Movement artist. Explores dance, fascia work, and conscious movement. Teaches Pilates and Power Yoga · Postura.
-- Álvaro: Guides meditation and ontology-based connection. Teaches Inner Journey · Meditation.
+- Tata (Founder & Lead Teacher, 30+ years): Sound Healing, Reiki, Kundalini, Vinyasa, Ceremonies. Teaches Tue/Thu mornings, Fri morning, Sat morning.
+- Betty Quintana: Psychologist and yoga instructor. Integrates meditation and mental reprogramming. Co-teaches Friday evening with Violeta.
+- Violeta: Movement artist. Explores dance, fascia work, and conscious movement. Teaches Mon/Wed evenings, co-teaches Friday evening with Betty.
+- Álvaro: Guides meditation and ontology-based connection. Teaches Inner Journey · Meditation (Sat/Sun).
+- Harold: Dynamic yoga and pilates instructor. Teaches Mon/Wed mornings and Wed 10:45 AM.
+- Alejandro: Guides practices combining strength and calm. Teaches Tue/Thu evenings and Sunday morning.
+- Karla: Creates accessible, loving practice spaces. Teaches Monday 11:00 AM.
 
 ALL GROUP CLASSES (2026 Pricing):
 Walk-in class: $80,000 COP per class

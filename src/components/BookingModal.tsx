@@ -24,6 +24,7 @@ const BOOKING_RULES = [
 const scheduleByDay: Record<number, { time: string; name: string }[]> = {
   1: [
     { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa" },
+    { time: "11:00 AM", name: "Yoga Flow" },
     { time: "7:15 PM", name: "Yoga Flow - Open Vinyasa" },
   ],
   2: [
@@ -37,7 +38,6 @@ const scheduleByDay: Record<number, { time: string; name: string }[]> = {
   ],
   4: [
     { time: "9:30 AM", name: "Yoga Intro · Power Up" },
-    { time: "5:30 PM", name: "Sound Healing" },
     { time: "7:15 PM", name: "Hatha" },
   ],
   5: [

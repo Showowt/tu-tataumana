@@ -96,6 +96,21 @@ export const PACK_DEFINITIONS: PackDefinition[] = [
     sortOrder: 5,
   },
   {
+    type: "PRIVATE_SESSION",
+    name: { en: "Private Session / One on One Experience", es: "Sesión Privada / Experiencia Uno a Uno" },
+    description: {
+      en: "Personalized one-on-one session with a teacher",
+      es: "Sesión personalizada uno a uno con un teacher",
+    },
+    totalClasses: 1,
+    priceCop: 190000,
+    priceUsd: 51,
+    expirationDays: 30,
+    isPromo: false,
+    isActive: true,
+    sortOrder: 6,
+  },
+  {
     type: "MAYO_MES_MAMA",
     name: { en: "Mayo Mes Mamá", es: "Mayo Mes Mamá" },
     description: {
