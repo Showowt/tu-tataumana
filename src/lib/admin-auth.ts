@@ -25,7 +25,7 @@ export async function verifyAdmin(
   // Method 1: Legacy header auth — uses service role or anon client
   if (request) {
     const adminKey = request.headers.get("x-admin-key");
-    const expected = process.env.TU_ADMIN_KEY || "tata2026";
+    const expected = process.env.TU_ADMIN_KEY || "";
     if (adminKey && adminKey === expected) {
       return {
         id: "header-admin",

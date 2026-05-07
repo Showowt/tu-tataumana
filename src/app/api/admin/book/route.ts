@@ -13,7 +13,7 @@ function getSupabase() {
 
 function verifyAdmin(request: NextRequest): boolean {
   const adminKey = request.headers.get("x-admin-key");
-  const expected = process.env.TU_ADMIN_KEY || "tata2026";
+  const expected = process.env.TU_ADMIN_KEY || "";
   return adminKey === expected;
 }
 

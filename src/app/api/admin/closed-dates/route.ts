@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
-const ADMIN_KEY = process.env.TU_ADMIN_KEY || "tata2026";
+const ADMIN_KEY = process.env.TU_ADMIN_KEY || "";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

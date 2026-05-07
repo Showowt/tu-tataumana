@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export async function POST(request: NextRequest) {
   const adminKey = request.headers.get("x-admin-key");
-  const expected = process.env.TU_ADMIN_KEY || "tata2026";
+  const expected = process.env.TU_ADMIN_KEY || "";
   if (adminKey !== expected) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

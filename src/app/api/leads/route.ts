@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from("tu_leads")
-      .select("*, tu_chat_sessions(*)")
+      .select("*")
       .order("created_at", { ascending: false })
       .limit(limit);
 

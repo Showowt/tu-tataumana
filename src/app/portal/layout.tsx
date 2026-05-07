@@ -65,7 +65,7 @@ export default function PortalLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
-  const lang = "es"; // TODO: read from student profile
+  const lang = "es"; // Default language
 
   const isActive = (href: string) =>
     href === "/portal" ? pathname === "/portal" : pathname.startsWith(href);
