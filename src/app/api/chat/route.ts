@@ -48,7 +48,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "JSON inválido. Invalid JSON body." },
+        { status: 400 },
+      );
+    }
     const validationResult = ChatRequestSchema.safeParse(body);
 
     if (!validationResult.success) {

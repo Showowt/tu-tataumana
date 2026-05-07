@@ -65,22 +65,22 @@ interface SessionWithDef {
 // ---------------------------------------------------------------------------
 
 function getSupabase(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
   if (!url || !key) return null;
   return createClient(url, key);
 }
 
 function getBotToken(): string {
-  return process.env.TELEGRAM_BOT_TOKEN || "";
+  return (process.env.TELEGRAM_BOT_TOKEN || "").trim();
 }
 
 function getAllowedChatId(): string {
-  return process.env.TELEGRAM_CHAT_ID || "";
+  return (process.env.TELEGRAM_CHAT_ID || "").trim();
 }
 
 function getAnthropicKey(): string {
-  return process.env.ANTHROPIC_API_KEY || "";
+  return (process.env.ANTHROPIC_API_KEY || "").trim();
 }
 
 // ---------------------------------------------------------------------------
