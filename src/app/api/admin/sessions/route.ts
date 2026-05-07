@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdmin, getAdminClient } from "@/lib/admin-auth";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 /**
  * GET /api/admin/sessions
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getAdminClient();
+  const supabase = admin.supabase;
   const { searchParams } = request.nextUrl;
 
   const today = new Date().toISOString().split("T")[0];
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getAdminClient();
+  const supabase = admin.supabase;
   const body = await request.json();
   const { action } = body;
 

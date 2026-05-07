@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdmin, getAdminClient } from "@/lib/admin-auth";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 /**
  * GET /api/admin/students/[id]
@@ -23,7 +23,7 @@ export async function GET(
     );
   }
 
-  const supabase = getAdminClient();
+  const supabase = admin.supabase;
 
   // Fetch student
   const { data: student, error: studentError } = await supabase

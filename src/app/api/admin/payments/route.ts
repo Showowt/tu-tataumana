@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdmin, getAdminClient } from "@/lib/admin-auth";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 export async function GET(request: NextRequest) {
   const admin = await verifyAdmin(request);
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getAdminClient();
+  const supabase = admin.supabase;
   const { searchParams } = request.nextUrl;
   const status = searchParams.get("status");
 

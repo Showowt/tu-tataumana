@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdmin, getAdminClient } from "@/lib/admin-auth";
+import { verifyAdmin } from "@/lib/admin-auth";
 import { z } from "zod";
 import { getPackDefinition, calculateExpiration } from "@/lib/constants/packs";
 import { notifyNewMembership } from "@/lib/telegram";
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getAdminClient();
+  const supabase = admin.supabase;
   const { searchParams } = request.nextUrl;
   const studentId = searchParams.get("student_id");
   const status = searchParams.get("status");
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getAdminClient();
+  const supabase = admin.supabase;
 
   const body = await request.json();
   const parsed = CreatePackSchema.safeParse(body);
@@ -149,7 +149,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getAdminClient();
+  const supabase = admin.supabase;
   const body = await request.json();
   const { id, add_credits, extend_days, ...updates } = body;
 

@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { verifyAdmin, getAdminClient } from "@/lib/admin-auth";
+import { verifyAdmin } from "@/lib/admin-auth";
 import { getPackDefinition, calculateExpiration } from "@/lib/constants/packs";
 import { notifyNewMembership, notifyPaymentReceived } from "@/lib/telegram";
 import { ADMIN_EMAILS } from "@/lib/constants/business-rules";
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getAdminClient();
+  const supabase = admin.supabase;
 
   // Parse and validate body
   let body: unknown;

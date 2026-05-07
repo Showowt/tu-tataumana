@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdmin, getAdminClient } from "@/lib/admin-auth";
+import { verifyAdmin } from "@/lib/admin-auth";
 import { z } from "zod";
 import { getPackDefinition, calculateExpiration } from "@/lib/constants/packs";
 import { notifyNewMembership } from "@/lib/telegram";
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getAdminClient();
+  const supabase = admin.supabase;
 
   let body: unknown;
   try {
