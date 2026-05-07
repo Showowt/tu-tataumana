@@ -39,6 +39,13 @@ interface ParsedIntent {
     | "create_event_text"
     | "cancel_event"
     | "student_count"
+    | "pending_payments"
+    | "active_packs"
+    | "search_student"
+    | "recent_leads"
+    | "dashboard"
+    | "bookings_today"
+    | "health_check"
     | "help"
     | "unknown";
   params: Record<string, string>;
@@ -232,6 +239,13 @@ Acciones posibles:
 - "create_event_text": crear un evento especial. Params: { "title": "...", "date": "YYYY-MM-DD", "time": "HH:MM" (24h), "price_cop": numero, "capacity": numero, "description": "..." }
 - "cancel_event": cancelar un evento. Params: { "title": "..." }
 - "student_count": ver cuantos alumnos hay. Params: {}
+- "pending_payments": ver pagos pendientes. Params: {}
+- "active_packs": ver packs activos. Params: {}
+- "search_student": buscar alumno por nombre. Params: { "name": "..." }
+- "recent_leads": ver leads recientes. Params: {}
+- "dashboard": resumen general del negocio. Params: {}
+- "bookings_today": ver reservas de hoy con nombres. Params: {}
+- "health_check": verificar que el sitio funciona. Params: {}
 - "help": mostrar ayuda. Params: {}
 - "unknown": no se entiende. Params: {}
 
@@ -249,6 +263,13 @@ Reglas:
 - Si dice "evento" y datos -> create_event_text
 - Si dice "cancelar evento" -> cancel_event
 - Si dice "alumnos" o "cuantos" -> student_count
+- Si dice "pagos" o "pagos pendientes" -> pending_payments
+- Si dice "packs" o "packs activos" -> active_packs
+- Si dice "buscar" seguido de un nombre -> search_student
+- Si dice "leads" o "interesados" -> recent_leads
+- Si dice "resumen" o "dashboard" o "estadisticas" -> dashboard
+- Si dice "reservas" o "reservas de hoy" -> bookings_today
+- Si dice "sitio" o "health" o "status" o "verificar" -> health_check
 - Si dice "ayuda" o "help" -> help`;
 
   try {
@@ -1037,27 +1058,410 @@ async function handleStudentCount(
   return response;
 }
 
+async function handlePendingPayments(
+  supabase: SupabaseClient
+): Promise<string> {
+  const { data: payments, error } = await supabase
+    .from("tu_payments")
+    .select("id, amount, currency, payment_method, status, reference, created_at, student:tu_students(full_name)")
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(15);
+
+  if (error) {
+    console.error("[Telegram] pending_payments error:", error.message);
+    return "Error al consultar pagos. Intenta de nuevo.";
+  }
+
+  const items = (payments || []) as unknown as Array<{
+    id: string; amount: number; currency: string; payment_method: string;
+    status: string; reference: string; created_at: string;
+    student: { full_name: string } | null;
+  }>;
+
+  if (items.length === 0) {
+    return "<b>Pagos Pendientes</b>\n\nNo hay pagos pendientes. Todo al dia!";
+  }
+
+  const lines = items.map((p) => {
+    const amt = p.currency === "COP"
+      ? `$${(p.amount / 100).toLocaleString("es-CO")} COP`
+      : `$${(p.amount / 100).toFixed(2)} USD`;
+    const name = p.student?.full_name || "Desconocido";
+    const method = p.payment_method || "N/A";
+    const d = new Date(p.created_at);
+    const dateStr = `${d.getDate()}/${d.getMonth() + 1}`;
+    return `  ${name} - ${amt} (${method}) - ${dateStr}\n  Ref: ${p.reference || "N/A"} | ID: ${p.id.slice(0, 8)}`;
+  });
+
+  return `<b>Pagos Pendientes (${items.length})</b>\n\n${lines.join("\n\n")}\n\nPara aprobar, escribe: "aprobar pago [ID]"`;
+}
+
+async function handleActivePacks(
+  supabase: SupabaseClient
+): Promise<string> {
+  const { data: packs, error } = await supabase
+    .from("tu_packs")
+    .select("id, pack_type, total_classes, classes_used, expires_at, status, student:tu_students(full_name)")
+    .eq("status", "active")
+    .order("expires_at", { ascending: true })
+    .limit(20);
+
+  if (error) {
+    console.error("[Telegram] active_packs error:", error.message);
+    return "Error al consultar packs. Intenta de nuevo.";
+  }
+
+  const items = (packs || []) as unknown as Array<{
+    id: string; pack_type: string; total_classes: number; classes_used: number;
+    expires_at: string; status: string;
+    student: { full_name: string } | null;
+  }>;
+
+  if (items.length === 0) {
+    return "<b>Packs Activos</b>\n\nNo hay packs activos en este momento.";
+  }
+
+  const lines = items.map((p) => {
+    const remaining = p.total_classes - (p.classes_used || 0);
+    const name = p.student?.full_name || "Sin alumno";
+    const expires = p.expires_at ? spanishDate(p.expires_at.split("T")[0]) : "Sin vencimiento";
+    const bar = "\u2588".repeat(Math.min(p.classes_used || 0, p.total_classes)) +
+      "\u2591".repeat(Math.max(remaining, 0));
+    return `  <b>${name}</b> - ${p.pack_type}\n  ${bar} ${p.classes_used || 0}/${p.total_classes} usadas (${remaining} restantes)\n  Vence: ${expires}`;
+  });
+
+  return `<b>Packs Activos (${items.length})</b>\n\n${lines.join("\n\n")}`;
+}
+
+async function handleSearchStudent(
+  supabase: SupabaseClient,
+  params: Record<string, string>
+): Promise<string> {
+  const { name } = params;
+  if (!name) {
+    return "Necesito un nombre para buscar. Ej: buscar Maria";
+  }
+
+  const { data: students, error } = await supabase
+    .from("tu_students")
+    .select("id, full_name, email, phone, created_at")
+    .ilike("full_name", `%${name}%`)
+    .order("full_name")
+    .limit(10);
+
+  if (error) {
+    console.error("[Telegram] search_student error:", error.message);
+    return "Error al buscar alumno. Intenta de nuevo.";
+  }
+
+  if (!students || students.length === 0) {
+    return `No encontre alumnos con nombre "${name}".`;
+  }
+
+  // For each student, get their active packs and recent bookings
+  const lines: string[] = [];
+  for (const s of students) {
+    const { count: packCount } = await supabase
+      .from("tu_packs")
+      .select("id", { count: "exact", head: true })
+      .eq("student_id", s.id)
+      .eq("status", "active");
+
+    const { count: bookingCount } = await supabase
+      .from("tu_class_bookings")
+      .select("id", { count: "exact", head: true })
+      .eq("student_id", s.id)
+      .eq("status", "confirmed");
+
+    const d = new Date(s.created_at);
+    const dateStr = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+
+    lines.push(
+      `<b>${s.full_name}</b>\n` +
+      (s.email ? `  Email: ${s.email}\n` : "") +
+      (s.phone ? `  Tel: ${s.phone}\n` : "") +
+      `  Packs activos: ${packCount || 0} | Reservas: ${bookingCount || 0}\n` +
+      `  Registrado: ${dateStr}`
+    );
+  }
+
+  return `<b>Resultados para "${name}" (${students.length})</b>\n\n${lines.join("\n\n")}`;
+}
+
+async function handleRecentLeads(
+  supabase: SupabaseClient
+): Promise<string> {
+  const { data: leads, error } = await supabase
+    .from("tu_leads")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (error) {
+    console.error("[Telegram] recent_leads error:", error.message);
+    return "Error al consultar leads. Intenta de nuevo.";
+  }
+
+  if (!leads || leads.length === 0) {
+    return "<b>Leads Recientes</b>\n\nNo hay leads registrados todavia.";
+  }
+
+  const items = leads as Array<{
+    name: string | null; phone: string | null; email: string | null;
+    source: string; warmth: string; status: string; service_interest: string | null;
+    created_at: string;
+  }>;
+
+  const lines = items.map((l) => {
+    const d = new Date(l.created_at);
+    const dateStr = `${d.getDate()}/${d.getMonth() + 1}`;
+    const warmthIcon = l.warmth === "hot" ? "HOT" : l.warmth === "warm" ? "WARM" : "COLD";
+    return (
+      `  <b>${l.name || "Anonimo"}</b> [${warmthIcon}] (${dateStr})\n` +
+      (l.phone ? `  Tel: ${l.phone}\n` : "") +
+      (l.email ? `  Email: ${l.email}\n` : "") +
+      `  Fuente: ${l.source} | Estado: ${l.status}` +
+      (l.service_interest ? `\n  Interes: ${l.service_interest}` : "")
+    );
+  });
+
+  return `<b>Leads Recientes (${items.length})</b>\n\n${lines.join("\n\n")}`;
+}
+
+async function handleDashboard(
+  supabase: SupabaseClient
+): Promise<string> {
+  const todayStr = getColombiaDateStr();
+
+  // Students total
+  const { count: totalStudents } = await supabase
+    .from("tu_students")
+    .select("id", { count: "exact", head: true });
+
+  // Active packs
+  const { count: activePacks } = await supabase
+    .from("tu_packs")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "active");
+
+  // Today's sessions
+  const { data: todaySessions } = await supabase
+    .from("tu_class_sessions")
+    .select("enrolled, capacity, status")
+    .eq("session_date", todayStr);
+
+  const sessions = (todaySessions || []) as Array<{ enrolled: number; capacity: number; status: string }>;
+  const activeSessions = sessions.filter((s) => s.status !== "cancelled");
+  const todayEnrolled = activeSessions.reduce((sum, s) => sum + (s.enrolled || 0), 0);
+  const todayCapacity = activeSessions.reduce((sum, s) => sum + (s.capacity || 0), 0);
+
+  // Today's bookings
+  const { count: todayBookings } = await supabase
+    .from("tu_class_bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "confirmed")
+    .in("session_id", activeSessions.map(() => "").length > 0 ? ["placeholder"] : []);
+
+  // Pending payments
+  const { count: pendingPayments } = await supabase
+    .from("tu_payments")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending");
+
+  // Recent leads (7 days)
+  const weekAgo = getColombiaDate(-7).toISOString();
+  const { count: recentLeads } = await supabase
+    .from("tu_leads")
+    .select("id", { count: "exact", head: true })
+    .gte("created_at", weekAgo);
+
+  // Hot leads
+  const { count: hotLeads } = await supabase
+    .from("tu_leads")
+    .select("id", { count: "exact", head: true })
+    .eq("warmth", "hot")
+    .eq("status", "new");
+
+  // Upcoming events
+  const { count: upcomingEvents } = await supabase
+    .from("tu_events")
+    .select("id", { count: "exact", head: true })
+    .eq("is_active", true)
+    .gte("event_date", todayStr);
+
+  // New students this week
+  const { count: newStudents } = await supabase
+    .from("tu_students")
+    .select("id", { count: "exact", head: true })
+    .gte("created_at", weekAgo);
+
+  const occupancy = todayCapacity > 0
+    ? Math.round((todayEnrolled / todayCapacity) * 100)
+    : 0;
+
+  return (
+    `<b>RESUMEN — ${spanishDate(todayStr)}</b>\n\n` +
+    `<b>Hoy</b>\n` +
+    `  Clases: ${activeSessions.length} | Inscritos: ${todayEnrolled}/${todayCapacity} (${occupancy}%)\n\n` +
+    `<b>Alumnos</b>\n` +
+    `  Total: ${totalStudents || 0} | Nuevos esta semana: ${newStudents || 0}\n` +
+    `  Packs activos: ${activePacks || 0}\n\n` +
+    `<b>Negocio</b>\n` +
+    `  Pagos pendientes: ${pendingPayments || 0}\n` +
+    `  Leads esta semana: ${recentLeads || 0}${hotLeads ? ` (${hotLeads} HOT)` : ""}\n` +
+    `  Eventos proximos: ${upcomingEvents || 0}\n\n` +
+    `Escribe el comando para ver mas detalles.`
+  );
+}
+
+async function handleBookingsToday(
+  supabase: SupabaseClient
+): Promise<string> {
+  const todayStr = getColombiaDateStr();
+
+  // Get today's sessions with bookings
+  const { data: sessions, error: sessError } = await supabase
+    .from("tu_class_sessions")
+    .select(`
+      id, session_date, start_time, teacher, capacity, enrolled, status,
+      definition:tu_class_definitions (name, name_es)
+    `)
+    .eq("session_date", todayStr)
+    .neq("status", "cancelled")
+    .order("start_time", { ascending: true });
+
+  if (sessError) {
+    console.error("[Telegram] bookings_today error:", sessError.message);
+    return "Error al consultar reservas. Intenta de nuevo.";
+  }
+
+  const typedSessions = (sessions || []) as unknown as SessionWithDef[];
+
+  if (typedSessions.length === 0) {
+    return `<b>Reservas de Hoy — ${spanishDate(todayStr)}</b>\n\nNo hay clases programadas para hoy.`;
+  }
+
+  const blocks: string[] = [];
+
+  for (const s of typedSessions) {
+    const className = s.definition?.name_es || s.definition?.name || "Clase";
+
+    // Get bookings for this session
+    const { data: bookings } = await supabase
+      .from("tu_class_bookings")
+      .select("student:tu_students(full_name, phone)")
+      .eq("session_id", s.id)
+      .eq("status", "confirmed");
+
+    const students = (bookings || []) as unknown as Array<{
+      student: { full_name: string; phone: string | null } | null;
+    }>;
+
+    const studentList = students.length > 0
+      ? students
+          .map((b, i) => `  ${i + 1}. ${b.student?.full_name || "Sin nombre"}`)
+          .join("\n")
+      : "  Sin reservas";
+
+    const spots = s.capacity - (s.enrolled || 0);
+    const spotsText = spots <= 0 ? "LLENA" : `${spots} cupos libres`;
+
+    blocks.push(
+      `<b>${s.start_time} — ${className}</b> (${s.teacher})\n` +
+      `${s.enrolled || 0}/${s.capacity} — ${spotsText}\n` +
+      studentList
+    );
+  }
+
+  return `<b>Reservas de Hoy — ${spanishDate(todayStr)}</b>\n\n${blocks.join("\n\n")}`;
+}
+
+async function handleHealthCheck(): Promise<string> {
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com").trim();
+  const results: string[] = [];
+  let passCount = 0;
+  let failCount = 0;
+
+  const endpoints = [
+    { name: "Homepage", path: "/" },
+    { name: "Login", path: "/login" },
+    { name: "Schedule API", path: "/api/schedule" },
+    { name: "Events API", path: "/api/events" },
+    { name: "Chat API", path: "/api/chat" },
+    { name: "Admin Auth", path: "/admin" },
+  ];
+
+  for (const ep of endpoints) {
+    try {
+      const start = Date.now();
+      const res = await fetch(`${appUrl}${ep.path}`, {
+        method: "GET",
+        redirect: "manual",
+      });
+      const ms = Date.now() - start;
+      const ok = res.status < 500;
+      if (ok) passCount++;
+      else failCount++;
+      results.push(`  ${ok ? "OK" : "FAIL"} ${ep.name} (${res.status}) ${ms}ms`);
+    } catch (err) {
+      failCount++;
+      results.push(`  FAIL ${ep.name} — ${String(err).slice(0, 50)}`);
+    }
+  }
+
+  // Check Supabase
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      const start = Date.now();
+      const { error } = await supabase.from("tu_students").select("id", { count: "exact", head: true });
+      const ms = Date.now() - start;
+      if (!error) {
+        passCount++;
+        results.push(`  OK Base de datos (${ms}ms)`);
+      } else {
+        failCount++;
+        results.push(`  FAIL Base de datos — ${error.message}`);
+      }
+    } catch {
+      failCount++;
+      results.push("  FAIL Base de datos — sin conexion");
+    }
+  }
+
+  const status = failCount === 0 ? "TODO BIEN" : `${failCount} PROBLEMA(S)`;
+
+  return (
+    `<b>ESTADO DEL SITIO — ${status}</b>\n\n` +
+    `${passCount} OK / ${failCount} Errores\n\n` +
+    results.join("\n")
+  );
+}
+
 function handleHelp(): string {
   return (
-    `<b>Comandos disponibles</b>\n\n` +
-    `<b>Horario:</b>\n` +
-    `  "que hay hoy" - Clases de hoy\n` +
-    `  "clases de manana" - Clases de manana\n` +
-    `  "semana" - Horario de la semana\n\n` +
-    `<b>Sesiones:</b>\n` +
-    `  "cancelar clase de las 9:30 manana" - Cancelar sesion\n` +
-    `  "clase llena las 7:15 hoy" - Marcar como llena\n\n` +
-    `<b>Dias:</b>\n` +
-    `  "cerrar el viernes" - Cerrar un dia\n` +
-    `  "abrir el viernes" - Reabrir un dia cerrado\n\n` +
-    `<b>Eventos:</b>\n` +
-    `  "evento Sound Healing mayo 25 5:30pm $80,000 COP 15 cupos"\n` +
-    `  Enviar foto de flyer - Crear evento desde imagen\n` +
-    `  "cancelar evento Sound Healing"\n\n` +
-    `<b>Alumnos:</b>\n` +
-    `  "alumnos" - Conteo y registros recientes\n\n` +
-    `<b>Ayuda:</b>\n` +
-    `  "ayuda" - Este mensaje`
+    `<b>TU. Bot — Comandos</b>\n\n` +
+    `<b>/hoy</b> — Clases de hoy\n` +
+    `<b>/manana</b> — Clases de manana\n` +
+    `<b>/semana</b> — Horario de la semana\n` +
+    `<b>/reservas</b> — Reservas de hoy con nombres\n` +
+    `<b>/resumen</b> — Dashboard general\n\n` +
+    `<b>/cancelar</b> clase 9:30 manana — Cancelar sesion\n` +
+    `<b>/llena</b> 7:15 hoy — Marcar como llena\n` +
+    `<b>/cerrar</b> viernes — Cerrar un dia\n` +
+    `<b>/abrir</b> viernes — Reabrir dia cerrado\n\n` +
+    `<b>/evento</b> Sound Healing mayo 25 5:30pm $80,000 15 cupos\n` +
+    `<b>/cancelar_evento</b> Sound Healing\n` +
+    `Enviar foto de flyer — Crear evento desde imagen\n\n` +
+    `<b>/alumnos</b> — Conteo y registros recientes\n` +
+    `<b>/buscar</b> Maria — Buscar alumno\n` +
+    `<b>/packs</b> — Packs activos\n` +
+    `<b>/pagos</b> — Pagos pendientes\n` +
+    `<b>/leads</b> — Leads recientes\n` +
+    `<b>/sitio</b> — Verificar que todo funciona\n\n` +
+    `<b>/ayuda</b> — Este mensaje\n\n` +
+    `Tambien puedes escribir en lenguaje natural!`
   );
 }
 
@@ -1139,9 +1543,48 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle text messages
-    const text = message.text || message.caption || "";
-    if (!text.trim()) {
+    const rawText = (message.text || message.caption || "").trim();
+    if (!rawText) {
       return NextResponse.json({ ok: true });
+    }
+
+    // Handle slash commands — map to natural language for intent parser
+    const slashMap: Record<string, string> = {
+      "/hoy": "que hay hoy",
+      "/manana": "clases de manana",
+      "/semana": "semana",
+      "/reservas": "reservas de hoy",
+      "/resumen": "resumen",
+      "/alumnos": "alumnos",
+      "/packs": "packs activos",
+      "/pagos": "pagos pendientes",
+      "/leads": "leads recientes",
+      "/sitio": "verificar sitio",
+      "/ayuda": "ayuda",
+      "/help": "ayuda",
+      "/start": "ayuda",
+    };
+
+    let text = rawText;
+    // Check for exact slash command match
+    const firstWord = rawText.split(" ")[0].toLowerCase();
+    if (slashMap[firstWord]) {
+      const rest = rawText.slice(firstWord.length).trim();
+      text = slashMap[firstWord] + (rest ? " " + rest : "");
+    } else if (firstWord === "/cancelar_evento") {
+      text = "cancelar evento " + rawText.slice("/cancelar_evento".length).trim();
+    } else if (firstWord === "/cancelar") {
+      text = "cancelar clase " + rawText.slice("/cancelar".length).trim();
+    } else if (firstWord === "/llena") {
+      text = "clase llena " + rawText.slice("/llena".length).trim();
+    } else if (firstWord === "/cerrar") {
+      text = "cerrar " + rawText.slice("/cerrar".length).trim();
+    } else if (firstWord === "/abrir") {
+      text = "abrir " + rawText.slice("/abrir".length).trim();
+    } else if (firstWord === "/evento") {
+      text = "evento " + rawText.slice("/evento".length).trim();
+    } else if (firstWord === "/buscar") {
+      text = "buscar " + rawText.slice("/buscar".length).trim();
     }
 
     // Parse intent with Claude
@@ -1188,6 +1631,34 @@ export async function POST(request: NextRequest) {
 
       case "student_count":
         response = await handleStudentCount(supabase);
+        break;
+
+      case "pending_payments":
+        response = await handlePendingPayments(supabase);
+        break;
+
+      case "active_packs":
+        response = await handleActivePacks(supabase);
+        break;
+
+      case "search_student":
+        response = await handleSearchStudent(supabase, intent.params);
+        break;
+
+      case "recent_leads":
+        response = await handleRecentLeads(supabase);
+        break;
+
+      case "dashboard":
+        response = await handleDashboard(supabase);
+        break;
+
+      case "bookings_today":
+        response = await handleBookingsToday(supabase);
+        break;
+
+      case "health_check":
+        response = await handleHealthCheck();
         break;
 
       case "help":
