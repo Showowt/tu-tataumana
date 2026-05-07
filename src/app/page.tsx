@@ -98,9 +98,9 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "MON",
     dayIndex: 1,
     classes: [
-      { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa", teacher: "Harold", desc: { es: "Fluye con intención. Movimiento, respiración y energía para empezar el día.", en: "Flow with intention. Movement, breath and energy to start the day." } },
-      { time: "11:00 AM", name: "Yoga Flow", teacher: "Karla", desc: { es: "Una práctica fluida para conectar cuerpo y mente.", en: "A flowing practice to connect body and mind." } },
-      { time: "7:15 PM", name: "Yoga Flow - Open Vinyasa", teacher: "Violeta", desc: { es: "Vinyasa creativo para soltar tensiones y reconectar contigo.", en: "Creative vinyasa to release tension and reconnect with yourself." } },
+      { time: "9:30 AM", name: "Stress Release", teacher: "Harold", desc: { es: "Libera tensión y estrés a través de movimiento consciente y respiración profunda.", en: "Release tension and stress through conscious movement and deep breathing." } },
+      { time: "11:00 AM", name: "Sculpt Your Body", teacher: "Karla", desc: { es: "Tonifica y fortalece tu cuerpo con movimientos precisos y controlados.", en: "Tone and strengthen your body with precise, controlled movements." } },
+      { time: "7:15 PM", name: "Open Flow", teacher: "Violeta", desc: { es: "Secuencias fluidas para liberar, expandir y equilibrar tu energía.", en: "Fluid sequences to release, expand and balance your energy." } },
     ],
   },
   {
@@ -109,8 +109,9 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "TUE",
     dayIndex: 2,
     classes: [
-      { time: "9:30 AM", name: "Back Care Yoga", teacher: "Tata", desc: { es: "Cuida tu espalda, mejora tu postura y alivia tensiones.", en: "Care for your back, improve your posture and relieve tension." } },
-      { time: "7:15 PM", name: "Hatha", teacher: "Alejandro", desc: { es: "Posturas conscientes y respiración para cultivar equilibrio y calma.", en: "Conscious postures and breathing to cultivate balance and calm." } },
+      { time: "9:30 AM", name: "Yoga for the Back", teacher: "Tata", desc: { es: "Cuida tu espalda, mejora tu postura y alivia tensiones.", en: "Care for your back, improve your posture and relieve tension." } },
+      { time: "5:30 PM", name: "Meditación Viaje Interior", note: "(solo en español)", teacher: "Álvaro", desc: { es: "Meditación guiada para volver a ti y encontrar paz interior.", en: "Guided meditation to return to yourself and find inner peace." } },
+      { time: "7:15 PM", name: "Hip Opening · Hatha", teacher: "Alejandro", desc: { es: "Abre tus caderas y libera tensión profunda con posturas conscientes de hatha.", en: "Open your hips and release deep tension with conscious hatha postures." } },
     ],
   },
   {
@@ -119,8 +120,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "WED",
     dayIndex: 3,
     classes: [
-      { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa", teacher: "Harold", desc: { es: "Una práctica dinámica para despertar el cuerpo y enfocar la mente.", en: "A dynamic practice to awaken the body and focus the mind." } },
-      { time: "10:45 AM", name: "Pilates", teacher: "Harold", desc: { es: "Fortalece, alinea y tonifica tu cuerpo desde el centro.", en: "Strengthen, align and tone your body from the core." } },
+      { time: "9:30 AM", name: "Yogalates", teacher: "Harold", desc: { es: "Fusión de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
+      { time: "10:45 AM", name: "Pilates Flow", teacher: "Harold", desc: { es: "Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.", en: "Strengthen, align and tone your body with fluidity from the core." } },
       { time: "7:15 PM", name: "Open Flow", teacher: "Violeta", desc: { es: "Secuencias fluidas para liberar, expandir y equilibrar tu energía.", en: "Fluid sequences to release, expand and balance your energy." } },
     ],
   },
@@ -130,8 +131,9 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "THU",
     dayIndex: 4,
     classes: [
-      { time: "9:30 AM", name: "Yoga Intro · Power Up", teacher: "Tata", desc: { es: "Activa tu cuerpo y mente con una práctica poderosa y revitalizante.", en: "Activate your body and mind with a powerful and revitalizing practice." } },
-      { time: "7:15 PM", name: "Hatha", teacher: "Alejandro", desc: { es: "Una práctica clásica para conectar cuerpo, mente y respiración.", en: "A classic practice to connect body, mind and breath." } },
+      { time: "9:30 AM", name: "Yoga Intro", teacher: "Tata", desc: { es: "Práctica accesible para descubrir el yoga y activar tu cuerpo.", en: "Accessible practice to discover yoga and activate your body." } },
+      { time: "5:30 PM", name: "Sound Healing", teacher: "Tata", desc: { es: "Relajación profunda a través de sonidos sanadores que armonizan tu energía.", en: "Deep relaxation through healing sounds that harmonize your energy." } },
+      { time: "7:15 PM", name: "Hip Opening", teacher: "Alejandro", desc: { es: "Abre tus caderas y libera tensión profunda con movimiento consciente.", en: "Open your hips and release deep tension with conscious movement." } },
     ],
   },
   {
@@ -140,7 +142,7 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "FRI",
     dayIndex: 5,
     classes: [
-      { time: "10:00 AM", name: "Power Yoga · Postura", teacher: "Tata", desc: { es: "Fuerza, alineación y presencia para activar tu poder interior.", en: "Strength, alignment and presence to activate your inner power." } },
+      { time: "10:00 AM", name: "Power Yoga", teacher: "Tata", desc: { es: "Fuerza, alineación y presencia para activar tu poder interior.", en: "Strength, alignment and presence to activate your inner power." } },
       { time: "7:00 PM", name: "Open Flow", teacher: "Betty & Violeta", desc: { es: "Fluye, suelta y recarga tu energía para cerrar la semana en balance.", en: "Flow, release and recharge your energy to close the week in balance." } },
     ],
   },
@@ -151,7 +153,7 @@ const weeklySchedule: ScheduleDay[] = [
     dayIndex: 6,
     classes: [
       { time: "11:00 AM", name: "Sun Salutation", teacher: "Tata", desc: { es: "Salud al sol: movimiento consciente para despertar y agradecer.", en: "Sun salute: conscious movement to awaken and give thanks." } },
-      { time: "6:00 PM", name: "Inner Journey · Meditation", note: "(solo en español)", teacher: "Álvaro", desc: { es: "Meditación guiada para volver a ti y encontrar paz interior.", en: "Guided meditation to return to yourself and find inner peace." } },
+      { time: "6:00 PM", name: "Meditación Viaje Interior", note: "(solo en español)", teacher: "Álvaro", desc: { es: "Meditación guiada para volver a ti y encontrar paz interior.", en: "Guided meditation to return to yourself and find inner peace." } },
     ],
   },
   {
@@ -160,8 +162,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "SUN",
     dayIndex: 0,
     classes: [
-      { time: "9:00 AM", name: "Power Yoga", teacher: "Alejandro", desc: { es: "Práctica energética para fortalecer el cuerpo y calmar la mente.", en: "Energetic practice to strengthen the body and calm the mind." } },
-      { time: "10:30 AM", name: "Inner Journey · Meditation", note: "(solo en español)", teacher: "Álvaro", desc: { es: "Un viaje hacia adentro a través de la meditación y la quietud.", en: "A journey inward through meditation and stillness." } },
+      { time: "9:00 AM", name: "Just Hatha Flow", teacher: "Alejandro", desc: { es: "Flujo suave de hatha yoga para conectar cuerpo, mente y respiración.", en: "Gentle hatha yoga flow to connect body, mind and breath." } },
+      { time: "10:30 AM", name: "Meditación Viaje Interior", note: "(solo en español)", teacher: "Álvaro", desc: { es: "Un viaje hacia adentro a través de la meditación y la quietud.", en: "A journey inward through meditation and stillness." } },
     ],
   },
 ];
@@ -354,6 +356,7 @@ function useScrollReveal() {
 export default function Home() {
   const [heroLoaded, setHeroLoaded] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [preselectedService, setPreselectedService] = useState("");
@@ -395,10 +398,12 @@ export default function Home() {
     return () => lenis.destroy();
   }, []);
 
-  // Show sticky bar after scrolling past hero
+  // Show sticky bar + scroll progress
   useEffect(() => {
     const handler = () => {
       setShowStickyBar(window.scrollY > window.innerHeight * 0.7);
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgress(docHeight > 0 ? Math.min(window.scrollY / docHeight, 1) : 0);
     };
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
@@ -480,34 +485,85 @@ export default function Home() {
 
   return (
     <main ref={sectionsRef} className="w-full overflow-x-hidden">
-      {/* ━━━ TOP NAV — Login + Language ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <div className="fixed top-4 right-4 z-[60] flex items-center gap-2">
-        <Link
-          href={isLoggedIn ? "/portal" : "/login"}
-          className={`px-4 py-1.5 rounded-full backdrop-blur-md border font-[family-name:var(--font-body)] text-xs tracking-[0.15em] no-underline transition-all duration-500 ${
-            showStickyBar
-              ? "bg-charcoal/5 border-charcoal/10 text-charcoal hover:bg-charcoal/10"
-              : "bg-white/10 border-white/20 text-white hover:bg-white/20"
-          }`}
-          style={{ minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
-        >
-          {isLoggedIn
-            ? lang === "en" ? "My Account" : "Mi Cuenta"
-            : lang === "en" ? "Sign In" : "Entrar"}
-        </Link>
+      {/* ━━━ SCROLL PROGRESS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <div
+        className="scroll-progress"
+        style={{ transform: `scaleX(${scrollProgress})`, opacity: showStickyBar ? 1 : 0 }}
+      />
+
+      {/* ━━━ STICKY NAV ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <nav
+        className={`nav-sticky fixed top-0 left-0 right-0 z-[60] flex items-center justify-between px-5 md:px-8 border-b ${
+          showStickyBar
+            ? "bg-cream/90 backdrop-blur-xl border-charcoal/5 shadow-[0_1px_20px_rgba(0,0,0,0.04)]"
+            : "bg-transparent border-transparent"
+        }`}
+        style={{ height: 56 }}
+      >
+        {/* Logo */}
         <button
-          onClick={() => setLang(lang === "en" ? "es" : "en")}
-          className={`px-3 py-1.5 rounded-full backdrop-blur-md border font-[family-name:var(--font-body)] text-xs tracking-[0.15em] transition-all duration-500 ${
-            showStickyBar
-              ? "bg-charcoal/5 border-charcoal/10 text-charcoal hover:bg-charcoal/10"
-              : "bg-white/10 border-white/20 text-white hover:bg-white/20"
-          }`}
-          style={{ minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
-          aria-label="Toggle language"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="flex items-center gap-2.5 group"
+          aria-label="Scroll to top"
         >
-          {lang === "en" ? "ES" : "EN"}
+          <Image
+            src="/tu-logo.png"
+            alt="TU."
+            width={28}
+            height={28}
+            className={`transition-all duration-500 ${showStickyBar ? "opacity-100" : "opacity-0 -translate-y-2"}`}
+            style={{ objectFit: "contain" }}
+          />
+          <span
+            className={`font-[family-name:var(--font-display)] text-sm tracking-[0.15em] transition-all duration-500 ${
+              showStickyBar ? "text-charcoal/70 opacity-100" : "text-white/80 opacity-0 -translate-y-2"
+            }`}
+            style={{ fontWeight: 300 }}
+          >
+            TATA UMANA
+          </span>
         </button>
-      </div>
+
+        {/* Right side */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => openBooking()}
+            className={`px-4 py-1.5 rounded-full font-[family-name:var(--font-body)] text-[10px] tracking-[0.2em] transition-all duration-500 ${
+              showStickyBar
+                ? "bg-rose text-white hover:bg-charcoal opacity-100 translate-y-0"
+                : "bg-white/15 backdrop-blur-md text-white hover:bg-white/25 opacity-0 translate-y-2 pointer-events-none"
+            }`}
+            style={{ minHeight: 36 }}
+          >
+            {lang === "en" ? "BOOK NOW" : "RESERVAR"}
+          </button>
+          <Link
+            href={isLoggedIn ? "/portal" : "/login"}
+            className={`px-3.5 py-1.5 rounded-full backdrop-blur-md border font-[family-name:var(--font-body)] text-[10px] tracking-[0.15em] no-underline transition-all duration-500 ${
+              showStickyBar
+                ? "bg-charcoal/5 border-charcoal/8 text-charcoal/60 hover:bg-charcoal/10"
+                : "bg-white/10 border-white/20 text-white/80 hover:bg-white/20"
+            }`}
+            style={{ minHeight: 36, display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            {isLoggedIn
+              ? lang === "en" ? "My Account" : "Mi Cuenta"
+              : lang === "en" ? "Sign In" : "Entrar"}
+          </Link>
+          <button
+            onClick={() => setLang(lang === "en" ? "es" : "en")}
+            className={`px-2.5 py-1.5 rounded-full backdrop-blur-md border font-[family-name:var(--font-body)] text-[10px] tracking-[0.15em] transition-all duration-500 ${
+              showStickyBar
+                ? "bg-charcoal/5 border-charcoal/8 text-charcoal/60 hover:bg-charcoal/10"
+                : "bg-white/10 border-white/20 text-white/80 hover:bg-white/20"
+            }`}
+            style={{ minWidth: 36, minHeight: 36, display: "flex", alignItems: "center", justifyContent: "center" }}
+            aria-label="Toggle language"
+          >
+            {lang === "en" ? "ES" : "EN"}
+          </button>
+        </div>
+      </nav>
 
       {/* ━━━ HERO — Fullscreen Cinematic Video ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="relative h-screen w-full overflow-hidden bg-black">
@@ -1018,6 +1074,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Warm gradient into dark schedule */}
+      <div className="section-fade-to-dark" />
+
       {/* ━━━ WEEKLY SCHEDULE — Cinematic Dark Section ━━━━━━━━━━━━━━━━━━━━━ */}
       <section id="schedule" className="relative py-24 md:py-32 bg-charcoal overflow-clip grain-overlay">
         {/* Background video */}
@@ -1074,6 +1133,11 @@ export default function Home() {
             </h2>
             <p className="fade-in fade-in-delay-2 font-[family-name:var(--font-body)] text-sm text-white/40 mt-6 max-w-md mx-auto">
               {L(t.scheduleSub) as string}
+            </p>
+            <p className="fade-in fade-in-delay-3 font-[family-name:var(--font-body)] text-[11px] text-gold/40 mt-3 italic">
+              {lang === "en"
+                ? "Bilingual classes except Meditación Viaje Interior (solo en español)"
+                : "Clases bilingües excepto Meditación Viaje Interior (solo en español)"}
             </p>
           </div>
 
@@ -1319,7 +1383,8 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="py-4"><div className="divider-gold" /></div>
+      {/* Warm gradient out of dark schedule */}
+      <div className="section-fade-from-dark" />
 
       {/* ━━━ MEET OUR TEACHERS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section id="teachers" className="py-28 md:py-36 bg-white">
@@ -1561,6 +1626,8 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="section-fade-to-dark" />
+
       {/* ━━━ BOOKING HIGHLIGHT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="py-20 md:py-28 bg-charcoal relative overflow-clip grain-overlay">
         <div
@@ -1622,6 +1689,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <div className="section-fade-from-dark" />
 
       {/* ━━━ RETREATS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section id="retreats" className="py-32 md:py-44">
@@ -1950,13 +2019,22 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-16 pt-8 border-t border-charcoal/5 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/30">
-              &copy; {new Date().getFullYear()} TU. by Tata Umana
-            </p>
-            <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/20">
-              Built by MachineMind
-            </p>
+          <div className="mt-16 pt-8 border-t border-charcoal/5">
+            <div className="divider-gold mb-8" />
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/30">
+                  &copy; {new Date().getFullYear()} TU. by Tata Umana
+                </p>
+                <span className="text-charcoal/10">&middot;</span>
+                <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.15em] text-gold/30">
+                  JUSTBYOGA BY TUISYOU
+                </p>
+              </div>
+              <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/20">
+                Built by MachineMind
+              </p>
+            </div>
           </div>
         </div>
       </footer>

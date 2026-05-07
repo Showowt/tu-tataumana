@@ -1,11 +1,11 @@
 /**
  * Payment Creation API
- * TU. by Tata Umana — WellnessOS v1.0
+ * TU. by Tata Umana — WellnessOS v1.1
  *
  * POST /api/payments/create
- * Creates a Wompi checkout config OR records a manual payment pending.
+ * Creates a Square checkout link OR records a manual payment pending.
  *
- * Body: { pack_type: string, payment_method: 'wompi' | 'nequi' | 'bancolombia' | 'zelle' }
+ * Body: { pack_type: string, payment_method: 'square' | 'nequi' | 'bancolombia' | 'zelle' }
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -13,14 +13,14 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { getPackDefinition } from "@/lib/constants/packs";
-import { createWompiCheckout, type WompiCheckoutConfig } from "@/lib/wompi";
+import { createSquareCheckout } from "@/lib/square";
 import { notifyPaymentReceived } from "@/lib/telegram";
 
 // -------------------------------------------------------------------
 // Types
 // -------------------------------------------------------------------
 
-type PaymentMethod = "wompi" | "nequi" | "bancolombia" | "zelle";
+type PaymentMethod = "square" | "nequi" | "bancolombia" | "zelle";
 
 interface CreatePaymentBody {
   pack_type: string;
@@ -33,10 +33,10 @@ interface StudentRecord {
   email: string | null;
 }
 
-interface WompiSuccessResponse {
+interface SquareSuccessResponse {
   data: {
-    method: "wompi";
-    checkout: WompiCheckoutConfig;
+    method: "square";
+    checkout_url: string;
     reference: string;
   };
   error: null;
@@ -60,7 +60,7 @@ interface ErrorResponse {
   message: string;
 }
 
-type CreatePaymentResponse = WompiSuccessResponse | ManualSuccessResponse | ErrorResponse;
+type CreatePaymentResponse = SquareSuccessResponse | ManualSuccessResponse | ErrorResponse;
 
 // -------------------------------------------------------------------
 // Manual payment account details
@@ -81,7 +81,7 @@ const MANUAL_ACCOUNTS: Record<"nequi" | "bancolombia" | "zelle", { label: string
   },
 };
 
-const VALID_PAYMENT_METHODS: PaymentMethod[] = ["wompi", "nequi", "bancolombia", "zelle"];
+const VALID_PAYMENT_METHODS: PaymentMethod[] = ["square", "nequi", "bancolombia", "zelle"];
 
 const TATA_WHATSAPP = "573185083035";
 
@@ -214,36 +214,36 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
     const serviceDb = getServiceSupabase();
 
     // -------------------------------------------------------------------
-    // WOMPI CHECKOUT
+    // SQUARE CHECKOUT
     // -------------------------------------------------------------------
-    if (payment_method === "wompi") {
-      const amountInCents = packDef.priceCop * 100;
+    if (payment_method === "square") {
+      const amountCents = packDef.priceCop * 100;
 
-      const checkoutConfig = createWompiCheckout({
-        amount: amountInCents,
+      const checkout = await createSquareCheckout({
+        amountCents,
         currency: "COP",
         reference,
-        customerEmail: student?.email || "",
-        customerName: student?.full_name || "",
+        customerEmail: student?.email || undefined,
         redirectUrl: `https://www.tataumana.com/payment/success?ref=${reference}`,
-        description: `TU. ${packDef.name.en} — ${packDef.totalClasses === -1 ? "Unlimited" : packDef.totalClasses} classes`,
+        description: `TU. ${packDef.name.es} — ${packDef.totalClasses === -1 ? "Ilimitado" : packDef.totalClasses + " clases"}`,
       });
 
       // Insert pending transaction
       const { error: txError } = await serviceDb.from("tu_transactions").insert({
         wompi_reference: reference,
-        amount: amountInCents,
+        amount: amountCents,
         currency: "COP",
-        payment_method: "wompi",
+        payment_method: "square",
         status: "pending",
         student_id: student?.id || null,
         related_pack_type: pack_type,
-        description: `${packDef.name.en} — Wompi checkout`,
+        description: `${packDef.name.en} — Square checkout`,
         metadata: {
           pack_name: packDef.name.en,
           pack_classes: packDef.totalClasses,
           customer_email: student?.email || null,
           customer_name: student?.full_name || null,
+          square_order_id: checkout.orderId,
           initiated_at: new Date().toISOString(),
         },
       });
@@ -258,12 +258,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
 
       return NextResponse.json({
         data: {
-          method: "wompi" as const,
-          checkout: checkoutConfig,
+          method: "square" as const,
+          checkout_url: checkout.paymentLinkUrl,
           reference,
         },
         error: null,
-        message: "Wompi checkout ready",
+        message: "Square checkout ready",
       });
     }
 
@@ -305,7 +305,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
     try {
       await notifyPaymentReceived({
         reference,
-        amount: packDef.priceCop * 100, // notifyPaymentReceived divides by 100 for display
+        amount: packDef.priceCop * 100,
         currency: "COP",
         customerEmail: student?.email || undefined,
         customerName: student?.full_name || undefined,

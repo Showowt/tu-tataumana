@@ -110,15 +110,55 @@ body {
   opacity: 0.4;
 }
 
+/* Scroll progress indicator */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-rose), var(--color-gold));
+  z-index: 100;
+  transform-origin: left;
+  will-change: transform;
+}
+
+/* Sticky nav */
+.nav-sticky {
+  transition: background-color 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Service card hover */
 .service-card {
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.service-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-rose), var(--color-rose-soft));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .service-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+  border-color: rgba(184,119,119,0.12);
+}
+
+.service-card:hover::after {
+  transform: scaleX(1);
 }
 
 /* CTA button */
@@ -154,11 +194,24 @@ body {
 /* Booking card glow */
 .booking-glow {
   box-shadow: 0 0 0 1px rgba(184,119,119,0.1);
-  transition: box-shadow 0.6s;
+  transition: box-shadow 0.6s, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .booking-glow:hover {
   box-shadow: 0 0 60px rgba(184,119,119,0.08), 0 0 0 1px rgba(184,119,119,0.15);
+  transform: translateY(-3px);
+}
+
+/* Section transition — warm fade between light and dark sections */
+.section-fade-to-dark {
+  background: linear-gradient(to bottom, var(--color-cream) 0%, #3a3535 100%);
+  height: 120px;
+  margin-bottom: -1px;
+}
+.section-fade-from-dark {
+  background: linear-gradient(to bottom, #3a3535 0%, var(--color-cream) 100%);
+  height: 120px;
+  margin-top: -1px;
 }
 
 /* Press logo style */

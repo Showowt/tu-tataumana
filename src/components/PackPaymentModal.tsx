@@ -18,7 +18,7 @@ interface PackPaymentModalProps {
   lang?: "es" | "en";
 }
 
-type PaymentMethod = "wompi" | "nequi" | "bancolombia" | "zelle";
+type PaymentMethod = "square" | "nequi" | "bancolombia" | "zelle";
 
 function formatCOP(amount: number): string {
   return new Intl.NumberFormat("es-CO", {
@@ -85,7 +85,7 @@ const PAYMENT_METHODS: {
   icon: () => React.ReactElement;
 }[] = [
   {
-    value: "wompi",
+    value: "square",
     label: {
       es: "Tarjeta de Credito/Debito",
       en: "Credit/Debit Card",
@@ -146,7 +146,7 @@ export default function PackPaymentModal({
     }
   }
 
-  async function handleWompiPayment() {
+  async function handleSquarePayment() {
     setLoading(true);
     setError(null);
 
@@ -156,7 +156,7 @@ export default function PackPaymentModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           pack_type: pack.type,
-          payment_method: "wompi",
+          payment_method: "square",
         }),
       });
 
@@ -166,22 +166,8 @@ export default function PackPaymentModal({
         throw new Error(json.message || "Error al crear el pago");
       }
 
-      const checkout = json.data.checkout;
-      const params = new URLSearchParams();
-      params.set("public-key", checkout.publicKey);
-      params.set("currency", checkout.currency);
-      params.set("amount-in-cents", String(checkout.amountInCents));
-      params.set("reference", checkout.reference);
-      params.set("signature:integrity", checkout.signature);
-      params.set("redirect-url", checkout.redirectUrl);
-      if (checkout.customerEmail) {
-        params.set("customer-data:email", checkout.customerEmail);
-      }
-      if (checkout.customerFullname) {
-        params.set("customer-data:full-name", checkout.customerFullname);
-      }
-
-      window.location.href = `https://checkout.wompi.co/p/?${params.toString()}`;
+      // Square returns a checkout URL — redirect directly
+      window.location.href = json.data.checkout_url;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error inesperado";
@@ -227,11 +213,11 @@ export default function PackPaymentModal({
   function renderMethodDetails() {
     if (!selected) return null;
 
-    if (selected === "wompi") {
+    if (selected === "square") {
       return (
         <div className="mt-4 space-y-3">
           <button
-            onClick={handleWompiPayment}
+            onClick={handleSquarePayment}
             disabled={loading}
             className="w-full py-3 bg-[#2C2C2C] text-white text-[11px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ fontFamily: "Outfit, sans-serif" }}

@@ -62,7 +62,7 @@ const STATUS_BADGES: Record<string, { label: string; color: string }> = {
 };
 
 const METHOD_LABELS: Record<string, string> = {
-  wompi: "Wompi",
+  square: "Square",
   nequi: "Nequi",
   bancolombia: "Bancolombia",
   zelle: "Zelle",
@@ -149,8 +149,8 @@ export default function AdminPaymentsPage() {
    */
   function displayAmount(tx: TransactionData): string {
     const raw = tx.amount;
-    // Wompi amounts are in centavos (x100)
-    const isCents = tx.payment_method === "wompi" || tx.payment_method === "card";
+    // Square amounts are in centavos (x100)
+    const isCents = tx.payment_method === "square" || tx.payment_method === "card";
     const cop = isCents ? raw / 100 : raw;
     return formatCOP(cop);
   }
@@ -233,7 +233,7 @@ export default function AdminPaymentsPage() {
               "";
 
             const isPendingManual =
-              tx.status === "pending" && tx.payment_method !== "wompi";
+              tx.status === "pending" && tx.payment_method !== "square";
 
             return (
               <div
