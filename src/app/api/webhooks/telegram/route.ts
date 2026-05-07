@@ -1,0 +1,1224 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface TelegramUpdate {
+  update_id: number;
+  message?: TelegramMessage;
+}
+
+interface TelegramMessage {
+  message_id: number;
+  from: { id: number; first_name: string };
+  chat: { id: number; type: string };
+  date: number;
+  text?: string;
+  caption?: string;
+  photo?: TelegramPhoto[];
+}
+
+interface TelegramPhoto {
+  file_id: string;
+  file_unique_id: string;
+  width: number;
+  height: number;
+  file_size?: number;
+}
+
+interface ParsedIntent {
+  action:
+    | "today_schedule"
+    | "week_schedule"
+    | "cancel_session"
+    | "close_date"
+    | "open_date"
+    | "mark_full"
+    | "create_event_text"
+    | "cancel_event"
+    | "student_count"
+    | "help"
+    | "unknown";
+  params: Record<string, string>;
+}
+
+interface SessionWithDef {
+  id: string;
+  session_date: string;
+  start_time: string;
+  teacher: string;
+  capacity: number;
+  enrolled: number;
+  status: string;
+  cancel_reason: string | null;
+  definition: {
+    name: string;
+    name_es: string;
+    style: string;
+  } | null;
+}
+
+// ---------------------------------------------------------------------------
+// Env / Clients
+// ---------------------------------------------------------------------------
+
+function getSupabase(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
+
+function getBotToken(): string {
+  return process.env.TELEGRAM_BOT_TOKEN || "";
+}
+
+function getAllowedChatId(): string {
+  return process.env.TELEGRAM_CHAT_ID || "";
+}
+
+function getAnthropicKey(): string {
+  return process.env.ANTHROPIC_API_KEY || "";
+}
+
+// ---------------------------------------------------------------------------
+// Colombia timezone helpers
+// ---------------------------------------------------------------------------
+
+function getColombiaDate(offsetDays = 0): Date {
+  const now = new Date();
+  const colombia = new Date(
+    now.toLocaleString("en-US", { timeZone: "America/Bogota" })
+  );
+  colombia.setDate(colombia.getDate() + offsetDays);
+  return colombia;
+}
+
+function getColombiaDateStr(offsetDays = 0): string {
+  return getColombiaDate(offsetDays).toISOString().split("T")[0];
+}
+
+function getColombiaWeekRange(): { start: string; end: string } {
+  const today = getColombiaDate();
+  const dayOfWeek = today.getDay();
+  const start = new Date(today);
+  start.setDate(start.getDate() - dayOfWeek);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  return {
+    start: start.toISOString().split("T")[0],
+    end: end.toISOString().split("T")[0],
+  };
+}
+
+const DAY_NAMES_ES = [
+  "Domingo",
+  "Lunes",
+  "Martes",
+  "Miercoles",
+  "Jueves",
+  "Viernes",
+  "Sabado",
+];
+
+function spanishDate(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  const dayName = DAY_NAMES_ES[d.getDay()];
+  const day = d.getDate();
+  const months = [
+    "ene", "feb", "mar", "abr", "may", "jun",
+    "jul", "ago", "sep", "oct", "nov", "dic",
+  ];
+  const month = months[d.getMonth()];
+  return `${dayName} ${day} ${month}`;
+}
+
+// ---------------------------------------------------------------------------
+// Telegram API helpers
+// ---------------------------------------------------------------------------
+
+async function sendTelegram(text: string): Promise<boolean> {
+  const botToken = getBotToken();
+  const chatId = getAllowedChatId();
+  if (!botToken || !chatId) return false;
+
+  // Telegram limit is 4096 chars — split if needed
+  const chunks: string[] = [];
+  let remaining = text;
+  while (remaining.length > 0) {
+    if (remaining.length <= 4096) {
+      chunks.push(remaining);
+      break;
+    }
+    // Find a good break point
+    let breakIdx = remaining.lastIndexOf("\n", 4096);
+    if (breakIdx < 2000) breakIdx = 4096;
+    chunks.push(remaining.slice(0, breakIdx));
+    remaining = remaining.slice(breakIdx);
+  }
+
+  for (const chunk of chunks) {
+    const res = await fetch(
+      `https://api.telegram.org/bot${botToken}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: chunk,
+          parse_mode: "HTML",
+          disable_web_page_preview: true,
+        }),
+      }
+    );
+    if (!res.ok) {
+      console.error("[Telegram] sendMessage failed:", await res.text());
+      return false;
+    }
+  }
+  return true;
+}
+
+async function downloadTelegramFile(fileId: string): Promise<Buffer | null> {
+  const botToken = getBotToken();
+  if (!botToken) return null;
+
+  // Get file path
+  const fileInfoRes = await fetch(
+    `https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`
+  );
+  if (!fileInfoRes.ok) return null;
+  const fileInfo = await fileInfoRes.json();
+  const filePath = fileInfo.result?.file_path;
+  if (!filePath) return null;
+
+  // Download file
+  const downloadRes = await fetch(
+    `https://api.telegram.org/file/bot${botToken}/${filePath}`
+  );
+  if (!downloadRes.ok) return null;
+
+  const arrayBuffer = await downloadRes.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
+// ---------------------------------------------------------------------------
+// Claude AI — Intent parsing
+// ---------------------------------------------------------------------------
+
+async function parseIntent(userMessage: string): Promise<ParsedIntent> {
+  const apiKey = getAnthropicKey();
+  if (!apiKey) {
+    return { action: "unknown", params: {} };
+  }
+
+  const todayStr = getColombiaDateStr();
+  const todayDate = getColombiaDate();
+  const dayName = DAY_NAMES_ES[todayDate.getDay()];
+
+  const systemPrompt = `Eres un parser de comandos para un bot de Telegram de un estudio de yoga. Hoy es ${dayName} ${todayStr}. Colombia timezone (UTC-5).
+
+Extrae la accion y parametros del mensaje de la administradora. Responde SOLO con JSON valido, sin markdown.
+
+Acciones posibles:
+- "today_schedule": ver clases de hoy. Params: { "date": "YYYY-MM-DD" }
+- "week_schedule": ver clases de la semana. Params: {}
+- "cancel_session": cancelar una sesion. Params: { "date": "YYYY-MM-DD", "time": "HH:MM" (24h), "reason": "..." }
+- "close_date": cerrar un dia (sin clases). Params: { "date": "YYYY-MM-DD", "reason": "..." }
+- "open_date": reabrir un dia cerrado. Params: { "date": "YYYY-MM-DD" }
+- "mark_full": marcar una sesion como llena. Params: { "date": "YYYY-MM-DD", "time": "HH:MM" (24h) }
+- "create_event_text": crear un evento especial. Params: { "title": "...", "date": "YYYY-MM-DD", "time": "HH:MM" (24h), "price_cop": numero, "capacity": numero, "description": "..." }
+- "cancel_event": cancelar un evento. Params: { "title": "..." }
+- "student_count": ver cuantos alumnos hay. Params: {}
+- "help": mostrar ayuda. Params: {}
+- "unknown": no se entiende. Params: {}
+
+Reglas:
+- "hoy" = ${todayStr}
+- "manana" = fecha de manana
+- "viernes" = proximo viernes desde hoy
+- Convierte horas 12h a 24h: "9:30 AM" -> "09:30", "7:15 PM" -> "19:15", "5:30 PM" -> "17:30"
+- Si dice "que hay hoy" o "clases de hoy" -> today_schedule
+- Si dice "semana" o "esta semana" -> week_schedule
+- Si dice "cancelar clase" -> cancel_session
+- Si dice "cerrar" -> close_date
+- Si dice "abrir" -> open_date
+- Si dice "llena" o "full" -> mark_full
+- Si dice "evento" y datos -> create_event_text
+- Si dice "cancelar evento" -> cancel_event
+- Si dice "alumnos" o "cuantos" -> student_count
+- Si dice "ayuda" o "help" -> help`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 300,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userMessage }],
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("[Claude] parseIntent failed:", await res.text());
+      return { action: "unknown", params: {} };
+    }
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || "{}";
+
+    // Extract JSON from response (handle possible markdown wrapping)
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { action: "unknown", params: {} };
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      action: parsed.action || "unknown",
+      params: parsed.params || {},
+    };
+  } catch (err) {
+    console.error("[Claude] parseIntent error:", err);
+    return { action: "unknown", params: {} };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Claude Vision — Extract event from photo
+// ---------------------------------------------------------------------------
+
+async function extractEventFromImage(
+  imageBase64: string,
+  caption?: string
+): Promise<Record<string, string> | null> {
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return null;
+
+  const todayStr = getColombiaDateStr();
+
+  const systemPrompt = `Eres un asistente que extrae informacion de eventos de imagenes de flyers para un estudio de yoga en Cartagena, Colombia. Hoy es ${todayStr}.
+
+Extrae estos campos del flyer/imagen y responde SOLO con JSON valido, sin markdown:
+{
+  "title": "nombre del evento",
+  "title_es": "nombre en español",
+  "description": "descripcion breve en ingles",
+  "description_es": "descripcion breve en español",
+  "date": "YYYY-MM-DD",
+  "time": "HH:MM (24h)",
+  "end_time": "HH:MM (24h) o null",
+  "price_cop": "numero o 0",
+  "capacity": "numero o 15",
+  "teacher": "nombre del profesor o Tata"
+}
+
+Si no puedes determinar algun campo, usa valores razonables por defecto. El estudio se llama TU. Tataumana.`;
+
+  const userContent: Array<
+    | { type: "image"; source: { type: "base64"; media_type: string; data: string } }
+    | { type: "text"; text: string }
+  > = [
+    {
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: "image/jpeg",
+        data: imageBase64,
+      },
+    },
+  ];
+
+  if (caption) {
+    userContent.push({
+      type: "text",
+      text: `La administradora envio esta imagen con el texto: "${caption}". Extrae la info del evento.`,
+    });
+  } else {
+    userContent.push({
+      type: "text",
+      text: "Extrae la informacion del evento de esta imagen de flyer.",
+    });
+  }
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 500,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userContent }],
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("[Claude Vision] failed:", await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || "{}";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+
+    return JSON.parse(jsonMatch[0]);
+  } catch (err) {
+    console.error("[Claude Vision] error:", err);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Action handlers
+// ---------------------------------------------------------------------------
+
+async function handleTodaySchedule(
+  supabase: SupabaseClient,
+  params: Record<string, string>
+): Promise<string> {
+  const dateStr = params.date || getColombiaDateStr();
+  const dateLabel = spanishDate(dateStr);
+
+  const { data: sessions, error } = await supabase
+    .from("tu_class_sessions")
+    .select(
+      `
+      id, session_date, start_time, teacher, capacity, enrolled, status, cancel_reason,
+      definition:tu_class_definitions (name, name_es, style)
+    `
+    )
+    .eq("session_date", dateStr)
+    .order("start_time", { ascending: true });
+
+  if (error) {
+    console.error("[Telegram] today_schedule error:", error.message);
+    return "Error al consultar las clases. Intenta de nuevo.";
+  }
+
+  const typedSessions = (sessions || []) as unknown as SessionWithDef[];
+
+  if (typedSessions.length === 0) {
+    // Check if it's a closed date
+    const { data: closed } = await supabase
+      .from("tu_closed_dates")
+      .select("date, reason")
+      .eq("date", dateStr)
+      .single();
+
+    if (closed) {
+      return `<b>Horario ${dateLabel}</b>\n\nDia cerrado${closed.reason ? `: ${closed.reason}` : ""}. No hay clases programadas.`;
+    }
+    return `<b>Horario ${dateLabel}</b>\n\nNo hay sesiones programadas para este dia.`;
+  }
+
+  let totalEnrolled = 0;
+  let totalCapacity = 0;
+  const lines: string[] = [];
+
+  for (const s of typedSessions) {
+    const name = s.definition?.name_es || s.definition?.name || s.start_time;
+    const enrolled = s.enrolled || 0;
+    const capacity = s.capacity || 10;
+    totalEnrolled += enrolled;
+    totalCapacity += capacity;
+
+    const bar =
+      enrolled > 0
+        ? "\u2588".repeat(Math.min(enrolled, capacity)) +
+          "\u2591".repeat(Math.max(capacity - enrolled, 0))
+        : "\u2591".repeat(capacity);
+
+    let statusTag = "";
+    if (s.status === "cancelled") {
+      statusTag = " CANCELADA";
+    } else if (enrolled >= capacity) {
+      statusTag = " LLENA";
+    } else if (capacity - enrolled <= 3) {
+      statusTag = ` ${capacity - enrolled} cupos`;
+    }
+
+    lines.push(
+      `<b>${s.start_time} - ${name}</b> (${s.teacher})\n${bar}  ${enrolled}/${capacity}${statusTag}`
+    );
+  }
+
+  const header = `<b>Horario ${dateLabel}</b>\n${typedSessions.length} clases \u00b7 ${totalEnrolled}/${totalCapacity} inscritos\n`;
+  return header + "\n" + lines.join("\n\n");
+}
+
+async function handleWeekSchedule(
+  supabase: SupabaseClient
+): Promise<string> {
+  const { start, end } = getColombiaWeekRange();
+
+  const { data: sessions, error } = await supabase
+    .from("tu_class_sessions")
+    .select(
+      `
+      id, session_date, start_time, teacher, capacity, enrolled, status,
+      definition:tu_class_definitions (name, name_es, style)
+    `
+    )
+    .gte("session_date", start)
+    .lte("session_date", end)
+    .neq("status", "cancelled")
+    .order("session_date", { ascending: true })
+    .order("start_time", { ascending: true });
+
+  if (error) {
+    console.error("[Telegram] week_schedule error:", error.message);
+    return "Error al consultar la semana. Intenta de nuevo.";
+  }
+
+  const typedSessions = (sessions || []) as unknown as SessionWithDef[];
+
+  if (typedSessions.length === 0) {
+    return `<b>Semana ${spanishDate(start)} - ${spanishDate(end)}</b>\n\nNo hay sesiones programadas.`;
+  }
+
+  // Get closed dates for the week
+  const { data: closedDates } = await supabase
+    .from("tu_closed_dates")
+    .select("date, reason")
+    .gte("date", start)
+    .lte("date", end);
+
+  const closedSet = new Set((closedDates || []).map((d: { date: string }) => d.date));
+
+  // Group by date
+  const byDate: Record<string, SessionWithDef[]> = {};
+  for (const s of typedSessions) {
+    if (!byDate[s.session_date]) byDate[s.session_date] = [];
+    byDate[s.session_date].push(s);
+  }
+
+  let totalEnrolled = 0;
+  let totalSessions = 0;
+  const dayBlocks: string[] = [];
+
+  // Iterate through each day of the week
+  const current = new Date(start + "T12:00:00");
+  const endDate = new Date(end + "T12:00:00");
+
+  while (current <= endDate) {
+    const ds = current.toISOString().split("T")[0];
+    const dayLabel = spanishDate(ds);
+
+    if (closedSet.has(ds)) {
+      dayBlocks.push(`<b>${dayLabel}</b> - Cerrado`);
+    } else if (byDate[ds] && byDate[ds].length > 0) {
+      const dayLines: string[] = [];
+      for (const s of byDate[ds]) {
+        const name = s.definition?.name_es || s.definition?.name || "Clase";
+        const enrolled = s.enrolled || 0;
+        totalEnrolled += enrolled;
+        totalSessions++;
+        const fullTag = enrolled >= s.capacity ? " LLENA" : "";
+        dayLines.push(
+          `  ${s.start_time} ${name} (${s.teacher}) ${enrolled}/${s.capacity}${fullTag}`
+        );
+      }
+      dayBlocks.push(`<b>${dayLabel}</b>\n${dayLines.join("\n")}`);
+    }
+
+    current.setDate(current.getDate() + 1);
+  }
+
+  const header = `<b>Esta semana</b>\n${totalSessions} clases \u00b7 ${totalEnrolled} inscritos\n`;
+  return header + "\n" + dayBlocks.join("\n\n");
+}
+
+async function handleCancelSession(
+  supabase: SupabaseClient,
+  params: Record<string, string>
+): Promise<string> {
+  const { date, time, reason } = params;
+  if (!date || !time) {
+    return "Necesito la fecha y hora de la clase a cancelar. Ej: cancelar clase de las 9:30 manana";
+  }
+
+  // Find the session
+  const { data: sessions, error: findError } = await supabase
+    .from("tu_class_sessions")
+    .select(
+      `
+      id, session_date, start_time, teacher, capacity, enrolled, status,
+      definition:tu_class_definitions (name, name_es, style)
+    `
+    )
+    .eq("session_date", date)
+    .eq("status", "scheduled");
+
+  if (findError) {
+    console.error("[Telegram] cancel_session find error:", findError.message);
+    return "Error al buscar la sesion. Intenta de nuevo.";
+  }
+
+  const typedSessions = (sessions || []) as unknown as SessionWithDef[];
+
+  // Match by time (flexible: compare HH:MM)
+  const targetTime = time.padStart(5, "0"); // ensure "9:30" -> "09:30"
+  const match = typedSessions.find((s) => {
+    const sessTime = s.start_time.replace(/\s*(AM|PM)/i, "");
+    // Try exact match first
+    if (sessTime === targetTime) return true;
+    // Try converting 12h format stored in DB
+    const converted = convertTo24h(s.start_time);
+    return converted === targetTime;
+  });
+
+  if (!match) {
+    const available = typedSessions
+      .map(
+        (s) =>
+          `${s.start_time} - ${s.definition?.name_es || s.definition?.name || "Clase"}`
+      )
+      .join("\n");
+    return `No encontre una clase a las ${time} el ${spanishDate(date)}.\n\nClases disponibles ese dia:\n${available || "Ninguna"}`;
+  }
+
+  const className = match.definition?.name_es || match.definition?.name || "Clase";
+
+  // Cancel the session
+  const { error: cancelError } = await supabase
+    .from("tu_class_sessions")
+    .update({
+      status: "cancelled",
+      cancel_reason: reason || "Cancelada por admin via Telegram",
+    })
+    .eq("id", match.id);
+
+  if (cancelError) {
+    console.error("[Telegram] cancel_session error:", cancelError.message);
+    return "Error al cancelar la sesion. Intenta de nuevo.";
+  }
+
+  // Cancel all confirmed bookings and refund pack credits
+  const { data: bookings } = await supabase
+    .from("tu_class_bookings")
+    .select("id, pack_id")
+    .eq("session_id", match.id)
+    .eq("status", "confirmed");
+
+  let refundedCount = 0;
+  for (const booking of bookings || []) {
+    await supabase
+      .from("tu_class_bookings")
+      .update({
+        status: "cancelled",
+        cancelled_at: new Date().toISOString(),
+        cancel_reason: "Sesion cancelada por admin",
+      })
+      .eq("id", booking.id);
+
+    // Refund pack credit
+    if (booking.pack_id) {
+      const { data: pack } = await supabase
+        .from("tu_packs")
+        .select("classes_used, status")
+        .eq("id", booking.pack_id)
+        .single();
+
+      if (pack) {
+        await supabase
+          .from("tu_packs")
+          .update({
+            classes_used: Math.max((pack.classes_used || 0) - 1, 0),
+            status: pack.status === "exhausted" ? "active" : pack.status,
+          })
+          .eq("id", booking.pack_id);
+        refundedCount++;
+      }
+    }
+  }
+
+  let response = `<b>Sesion cancelada</b>\n\n${className}\n${match.start_time} - ${spanishDate(date)}`;
+  if (reason) {
+    response += `\nRazon: ${reason}`;
+  }
+  const bookingCount = (bookings || []).length;
+  if (bookingCount > 0) {
+    response += `\n\n${bookingCount} reserva(s) cancelada(s)`;
+    if (refundedCount > 0) {
+      response += `, ${refundedCount} credito(s) reembolsado(s)`;
+    }
+  }
+  return response;
+}
+
+async function handleCloseDate(
+  supabase: SupabaseClient,
+  params: Record<string, string>
+): Promise<string> {
+  const { date, reason } = params;
+  if (!date) {
+    return "Necesito la fecha para cerrar. Ej: cerrar el viernes";
+  }
+
+  const { data, error } = await supabase
+    .from("tu_closed_dates")
+    .upsert({ date, reason: reason || null }, { onConflict: "date" })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[Telegram] close_date error:", error.message);
+    return "Error al cerrar la fecha. Intenta de nuevo.";
+  }
+
+  // Also cancel all scheduled sessions for that date
+  const { data: sessions } = await supabase
+    .from("tu_class_sessions")
+    .select("id")
+    .eq("session_date", date)
+    .eq("status", "scheduled");
+
+  let cancelledCount = 0;
+  for (const s of sessions || []) {
+    await supabase
+      .from("tu_class_sessions")
+      .update({
+        status: "cancelled",
+        cancel_reason: reason || "Dia cerrado por admin",
+      })
+      .eq("id", s.id);
+
+    // Cancel bookings and refund
+    const { data: bookings } = await supabase
+      .from("tu_class_bookings")
+      .select("id, pack_id")
+      .eq("session_id", s.id)
+      .eq("status", "confirmed");
+
+    for (const booking of bookings || []) {
+      await supabase
+        .from("tu_class_bookings")
+        .update({
+          status: "cancelled",
+          cancelled_at: new Date().toISOString(),
+          cancel_reason: "Dia cerrado",
+        })
+        .eq("id", booking.id);
+
+      if (booking.pack_id) {
+        const { data: pack } = await supabase
+          .from("tu_packs")
+          .select("classes_used, status")
+          .eq("id", booking.pack_id)
+          .single();
+
+        if (pack) {
+          await supabase
+            .from("tu_packs")
+            .update({
+              classes_used: Math.max((pack.classes_used || 0) - 1, 0),
+              status: pack.status === "exhausted" ? "active" : pack.status,
+            })
+            .eq("id", booking.pack_id);
+        }
+      }
+    }
+    cancelledCount++;
+  }
+
+  let response = `<b>Dia cerrado</b>\n\n${spanishDate(date)}`;
+  if (reason) {
+    response += `\nRazon: ${reason}`;
+  }
+  if (cancelledCount > 0) {
+    response += `\n${cancelledCount} sesion(es) cancelada(s) automaticamente.`;
+  }
+  return response;
+}
+
+async function handleOpenDate(
+  supabase: SupabaseClient,
+  params: Record<string, string>
+): Promise<string> {
+  const { date } = params;
+  if (!date) {
+    return "Necesito la fecha para abrir. Ej: abrir el viernes";
+  }
+
+  const { error } = await supabase
+    .from("tu_closed_dates")
+    .delete()
+    .eq("date", date);
+
+  if (error) {
+    console.error("[Telegram] open_date error:", error.message);
+    return "Error al reabrir la fecha. Intenta de nuevo.";
+  }
+
+  return `<b>Dia reabierto</b>\n\n${spanishDate(date)}\n\nNota: Si necesitas regenerar las sesiones de ese dia, hazlo desde el panel admin o pideme que genere sesiones.`;
+}
+
+async function handleMarkFull(
+  supabase: SupabaseClient,
+  params: Record<string, string>
+): Promise<string> {
+  const { date, time } = params;
+  if (!date || !time) {
+    return "Necesito la fecha y hora. Ej: clase llena las 7:15 hoy";
+  }
+
+  const targetTime = time.padStart(5, "0");
+
+  const { data: sessions, error: findError } = await supabase
+    .from("tu_class_sessions")
+    .select(
+      `
+      id, session_date, start_time, teacher, capacity, enrolled, status,
+      definition:tu_class_definitions (name, name_es)
+    `
+    )
+    .eq("session_date", date)
+    .eq("status", "scheduled");
+
+  if (findError) {
+    console.error("[Telegram] mark_full find error:", findError.message);
+    return "Error al buscar la sesion. Intenta de nuevo.";
+  }
+
+  const typedSessions = (sessions || []) as unknown as SessionWithDef[];
+
+  const match = typedSessions.find((s) => {
+    const converted = convertTo24h(s.start_time);
+    return converted === targetTime || s.start_time.replace(/\s*(AM|PM)/i, "") === targetTime;
+  });
+
+  if (!match) {
+    return `No encontre una clase a las ${time} el ${spanishDate(date)}.`;
+  }
+
+  const className = match.definition?.name_es || match.definition?.name || "Clase";
+
+  const { error } = await supabase
+    .from("tu_class_sessions")
+    .update({ enrolled: match.capacity })
+    .eq("id", match.id);
+
+  if (error) {
+    console.error("[Telegram] mark_full error:", error.message);
+    return "Error al marcar la clase como llena. Intenta de nuevo.";
+  }
+
+  return `<b>Clase marcada como LLENA</b>\n\n${className}\n${match.start_time} - ${spanishDate(date)}\n${match.capacity}/${match.capacity} cupos ocupados`;
+}
+
+async function handleCreateEventText(
+  supabase: SupabaseClient,
+  params: Record<string, string>
+): Promise<string> {
+  const { title, date, time, price_cop, capacity, description } = params;
+
+  if (!title || !date) {
+    return "Necesito al menos el nombre y la fecha del evento. Ej: evento Sound Healing mayo 25 5:30pm $80,000 COP 15 cupos";
+  }
+
+  const eventData = {
+    title: title,
+    title_es: title,
+    description: description || null,
+    description_es: description || null,
+    event_date: date,
+    start_time: time || "18:00",
+    duration_minutes: 90,
+    teacher: "Tata",
+    capacity: parseInt(capacity || "15", 10),
+    enrolled: 0,
+    price_cop: parseInt(String(price_cop || "0").replace(/[^0-9]/g, ""), 10) || 0,
+    price_usd: 0,
+    location: "TU. Studio",
+    is_active: true,
+    status: "upcoming" as const,
+  };
+
+  const { data, error } = await supabase
+    .from("tu_events")
+    .insert(eventData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[Telegram] create_event error:", error.message);
+    return "Error al crear el evento. Intenta de nuevo.";
+  }
+
+  const priceStr =
+    eventData.price_cop > 0
+      ? `$${eventData.price_cop.toLocaleString("es-CO")} COP`
+      : "Gratis";
+
+  return (
+    `<b>Evento creado</b>\n\n` +
+    `<b>${data.title}</b>\n` +
+    `${spanishDate(data.event_date)} a las ${data.start_time}\n` +
+    `${priceStr}\n` +
+    `${eventData.capacity} cupos\n` +
+    `${data.location}\n` +
+    (data.description ? `\n${data.description}` : "")
+  );
+}
+
+async function handleCreateEventFromPhoto(
+  supabase: SupabaseClient,
+  imageBase64: string,
+  caption?: string
+): Promise<string> {
+  const extracted = await extractEventFromImage(imageBase64, caption);
+  if (!extracted) {
+    return "No pude extraer la informacion del flyer. Intenta enviando los datos como texto. Ej: evento Sound Healing mayo 25 5:30pm $80,000 COP 15 cupos";
+  }
+
+  const eventData = {
+    title: extracted.title || "Evento TU.",
+    title_es: extracted.title_es || extracted.title || "Evento TU.",
+    description: extracted.description || null,
+    description_es: extracted.description_es || extracted.description || null,
+    event_date: extracted.date || getColombiaDateStr(7),
+    start_time: extracted.time || "18:00",
+    end_time: extracted.end_time || null,
+    duration_minutes: 90,
+    teacher: extracted.teacher || "Tata",
+    capacity: parseInt(extracted.capacity || "15", 10),
+    enrolled: 0,
+    price_cop: parseInt(String(extracted.price_cop || "0").replace(/[^0-9]/g, ""), 10) || 0,
+    price_usd: 0,
+    location: "TU. Studio",
+    is_active: true,
+    status: "upcoming" as const,
+  };
+
+  const { data, error } = await supabase
+    .from("tu_events")
+    .insert(eventData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[Telegram] create_event_photo error:", error.message);
+    return `Error al crear el evento: ${error.message}`;
+  }
+
+  const priceStr =
+    eventData.price_cop > 0
+      ? `$${eventData.price_cop.toLocaleString("es-CO")} COP`
+      : "Gratis";
+
+  return (
+    `<b>Evento creado desde flyer</b>\n\n` +
+    `<b>${data.title}</b>\n` +
+    `${spanishDate(data.event_date)} a las ${data.start_time}\n` +
+    `${priceStr}\n` +
+    `${eventData.capacity} cupos\n` +
+    `${data.location}\n` +
+    (data.description ? `\n${data.description}` : "")
+  );
+}
+
+async function handleCancelEvent(
+  supabase: SupabaseClient,
+  params: Record<string, string>
+): Promise<string> {
+  const { title } = params;
+  if (!title) {
+    return "Necesito el nombre del evento a cancelar. Ej: cancelar evento Sound Healing";
+  }
+
+  // Search for the event by title (case insensitive, partial match)
+  const { data: events, error: findError } = await supabase
+    .from("tu_events")
+    .select("id, title, title_es, event_date, start_time, enrolled")
+    .eq("is_active", true)
+    .neq("status", "cancelled")
+    .order("event_date", { ascending: true });
+
+  if (findError) {
+    console.error("[Telegram] cancel_event find error:", findError.message);
+    return "Error al buscar el evento. Intenta de nuevo.";
+  }
+
+  const titleLower = title.toLowerCase();
+  const match = (events || []).find(
+    (e: { title: string; title_es: string }) =>
+      e.title.toLowerCase().includes(titleLower) ||
+      e.title_es.toLowerCase().includes(titleLower)
+  );
+
+  if (!match) {
+    const available = (events || [])
+      .map(
+        (e: { title: string; event_date: string }) =>
+          `- ${e.title} (${spanishDate(e.event_date)})`
+      )
+      .join("\n");
+    return `No encontre un evento con nombre "${title}".\n\nEventos activos:\n${available || "Ninguno"}`;
+  }
+
+  const { error } = await supabase
+    .from("tu_events")
+    .update({ status: "cancelled", is_active: false })
+    .eq("id", match.id);
+
+  if (error) {
+    console.error("[Telegram] cancel_event error:", error.message);
+    return "Error al cancelar el evento. Intenta de nuevo.";
+  }
+
+  return (
+    `<b>Evento cancelado</b>\n\n` +
+    `${match.title}\n` +
+    `${spanishDate(match.event_date)} a las ${match.start_time}\n` +
+    (match.enrolled > 0 ? `\n${match.enrolled} persona(s) estaban inscritas.` : "")
+  );
+}
+
+async function handleStudentCount(
+  supabase: SupabaseClient
+): Promise<string> {
+  // Total students
+  const { count: totalStudents, error: countError } = await supabase
+    .from("tu_students")
+    .select("id", { count: "exact", head: true });
+
+  if (countError) {
+    console.error("[Telegram] student_count error:", countError.message);
+    return "Error al consultar los alumnos. Intenta de nuevo.";
+  }
+
+  // Recent signups (last 7 days)
+  const weekAgo = getColombiaDate(-7).toISOString();
+  const { data: recentStudents, error: recentError } = await supabase
+    .from("tu_students")
+    .select("full_name, created_at")
+    .gte("created_at", weekAgo)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (recentError) {
+    console.error("[Telegram] student_count recent error:", recentError.message);
+  }
+
+  // Active packs
+  const { count: activePacks } = await supabase
+    .from("tu_packs")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "active");
+
+  let response = `<b>Alumnos</b>\n\n`;
+  response += `Total registrados: <b>${totalStudents || 0}</b>\n`;
+  response += `Packs activos: <b>${activePacks || 0}</b>\n`;
+
+  const recent = recentStudents || [];
+  if (recent.length > 0) {
+    response += `\n<b>Nuevos esta semana (${recent.length}):</b>\n`;
+    for (const s of recent) {
+      const d = new Date(s.created_at);
+      const dateStr = `${d.getDate()}/${d.getMonth() + 1}`;
+      response += `  ${s.full_name} (${dateStr})\n`;
+    }
+  } else {
+    response += "\nNo hay nuevos registros esta semana.";
+  }
+
+  return response;
+}
+
+function handleHelp(): string {
+  return (
+    `<b>Comandos disponibles</b>\n\n` +
+    `<b>Horario:</b>\n` +
+    `  "que hay hoy" - Clases de hoy\n` +
+    `  "clases de manana" - Clases de manana\n` +
+    `  "semana" - Horario de la semana\n\n` +
+    `<b>Sesiones:</b>\n` +
+    `  "cancelar clase de las 9:30 manana" - Cancelar sesion\n` +
+    `  "clase llena las 7:15 hoy" - Marcar como llena\n\n` +
+    `<b>Dias:</b>\n` +
+    `  "cerrar el viernes" - Cerrar un dia\n` +
+    `  "abrir el viernes" - Reabrir un dia cerrado\n\n` +
+    `<b>Eventos:</b>\n` +
+    `  "evento Sound Healing mayo 25 5:30pm $80,000 COP 15 cupos"\n` +
+    `  Enviar foto de flyer - Crear evento desde imagen\n` +
+    `  "cancelar evento Sound Healing"\n\n` +
+    `<b>Alumnos:</b>\n` +
+    `  "alumnos" - Conteo y registros recientes\n\n` +
+    `<b>Ayuda:</b>\n` +
+    `  "ayuda" - Este mensaje`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Time conversion utility
+// ---------------------------------------------------------------------------
+
+function convertTo24h(timeStr: string): string {
+  // Handle formats like "9:30 AM", "7:15 PM", "09:30", "19:15"
+  const cleaned = timeStr.trim().toUpperCase();
+  const match12 = cleaned.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+  if (match12) {
+    let hours = parseInt(match12[1], 10);
+    const minutes = match12[2];
+    const period = match12[3];
+    if (period === "PM" && hours !== 12) hours += 12;
+    if (period === "AM" && hours === 12) hours = 0;
+    return `${hours.toString().padStart(2, "0")}:${minutes}`;
+  }
+  // Already 24h format
+  const match24 = cleaned.match(/^(\d{1,2}):(\d{2})$/);
+  if (match24) {
+    return `${match24[1].padStart(2, "0")}:${match24[2]}`;
+  }
+  return timeStr;
+}
+
+// ---------------------------------------------------------------------------
+// Main webhook handler
+// ---------------------------------------------------------------------------
+
+export async function POST(request: NextRequest) {
+  try {
+    const update: TelegramUpdate = await request.json();
+    const message = update.message;
+
+    // Ignore non-message updates (edited, channel posts, etc.)
+    if (!message) {
+      return NextResponse.json({ ok: true });
+    }
+
+    // Security: verify chat_id matches TELEGRAM_CHAT_ID
+    const allowedChatId = getAllowedChatId();
+    if (allowedChatId && String(message.chat.id) !== allowedChatId) {
+      console.warn(
+        `[Telegram] Unauthorized chat_id: ${message.chat.id} (expected ${allowedChatId})`
+      );
+      return NextResponse.json({ ok: true });
+    }
+
+    // Init Supabase
+    const supabase = getSupabase();
+    if (!supabase) {
+      await sendTelegram("Error: Base de datos no configurada. Contacta a Phil.");
+      return NextResponse.json({ ok: true });
+    }
+
+    // Handle photo messages (flyer -> event creation)
+    if (message.photo && message.photo.length > 0) {
+      await sendTelegram("Analizando imagen... Un momento.");
+
+      // Get the highest resolution photo
+      const largestPhoto = message.photo[message.photo.length - 1];
+      const imageBuffer = await downloadTelegramFile(largestPhoto.file_id);
+
+      if (!imageBuffer) {
+        await sendTelegram("No pude descargar la imagen. Intenta enviarla de nuevo.");
+        return NextResponse.json({ ok: true });
+      }
+
+      const imageBase64 = imageBuffer.toString("base64");
+      const response = await handleCreateEventFromPhoto(
+        supabase,
+        imageBase64,
+        message.caption
+      );
+      await sendTelegram(response);
+      return NextResponse.json({ ok: true });
+    }
+
+    // Handle text messages
+    const text = message.text || message.caption || "";
+    if (!text.trim()) {
+      return NextResponse.json({ ok: true });
+    }
+
+    // Parse intent with Claude
+    const intent = await parseIntent(text);
+    console.log(
+      `[Telegram] Intent: ${intent.action}`,
+      JSON.stringify(intent.params)
+    );
+
+    let response: string;
+
+    switch (intent.action) {
+      case "today_schedule":
+        response = await handleTodaySchedule(supabase, intent.params);
+        break;
+
+      case "week_schedule":
+        response = await handleWeekSchedule(supabase);
+        break;
+
+      case "cancel_session":
+        response = await handleCancelSession(supabase, intent.params);
+        break;
+
+      case "close_date":
+        response = await handleCloseDate(supabase, intent.params);
+        break;
+
+      case "open_date":
+        response = await handleOpenDate(supabase, intent.params);
+        break;
+
+      case "mark_full":
+        response = await handleMarkFull(supabase, intent.params);
+        break;
+
+      case "create_event_text":
+        response = await handleCreateEventText(supabase, intent.params);
+        break;
+
+      case "cancel_event":
+        response = await handleCancelEvent(supabase, intent.params);
+        break;
+
+      case "student_count":
+        response = await handleStudentCount(supabase);
+        break;
+
+      case "help":
+        response = handleHelp();
+        break;
+
+      case "unknown":
+      default:
+        response =
+          `No entendi tu mensaje. Intenta algo como:\n\n` +
+          `"que hay hoy" - Ver clases\n` +
+          `"cancelar clase de las 9:30 manana"\n` +
+          `"cerrar el viernes"\n` +
+          `"ayuda" - Ver todos los comandos`;
+        break;
+    }
+
+    await sendTelegram(response);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[Telegram Webhook] Unhandled error:", err);
+
+    // Always try to respond to Tata even if something broke
+    try {
+      await sendTelegram(
+        "Hubo un error procesando tu mensaje. Intenta de nuevo o contacta a Phil."
+      );
+    } catch {
+      // Silent fail — nothing more we can do
+    }
+
+    return NextResponse.json({ ok: true });
+  }
+}
