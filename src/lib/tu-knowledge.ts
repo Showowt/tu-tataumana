@@ -237,8 +237,7 @@ How: Send via Zelle or PayPal to this number
 Best for: US-based clients, international visitors
 
 WOMPI (Secure online payment — credit/debit cards):
-Link: https://checkout.wompi.co/l/h3WPfP
-How: Click link, enter card details, secure checkout
+How: Book a session on tataumana.com and select "Credit / Debit Card" at checkout. You will be redirected to Wompi's secure payment page.
 Best for: International credit cards, anyone who prefers card payment
 Accepts: Visa, Mastercard, American Express
 

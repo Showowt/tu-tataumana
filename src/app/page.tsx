@@ -742,17 +742,15 @@ export default function Home() {
                   </div>
 
                   <div className="mt-auto">
-                    <a
-                      href="https://checkout.wompi.co/l/h3WPfP"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => openBooking("TU Naturaleza Habla — Sound Healing")}
                       className="btn-tactile w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-gold text-charcoal font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-white transition-all duration-500 rounded-full"
                     >
                       {L(t.workshopReserve) as string}
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                       </svg>
-                    </a>
+                    </button>
                     <p className="font-[family-name:var(--font-body)] text-[10px] text-white/25 text-center mt-3">
                       {L(t.workshopLimited) as string}
                     </p>
@@ -1539,12 +1537,10 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 stagger-reveal">
-            {/* Wompi — Card Payment */}
-            <a
-              href="https://checkout.wompi.co/l/h3WPfP"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="fade-in fade-in-delay-1 group flex items-center gap-5 p-6 rounded-2xl border-2 border-gold/25 bg-white hover:border-gold/50 hover:shadow-lg transition-all duration-500"
+            {/* Wompi — Card Payment (opens booking modal) */}
+            <button
+              onClick={() => openBooking()}
+              className="fade-in fade-in-delay-1 group flex items-center gap-5 p-6 rounded-2xl border-2 border-gold/25 bg-white hover:border-gold/50 hover:shadow-lg transition-all duration-500 text-left"
             >
               <div className="w-12 h-12 rounded-full bg-gold/15 flex items-center justify-center shrink-0 group-hover:bg-gold/25 transition-colors">
                 <svg className="w-6 h-6 text-gold" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -1565,7 +1561,7 @@ export default function Home() {
               <svg className="w-5 h-5 text-charcoal/20 group-hover:text-gold group-hover:translate-x-1 transition-all shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
               </svg>
-            </a>
+            </button>
 
             {/* Nequi */}
             <div className="fade-in fade-in-delay-2 flex items-center gap-5 p-6 rounded-2xl border border-charcoal/8 bg-white">

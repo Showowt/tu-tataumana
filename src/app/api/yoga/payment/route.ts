@@ -2,45 +2,58 @@
  * Yoga Booking Payment API
  * TU. by Tata Umana
  *
- * Creates Wompi payment links for yoga bookings
- * Amount is validated server-side — never trusted from client
+ * Creates Wompi checkout configs for yoga bookings.
+ * Prices are validated server-side — never trusted from client.
+ *
+ * Supports two flows:
+ *   1. NEW (BookingModal): { serviceName, customerName, ... } → checkout config
+ *   2. LEGACY (PaymentCheckout): { amount, customerEmail, ... } → payment link
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
+  createWompiCheckout,
   createPaymentLink,
   generateBookingReference,
+  WOMPI_PUBLIC_KEY,
   type WompiCurrency,
 } from "@/lib/wompi";
 
-// Canonical class prices (COP) — single source of truth
-// All group classes are 80,000 COP walk-in, private sessions 190,000 COP
-const CLASS_PRICES: Record<string, number> = {
-  "morning-flow": 80000,
-  "gentle-restore": 80000,
-  "power-yoga": 80000,
-  "sunset-yin": 80000,
-  "kundalini": 80000,
-  "private": 190000,
+// ──────────────────────────────────────────────────────────────────────────────
+// Canonical service prices (COP) — server-side source of truth
+// ──────────────────────────────────────────────────────────────────────────────
+
+const PRIVATE_SERVICE_PRICES: Record<string, number> = {
+  "Discovery Session": 85000,
+  "Personalized Yoga": 190000,
+  "Video Connection": 170000,
+  "Quantum Surgery": 320000,
+  "Superior Connection": 730000,
+  "Energy Cleansing": 485000,
+  "Sacred Ceremonies": 3500000,
+  "Leadership Integration": 1220000,
+  "TUISYOU Program": 7750000,
 };
 
-// Minimum valid amount as a safety net
-const MIN_AMOUNT_COP = 40000;
+// Walk-in group class price (matches DROP_IN pack)
+const GROUP_CLASS_PRICE_COP = 45000;
 
-// Request validation schema
-const PaymentRequestSchema = z.object({
-  classId: z.string().optional(),
-  amount: z.number().positive("Amount must be positive"),
-  currency: z.enum(["COP", "USD"]).default("COP"),
-  reference: z.string().optional(),
-  customerEmail: z.string().email("Valid email required"),
-  customerName: z.string().min(2, "Name must be at least 2 characters"),
-  description: z.string().optional(),
-  bookingId: z.string().optional(),
-});
+/**
+ * Look up the canonical COP price for a service.
+ * Private services match by exact name; everything else is a group class.
+ */
+function getServicePriceCop(serviceName: string): number {
+  if (PRIVATE_SERVICE_PRICES[serviceName]) {
+    return PRIVATE_SERVICE_PRICES[serviceName];
+  }
+  return GROUP_CLASS_PRICE_COP;
+}
 
-// Rate limiting (simple in-memory — use Upstash/Redis in production)
+// ──────────────────────────────────────────────────────────────────────────────
+// Rate limiting (in-memory)
+// ──────────────────────────────────────────────────────────────────────────────
+
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT = 10;
 const RATE_WINDOW = 60 * 1000;
@@ -48,88 +61,140 @@ const RATE_WINDOW = 60 * 1000;
 function checkRateLimit(identifier: string): boolean {
   const now = Date.now();
   const record = requestCounts.get(identifier);
-
   if (!record || now > record.resetTime) {
     requestCounts.set(identifier, { count: 1, resetTime: now + RATE_WINDOW });
     return true;
   }
-
-  if (record.count >= RATE_LIMIT) {
-    return false;
-  }
-
+  if (record.count >= RATE_LIMIT) return false;
   record.count++;
   return true;
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Validation schemas
+// ──────────────────────────────────────────────────────────────────────────────
+
+// New format: BookingModal sends service name, server looks up price
+const CheckoutRequestSchema = z.object({
+  serviceName: z.string().min(1, "Service name required"),
+  customerEmail: z
+    .string()
+    .email("Valid email required")
+    .optional()
+    .or(z.literal("")),
+  customerName: z.string().min(2, "Name must be at least 2 characters"),
+  bookingDate: z.string().optional(),
+  bookingTime: z.string().optional(),
+});
+
+// Legacy format: PaymentCheckout sends explicit amount
+const LegacyRequestSchema = z.object({
+  amount: z.number().positive("Amount must be positive"),
+  currency: z.enum(["COP", "USD"]).default("COP"),
+  reference: z.string().optional(),
+  customerEmail: z.string().email("Valid email required"),
+  customerName: z.string().min(2, "Name must be at least 2 characters"),
+  description: z.string().optional(),
+  classId: z.string().optional(),
+  bookingId: z.string().optional(),
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// POST handler
+// ──────────────────────────────────────────────────────────────────────────────
+
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting by IP (parse first IP from x-forwarded-for)
+    // Rate limiting
     const forwarded = request.headers.get("x-forwarded-for");
     const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
     if (!checkRateLimit(ip)) {
       return NextResponse.json(
-        { error: "Demasiadas solicitudes. Too many requests. Please try again later." },
+        {
+          error:
+            "Demasiadas solicitudes. Too many requests. Please try again later.",
+        },
         { status: 429 },
       );
     }
 
-    // Parse and validate request body
     const body = await request.json();
-    const validationResult = PaymentRequestSchema.safeParse(body);
 
-    if (!validationResult.success) {
+    // ── NEW FLOW: BookingModal sends serviceName ──────────────────────────
+    const newResult = CheckoutRequestSchema.safeParse(body);
+
+    if (newResult.success) {
+      const data = newResult.data;
+      const priceCop = getServicePriceCop(data.serviceName);
+      const amountInCents = priceCop * 100;
+      const reference = generateBookingReference();
+
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
+      const redirectUrl = `${baseUrl}/payment/success?ref=${encodeURIComponent(reference)}`;
+
+      const description = data.bookingDate
+        ? `TU. ${data.serviceName} — ${data.bookingDate}${data.bookingTime ? ` ${data.bookingTime}` : ""}`
+        : `TU. ${data.serviceName}`;
+
+      if (!WOMPI_PUBLIC_KEY) {
+        return NextResponse.json(
+          {
+            error:
+              "Sistema de pagos con tarjeta no disponible. Card payment not available. Please use Nequi, Bancolombia, or Zelle.",
+            notConfigured: true,
+          },
+          { status: 503 },
+        );
+      }
+
+      const checkout = createWompiCheckout({
+        amount: amountInCents,
+        currency: "COP",
+        reference,
+        customerEmail: data.customerEmail || "",
+        customerName: data.customerName,
+        redirectUrl,
+        description,
+      });
+
+      return NextResponse.json({
+        success: true,
+        checkout,
+        reference,
+        priceCop,
+        description,
+      });
+    }
+
+    // ── LEGACY FLOW: PaymentCheckout sends explicit amount ────────────────
+    const legacyResult = LegacyRequestSchema.safeParse(body);
+
+    if (!legacyResult.success) {
       return NextResponse.json(
         {
           error: "Datos inválidos. Invalid request data.",
-          details: validationResult.error.flatten().fieldErrors,
+          details: legacyResult.error.flatten().fieldErrors,
         },
         { status: 400 },
       );
     }
 
-    const data = validationResult.data;
-
-    // Server-side price validation: never trust client amount
-    let validatedAmount = data.amount;
-
-    if (data.classId && CLASS_PRICES[data.classId]) {
-      // Use canonical price from server
-      validatedAmount = CLASS_PRICES[data.classId];
-    } else if (data.currency === "COP" && data.amount < MIN_AMOUNT_COP) {
-      // Reject suspiciously low amounts
-      return NextResponse.json(
-        { error: "Monto inválido. Invalid payment amount." },
-        { status: 400 },
-      );
-    } else {
-      // Verify amount matches a known class price
-      const knownPrices = Object.values(CLASS_PRICES);
-      if (data.currency === "COP" && !knownPrices.includes(data.amount)) {
-        return NextResponse.json(
-          { error: "Monto no corresponde a ninguna clase. Amount does not match any class." },
-          { status: 400 },
-        );
-      }
-    }
-
-    // Generate reference if not provided
-    const reference = data.reference || generateBookingReference();
-
-    // Build redirect URL
+    const legacyData = legacyResult.data;
+    const reference = legacyData.reference || generateBookingReference();
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
     const redirectUrl = `${baseUrl}?payment=success&ref=${encodeURIComponent(reference)}`;
 
-    // Create Wompi payment link with server-validated amount
     const paymentLink = await createPaymentLink({
-      amount: validatedAmount,
-      currency: data.currency as WompiCurrency,
+      amount: legacyData.amount,
+      currency: legacyData.currency as WompiCurrency,
       reference,
-      customerEmail: data.customerEmail,
-      customerName: data.customerName,
+      customerEmail: legacyData.customerEmail,
+      customerName: legacyData.customerName,
       redirectUrl,
-      description: data.description || "TU. Wellness - Yoga Booking",
+      description:
+        legacyData.description || "TU. Wellness - Yoga Booking",
       expirationMinutes: 30,
     });
 
@@ -149,8 +214,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: isConfigError
-          ? "Sistema de pagos no configurado. Payment system not configured. Please contact support."
+          ? "Sistema de pagos no configurado. Card payment not available. Please use Nequi, Bancolombia, or Zelle."
           : "Error al crear el pago. Failed to create payment. Please try again.",
+        notConfigured: isConfigError,
       },
       { status: isConfigError ? 503 : 500 },
     );

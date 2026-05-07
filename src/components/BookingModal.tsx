@@ -13,6 +13,7 @@ interface BookingModalProps {
 
 type Step = "form" | "payment" | "confirmed";
 type PaymentMethod = "wompi" | "nequi" | "bancolombia" | "zelle" | null;
+type WompiState = "idle" | "loading" | "error";
 
 const BOOKING_RULES = [
   "Reserve your spot at least 2 hours in advance",
@@ -201,6 +202,8 @@ export default function BookingModal({
   const [rulesAccepted, setRulesAccepted] = useState(false);
   const [closedDates, setClosedDates] = useState<string[]>([]);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>(null);
+  const [wompiState, setWompiState] = useState<WompiState>("idle");
+  const [wompiError, setWompiError] = useState("");
   const [activePass, setActivePass] = useState<{ pass_type: string; classes_remaining: number | string; is_unlimited: boolean } | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -214,6 +217,8 @@ export default function BookingModal({
       setRulesAccepted(false);
       setSelectedPayment(null);
       setSubmitting(false);
+      setWompiState("idle");
+      setWompiError("");
     }
   }, [isOpen, preselectedService, preselectedDate, preselectedTime]);
 
@@ -327,6 +332,8 @@ export default function BookingModal({
         setSubmitting(false);
         setRulesAccepted(false);
         setSelectedPayment(null);
+        setWompiState("idle");
+        setWompiError("");
       }, 300);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -389,11 +396,64 @@ export default function BookingModal({
     setStep("payment");
   };
 
-  const handlePaymentSelect = (method: PaymentMethod) => {
+  const handlePaymentSelect = async (method: PaymentMethod) => {
     setSelectedPayment(method);
+
     if (method === "wompi") {
-      window.open("https://checkout.wompi.co/l/h3WPfP", "_blank", "noopener,noreferrer");
+      setWompiState("loading");
+      setWompiError("");
+
+      try {
+        const res = await fetch("/api/yoga/payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            serviceName: service,
+            customerEmail: email || "",
+            customerName: name,
+            bookingDate: date || undefined,
+            bookingTime: selectedTime || undefined,
+          }),
+        });
+
+        const json = await res.json();
+
+        if (!res.ok || json.error) {
+          throw new Error(json.error || "Payment creation failed");
+        }
+
+        if (json.checkout) {
+          // Build Wompi checkout URL from config
+          const checkout = json.checkout;
+          const params = new URLSearchParams();
+          params.set("public-key", checkout.publicKey);
+          params.set("currency", checkout.currency);
+          params.set("amount-in-cents", String(checkout.amountInCents));
+          params.set("reference", checkout.reference);
+          params.set("signature:integrity", checkout.signature);
+          params.set("redirect-url", checkout.redirectUrl);
+          if (checkout.customerEmail) {
+            params.set("customer-data:email", checkout.customerEmail);
+          }
+          if (checkout.customerFullname) {
+            params.set("customer-data:full-name", checkout.customerFullname);
+          }
+
+          window.location.href = `https://checkout.wompi.co/p/?${params.toString()}`;
+          return; // Page is redirecting — don't change step
+        }
+
+        throw new Error("No checkout config received");
+      } catch (error) {
+        const msg =
+          error instanceof Error ? error.message : "Payment failed";
+        setWompiError(msg);
+        setWompiState("error");
+        // Stay on payment step so user can try another method
+        return;
+      }
     }
+
     setStep("confirmed");
   };
 
@@ -782,31 +842,57 @@ export default function BookingModal({
                 </p>
               </div>
 
+              {/* Wompi error message */}
+              {wompiState === "error" && wompiError && (
+                <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 flex items-start gap-3">
+                  <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                  </svg>
+                  <div>
+                    <p className="font-[family-name:var(--font-body)] text-sm text-red-700">
+                      {wompiError}
+                    </p>
+                    <p className="font-[family-name:var(--font-body)] text-xs text-red-500 mt-1">
+                      Please try another payment method below, or try again.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3">
                 {/* Wompi - Card Payment */}
                 <button
                   onClick={() => handlePaymentSelect("wompi")}
-                  className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-gold/25 bg-white hover:border-gold/50 hover:shadow-md transition-all group text-left"
+                  disabled={wompiState === "loading"}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-gold/25 bg-white hover:border-gold/50 hover:shadow-md transition-all group text-left disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <div className="w-11 h-11 rounded-full bg-gold/15 flex items-center justify-center shrink-0 group-hover:bg-gold/25 transition-colors">
-                    <svg className="w-5 h-5 text-gold" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25h-15a2.25 2.25 0 0 0-2.25 2.25v10.5a2.25 2.25 0 0 0 2.25 2.25Z" />
-                    </svg>
+                    {wompiState === "loading" ? (
+                      <span className="w-5 h-5 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-5 h-5 text-gold" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25h-15a2.25 2.25 0 0 0-2.25 2.25v10.5a2.25 2.25 0 0 0 2.25 2.25Z" />
+                      </svg>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-[family-name:var(--font-body)] text-sm text-charcoal font-medium">
-                      Credit / Debit Card
+                      {wompiState === "loading" ? "Connecting to payment..." : "Credit / Debit Card"}
                     </p>
                     <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40">
-                      Visa, Mastercard, Amex — instant confirmation
+                      {wompiState === "loading" ? "Please wait, redirecting to secure checkout" : "Visa, Mastercard, Amex — instant confirmation"}
                     </p>
-                    <p className="font-[family-name:var(--font-body)] text-[10px] text-rose/60 mt-0.5">
-                      +4% processing fee applies / +4% comisión de procesamiento
-                    </p>
+                    {wompiState !== "loading" && (
+                      <p className="font-[family-name:var(--font-body)] text-[10px] text-rose/60 mt-0.5">
+                        +4% processing fee applies / +4% comision de procesamiento
+                      </p>
+                    )}
                   </div>
-                  <svg className="w-4 h-4 text-charcoal/20 group-hover:text-gold transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                  </svg>
+                  {wompiState !== "loading" && (
+                    <svg className="w-4 h-4 text-charcoal/20 group-hover:text-gold transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                    </svg>
+                  )}
                 </button>
 
                 {/* Nequi */}
@@ -959,18 +1045,10 @@ export default function BookingModal({
               {selectedPayment === "wompi" && (
                 <div className="rounded-2xl border border-gold/20 bg-gold/[0.03] p-5 mb-4">
                   <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 leading-relaxed">
-                    Your card payment through Wompi confirms your spot. If the checkout didn&apos;t open,{" "}
-                    <a
-                      href="https://checkout.wompi.co/l/h3WPfP"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-rose font-medium underline underline-offset-2 hover:text-charcoal transition-colors"
-                    >
-                      click here to pay now
-                    </a>.
+                    Your card payment through Wompi confirms your spot. You should have been redirected to Wompi&apos;s secure checkout. If the page didn&apos;t load, please go back and try again or choose another payment method.
                   </p>
                   <p className="font-[family-name:var(--font-body)] text-[10px] text-charcoal/40 mt-2">
-                    +4% processing fee applies / +4% comisión de procesamiento
+                    +4% processing fee applies / +4% comision de procesamiento
                   </p>
                 </div>
               )}
