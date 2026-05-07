@@ -169,13 +169,15 @@ const weeklySchedule: ScheduleDay[] = [
 ];
 
 function getNextDateForDay(dayIndex: number): string {
-  const today = new Date();
-  const todayDay = today.getDay();
+  // Use Colombia timezone to determine "today"
+  const now = new Date();
+  const colombiaNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+  const todayDay = colombiaNow.getDay();
   let daysUntil = dayIndex - todayDay;
   if (daysUntil < 0) daysUntil += 7;
-  if (daysUntil === 0) daysUntil = 7; // Show next week's occurrence on the schedule grid
-  const next = new Date(today);
-  next.setDate(today.getDate() + daysUntil);
+  // daysUntil === 0 means today — show today so users can book same-day classes
+  const next = new Date(colombiaNow);
+  next.setDate(colombiaNow.getDate() + daysUntil);
   return next.toISOString().split("T")[0];
 }
 

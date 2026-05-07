@@ -22,35 +22,37 @@ const BOOKING_RULES = [
 ];
 
 const scheduleByDay: Record<number, { time: string; name: string }[]> = {
-  1: [
-    { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa" },
-    { time: "11:00 AM", name: "Yoga Flow" },
-    { time: "7:15 PM", name: "Yoga Flow - Open Vinyasa" },
+  0: [ // Sunday
+    { time: "9:00 AM", name: "Just Hatha Flow" },
+    { time: "10:30 AM", name: "Meditación Viaje Interior" },
   ],
-  2: [
-    { time: "9:30 AM", name: "Back Care Yoga" },
-    { time: "7:15 PM", name: "Hatha" },
-  ],
-  3: [
-    { time: "9:30 AM", name: "Yoga Flow - Open Vinyasa" },
-    { time: "10:45 AM", name: "Pilates" },
+  1: [ // Monday
+    { time: "9:30 AM", name: "Stress Release" },
+    { time: "11:00 AM", name: "Sculpt Your Body" },
     { time: "7:15 PM", name: "Open Flow" },
   ],
-  4: [
-    { time: "9:30 AM", name: "Yoga Intro · Power Up" },
-    { time: "7:15 PM", name: "Hatha" },
+  2: [ // Tuesday
+    { time: "9:30 AM", name: "Yoga for the Back" },
+    { time: "5:30 PM", name: "Meditación Viaje Interior" },
+    { time: "7:15 PM", name: "Hip Opening · Hatha" },
   ],
-  5: [
-    { time: "10:00 AM", name: "Power Yoga · Postura" },
+  3: [ // Wednesday
+    { time: "9:30 AM", name: "Yogalates" },
+    { time: "10:45 AM", name: "Pilates Flow" },
+    { time: "7:15 PM", name: "Open Flow" },
+  ],
+  4: [ // Thursday
+    { time: "9:30 AM", name: "Yoga Intro" },
+    { time: "5:30 PM", name: "Sound Healing" },
+    { time: "7:15 PM", name: "Hip Opening" },
+  ],
+  5: [ // Friday
+    { time: "10:00 AM", name: "Power Yoga" },
     { time: "7:00 PM", name: "Open Flow" },
   ],
-  6: [
+  6: [ // Saturday
     { time: "11:00 AM", name: "Sun Salutation" },
-    { time: "6:00 PM", name: "Inner Journey · Meditation" },
-  ],
-  0: [
-    { time: "9:00 AM", name: "Power Yoga" },
-    { time: "10:30 AM", name: "Inner Journey · Meditation" },
+    { time: "6:00 PM", name: "Meditación Viaje Interior" },
   ],
 };
 
