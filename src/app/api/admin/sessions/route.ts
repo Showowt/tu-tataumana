@@ -172,6 +172,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Session completed" });
     }
 
+    case "update_capacity": {
+      const { session_id: capSid, capacity: newCapacity } = body;
+      if (!capSid || typeof newCapacity !== "number" || newCapacity < 1) {
+        return NextResponse.json(
+          { error: "session_id and capacity (>= 1) required" },
+          { status: 400 },
+        );
+      }
+
+      const { error } = await supabase
+        .from("tu_class_sessions")
+        .update({ capacity: newCapacity })
+        .eq("id", capSid);
+
+      if (error) {
+        console.error("[admin/sessions update_capacity]", error.message);
+        return NextResponse.json(
+          { error: "Failed to update capacity" },
+          { status: 500 },
+        );
+      }
+
+      return NextResponse.json({
+        message: `Capacity updated to ${newCapacity}`,
+        capacity: newCapacity,
+      });
+    }
+
     case "generate": {
       const weeks = body.weeks || 4;
       const { data: definitions } = await supabase

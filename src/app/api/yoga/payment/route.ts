@@ -13,10 +13,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
-  createWompiCheckout,
   createPaymentLink,
   generateBookingReference,
-  WOMPI_PUBLIC_KEY,
   type WompiCurrency,
 } from "@/lib/wompi";
 
@@ -126,7 +124,6 @@ export async function POST(request: NextRequest) {
     if (newResult.success) {
       const data = newResult.data;
       const priceCop = getServicePriceCop(data.serviceName);
-      const amountInCents = priceCop * 100;
       const reference = generateBookingReference();
 
       const baseUrl =
@@ -137,31 +134,22 @@ export async function POST(request: NextRequest) {
         ? `TU. ${data.serviceName} — ${data.bookingDate}${data.bookingTime ? ` ${data.bookingTime}` : ""}`
         : `TU. ${data.serviceName}`;
 
-      if (!WOMPI_PUBLIC_KEY) {
-        return NextResponse.json(
-          {
-            error:
-              "Sistema de pagos con tarjeta no disponible. Card payment not available. Please use Nequi, Bancolombia, or Zelle.",
-            notConfigured: true,
-          },
-          { status: 503 },
-        );
-      }
-
-      const checkout = createWompiCheckout({
-        amount: amountInCents,
+      // Create a fresh Wompi payment link (unique per booking, auto-expires)
+      const paymentLink = await createPaymentLink({
+        amount: priceCop * 100, // Wompi expects centavos
         currency: "COP",
         reference,
         customerEmail: data.customerEmail || "",
         customerName: data.customerName,
         redirectUrl,
         description,
+        expirationMinutes: 30,
       });
 
       return NextResponse.json({
         success: true,
-        checkout,
         reference,
+        paymentUrl: paymentLink.payment_link_url,
         priceCop,
         description,
       });

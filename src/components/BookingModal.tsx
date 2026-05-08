@@ -422,28 +422,13 @@ export default function BookingModal({
           throw new Error(json.error || "Payment creation failed");
         }
 
-        if (json.checkout) {
-          // Build Wompi checkout URL from config
-          const checkout = json.checkout;
-          const params = new URLSearchParams();
-          params.set("public-key", checkout.publicKey);
-          params.set("currency", checkout.currency);
-          params.set("amount-in-cents", String(checkout.amountInCents));
-          params.set("reference", checkout.reference);
-          params.set("signature:integrity", checkout.signature);
-          params.set("redirect-url", checkout.redirectUrl);
-          if (checkout.customerEmail) {
-            params.set("customer-data:email", checkout.customerEmail);
-          }
-          if (checkout.customerFullname) {
-            params.set("customer-data:full-name", checkout.customerFullname);
-          }
-
-          window.location.href = `https://checkout.wompi.co/p/?${params.toString()}`;
+        if (json.paymentUrl) {
+          // Redirect to Wompi payment link
+          window.location.href = json.paymentUrl;
           return; // Page is redirecting — don't change step
         }
 
-        throw new Error("No checkout config received");
+        throw new Error("No payment URL received");
       } catch (error) {
         const msg =
           error instanceof Error ? error.message : "Payment failed";

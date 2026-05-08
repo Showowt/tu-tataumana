@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { formatTime } from "@/lib/constants/business-rules";
 
 interface SessionDef {
@@ -23,6 +23,11 @@ interface SessionData {
   definition: SessionDef;
 }
 
+interface ClosedDate {
+  date: string;
+  reason: string | null;
+}
+
 export default function AdminSessionsPage() {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +36,19 @@ export default function AdminSessionsPage() {
   const [genWeeks, setGenWeeks] = useState(4);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+
+  // Capacity editing
+  const [editingCapacity, setEditingCapacity] = useState<string | null>(null);
+  const [capacityValue, setCapacityValue] = useState("");
+  const capacityInputRef = useRef<HTMLInputElement>(null);
+
+  // Closed dates
+  const [closedDates, setClosedDates] = useState<ClosedDate[]>([]);
+  const [closedLoading, setClosedLoading] = useState(true);
+  const [newClosedDate, setNewClosedDate] = useState("");
+  const [newClosedReason, setNewClosedReason] = useState("");
+  const [closedActionLoading, setClosedActionLoading] = useState(false);
+  const [showClosedDates, setShowClosedDates] = useState(false);
 
   const getWeekDates = useCallback(() => {
     const now = new Date();
@@ -59,9 +77,24 @@ export default function AdminSessionsPage() {
     setLoading(false);
   }, [getWeekDates]);
 
+  const loadClosedDates = useCallback(async () => {
+    setClosedLoading(true);
+    try {
+      const res = await fetch("/api/admin/closed-dates");
+      if (res.ok) {
+        const data = await res.json();
+        setClosedDates(data.data || []);
+      }
+    } catch {
+      // fail silently
+    }
+    setClosedLoading(false);
+  }, []);
+
   useEffect(() => {
     loadSessions();
-  }, [loadSessions]);
+    loadClosedDates();
+  }, [loadSessions, loadClosedDates]);
 
   async function handleGenerate() {
     if (!confirm(`¿Generar sesiones para ${genWeeks} semanas?`)) return;
@@ -117,6 +150,101 @@ export default function AdminSessionsPage() {
       showMessage("Error");
     }
     setActionLoading(null);
+  }
+
+  // --- Capacity editing ---
+  function startEditCapacity(session: SessionData) {
+    setEditingCapacity(session.id);
+    setCapacityValue(String(session.capacity));
+    setTimeout(() => capacityInputRef.current?.select(), 50);
+  }
+
+  async function saveCapacity(sessionId: string) {
+    const newCap = parseInt(capacityValue, 10);
+    if (isNaN(newCap) || newCap < 1) {
+      setEditingCapacity(null);
+      return;
+    }
+
+    // Find current session to skip if unchanged
+    const current = sessions.find((s) => s.id === sessionId);
+    if (current && current.capacity === newCap) {
+      setEditingCapacity(null);
+      return;
+    }
+
+    setActionLoading(sessionId);
+    try {
+      const res = await fetch("/api/admin/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_capacity",
+          session_id: sessionId,
+          capacity: newCap,
+        }),
+      });
+      if (res.ok) {
+        showMessage(`Capacidad actualizada a ${newCap}`);
+        setSessions((prev) =>
+          prev.map((s) => (s.id === sessionId ? { ...s, capacity: newCap } : s)),
+        );
+      } else {
+        showMessage("Error actualizando capacidad");
+      }
+    } catch {
+      showMessage("Error");
+    }
+    setEditingCapacity(null);
+    setActionLoading(null);
+  }
+
+  // --- Closed dates ---
+  async function handleCloseDate() {
+    if (!newClosedDate) return;
+    setClosedActionLoading(true);
+    try {
+      const res = await fetch("/api/admin/closed-dates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: newClosedDate,
+          reason: newClosedReason || null,
+        }),
+      });
+      if (res.ok) {
+        showMessage(`${newClosedDate} cerrado`);
+        setNewClosedDate("");
+        setNewClosedReason("");
+        await loadClosedDates();
+      } else {
+        showMessage("Error cerrando fecha");
+      }
+    } catch {
+      showMessage("Error");
+    }
+    setClosedActionLoading(false);
+  }
+
+  async function handleReopenDate(date: string) {
+    if (!confirm(`¿Reabrir ${date}?`)) return;
+    setClosedActionLoading(true);
+    try {
+      const res = await fetch("/api/admin/closed-dates", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date }),
+      });
+      if (res.ok) {
+        showMessage(`${date} reabierto`);
+        await loadClosedDates();
+      } else {
+        showMessage("Error reabriendo fecha");
+      }
+    } catch {
+      showMessage("Error");
+    }
+    setClosedActionLoading(false);
   }
 
   function showMessage(msg: string) {
@@ -179,6 +307,103 @@ export default function AdminSessionsPage() {
             {generating ? "Generando..." : "Generar"}
           </button>
         </div>
+      </div>
+
+      {/* Closed Dates Manager */}
+      <div className="bg-white border border-[#B87777]/20 p-4">
+        <button
+          onClick={() => setShowClosedDates(!showClosedDates)}
+          className="w-full flex items-center justify-between"
+        >
+          <p className="text-[10px] tracking-[0.2em] text-[#B87777] uppercase">
+            Días Cerrados
+            {closedDates.length > 0 && (
+              <span className="ml-2 text-[#B87777]/60">
+                ({closedDates.length})
+              </span>
+            )}
+          </p>
+          <span className="text-xs text-[#2C2C2C]/30">
+            {showClosedDates ? "▲" : "▼"}
+          </span>
+        </button>
+
+        {showClosedDates && (
+          <div className="mt-4 space-y-4">
+            {/* Add new closed date */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={newClosedDate}
+                  onChange={(e) => setNewClosedDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="flex-1 px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#B87777]"
+                />
+                <button
+                  onClick={handleCloseDate}
+                  disabled={closedActionLoading || !newClosedDate}
+                  className="px-4 py-2 bg-[#B87777] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#a06666] transition-colors disabled:opacity-30"
+                >
+                  Cerrar
+                </button>
+              </div>
+              <input
+                type="text"
+                value={newClosedReason}
+                onChange={(e) => setNewClosedReason(e.target.value)}
+                placeholder="Razón (opcional): ej. Festivo, Mantenimiento..."
+                className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-xs text-[#2C2C2C] focus:outline-none focus:border-[#B87777] placeholder:text-[#2C2C2C]/20"
+              />
+            </div>
+
+            {/* List closed dates */}
+            {closedLoading ? (
+              <div className="flex justify-center py-4">
+                <div className="w-4 h-4 border-2 border-[#B87777] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : closedDates.length === 0 ? (
+              <p className="text-xs text-[#2C2C2C]/30 text-center py-2">
+                No hay días cerrados programados
+              </p>
+            ) : (
+              <div className="space-y-1">
+                {closedDates.map((cd) => {
+                  const dateObj = new Date(cd.date + "T12:00:00");
+                  const label = dateObj.toLocaleDateString("es-CO", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  });
+                  return (
+                    <div
+                      key={cd.date}
+                      className="flex items-center justify-between px-3 py-2 bg-[#B87777]/5 border border-[#B87777]/10"
+                    >
+                      <div>
+                        <span className="text-sm text-[#2C2C2C] capitalize">
+                          {label}
+                        </span>
+                        {cd.reason && (
+                          <span className="ml-2 text-xs text-[#2C2C2C]/40">
+                            — {cd.reason}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleReopenDate(cd.date)}
+                        disabled={closedActionLoading}
+                        className="text-[9px] text-[#B87777] hover:text-red-600 transition-colors disabled:opacity-30 uppercase tracking-wider"
+                      >
+                        reabrir
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Week navigation */}
@@ -252,6 +477,7 @@ export default function AdminSessionsPage() {
                     const def = s.definition;
                     const isCancelled = s.status === "cancelled";
                     const isCompleted = s.status === "completed";
+                    const isEditingThis = editingCapacity === s.id;
 
                     return (
                       <div
@@ -290,9 +516,52 @@ export default function AdminSessionsPage() {
                           </div>
 
                           <div className="flex flex-col items-end gap-2">
-                            <span className="text-xs text-[#2C2C2C]/40">
-                              {s.enrolled}/{s.capacity}
-                            </span>
+                            {/* Capacity — tappable to edit */}
+                            {isEditingThis ? (
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-[#2C2C2C]/40">
+                                  {s.enrolled}/
+                                </span>
+                                <input
+                                  ref={capacityInputRef}
+                                  type="number"
+                                  min={1}
+                                  max={50}
+                                  value={capacityValue}
+                                  onChange={(e) =>
+                                    setCapacityValue(e.target.value)
+                                  }
+                                  onBlur={() => saveCapacity(s.id)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") saveCapacity(s.id);
+                                    if (e.key === "Escape")
+                                      setEditingCapacity(null);
+                                  }}
+                                  className="w-12 px-1 py-0.5 text-xs text-right border border-[#C9A96E] bg-[#C9A96E]/5 focus:outline-none"
+                                />
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() =>
+                                  !isCancelled &&
+                                  !isCompleted &&
+                                  startEditCapacity(s)
+                                }
+                                disabled={isCancelled || isCompleted}
+                                className={`text-xs transition-colors ${
+                                  isCancelled || isCompleted
+                                    ? "text-[#2C2C2C]/40"
+                                    : "text-[#2C2C2C]/40 hover:text-[#C9A96E] cursor-pointer"
+                                }`}
+                                title={
+                                  isCancelled || isCompleted
+                                    ? undefined
+                                    : "Toca para cambiar cupos"
+                                }
+                              >
+                                {s.enrolled}/{s.capacity}
+                              </button>
+                            )}
 
                             {!isCancelled && !isCompleted && (
                               <div className="flex gap-2">

@@ -1,26 +1,13 @@
-import { createClient } from "@supabase/supabase-js";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyAdmin, getAdminClient } from "@/lib/admin-auth";
 
-const ADMIN_KEY = process.env.TU_ADMIN_KEY || "";
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
-
-function unauthorized() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-
-// GET — public, returns all closed dates
+/**
+ * GET /api/admin/closed-dates
+ * Returns all future closed dates. Public read.
+ */
 export async function GET() {
   try {
-    const supabase = getSupabase();
-    if (!supabase) {
-      return NextResponse.json({ data: [] });
-    }
+    const supabase = getAdminClient();
 
     const { data, error } = await supabase
       .from("tu_closed_dates")
@@ -40,21 +27,26 @@ export async function GET() {
   }
 }
 
-// POST — admin only, add a closed date
-export async function POST(request: Request) {
+/**
+ * POST /api/admin/closed-dates
+ * Close a date. Admin only.
+ * Body: { date: string, reason?: string }
+ */
+export async function POST(request: NextRequest) {
+  const admin = await verifyAdmin(request);
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
-    const { date, reason, adminKey } = body;
+    const { date, reason } = body;
 
-    if (adminKey !== ADMIN_KEY) return unauthorized();
     if (!date) {
       return NextResponse.json({ error: "Date is required" }, { status: 400 });
     }
 
-    const supabase = getSupabase();
-    if (!supabase) {
-      return NextResponse.json({ error: "DB not configured" }, { status: 500 });
-    }
+    const supabase = getAdminClient();
 
     const { data, error } = await supabase
       .from("tu_closed_dates")
@@ -74,21 +66,26 @@ export async function POST(request: Request) {
   }
 }
 
-// DELETE — admin only, reopen a date
-export async function DELETE(request: Request) {
+/**
+ * DELETE /api/admin/closed-dates
+ * Reopen a date. Admin only.
+ * Body: { date: string }
+ */
+export async function DELETE(request: NextRequest) {
+  const admin = await verifyAdmin(request);
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
-    const { date, adminKey } = body;
+    const { date } = body;
 
-    if (adminKey !== ADMIN_KEY) return unauthorized();
     if (!date) {
       return NextResponse.json({ error: "Date is required" }, { status: 400 });
     }
 
-    const supabase = getSupabase();
-    if (!supabase) {
-      return NextResponse.json({ error: "DB not configured" }, { status: 500 });
-    }
+    const supabase = getAdminClient();
 
     const { error } = await supabase
       .from("tu_closed_dates")
