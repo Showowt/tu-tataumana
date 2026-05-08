@@ -36,7 +36,7 @@ export const PACK_EXPIRATION_DAYS: Record<string, number> = {
   TU_HEALING_PACK: 60,
   TU_EQUILIBRIUM: 90,
   TU_LIFE_PACK: 30,
-  MAYO_MES_MAMA: 30,
+  MAYO_2X1: 30,
 };
 
 /** Value representing unlimited classes */
