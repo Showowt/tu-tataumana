@@ -127,7 +127,7 @@ WEEKLY CLASS SCHEDULE (ACTUAL — use this to tell people what's happening on sp
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 MONDAY (Lunes):
-  9:30 AM — Stress Release (con Harold) — Libera tensión y estrés a través de movimiento consciente y respiración profunda.
+  9:30 AM — Stress Release (con Karla) — Libera tensión y estrés a través de movimiento consciente y respiración profunda.
   11:00 AM — Sculpt Your Body (con Karla) — Tonifica y fortalece tu cuerpo con movimientos precisos y controlados.
   7:15 PM — Open Flow (con Violeta) — Secuencias fluidas para liberar, expandir y equilibrar tu energía.
 
@@ -137,8 +137,8 @@ TUESDAY (Martes) — SPECIAL: $45,000 COP (Martes de Industria):
   7:15 PM — Hip Opening · Hatha (con Alejandro) — Abre tus caderas y libera tensión profunda con posturas conscientes de hatha.
 
 WEDNESDAY (Miércoles):
-  9:30 AM — Yogalates (con Harold) — Fusión de yoga y pilates para fortalecer, estirar y equilibrar.
-  10:45 AM — Pilates Flow (con Harold) — Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.
+  9:30 AM — Yogalates (con Karla) — Fusión de yoga y pilates para fortalecer, estirar y equilibrar.
+  10:45 AM — Pilates Flow (con Karla) — Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.
   7:15 PM — Open Flow (con Violeta) — Secuencias fluidas para liberar, expandir y equilibrar tu energía.
 
 THURSDAY (Jueves):
@@ -180,7 +180,7 @@ TEACHERS:
 - Betty Quintana: Psychologist and yoga instructor. Integrates meditation and mental reprogramming. Co-teaches Friday evening with Violeta.
 - Violeta: Movement artist. Explores dance, fascia work, and conscious movement. Teaches Mon/Wed evenings, co-teaches Friday evening with Betty.
 - Álvaro: Guides meditation and ontology-based connection. Teaches Meditación Viaje Interior (Tue/Sat/Sun).
-- Harold: Dynamic yoga, pilates, and stress release instructor. Teaches Mon morning, Wed 9:30 AM Yogalates and 10:45 AM Pilates Flow.
+- Karla: Pilates specialist. Teaches Mon 9:30 AM Stress Release, Mon 11:00 AM Sculpt Your Body, Wed 9:30 AM Yogalates, and Wed 10:45 AM Pilates Flow. All her classes focus on Pilates-style movement.
 - Alejandro: Guides practices combining strength and calm. Teaches Tue/Thu evenings (Hip Opening) and Sunday morning.
 - Karla: Creates accessible, loving practice spaces. Teaches Monday 11:00 AM Sculpt Your Body.
 

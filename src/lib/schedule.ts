@@ -22,7 +22,7 @@ export const SCHEDULE: Record<number, ScheduleClass[]> = {
     { time: "10:30 AM", name: "Meditación Viaje Interior", note: "(solo en español)", teacher: "Álvaro", desc: { es: "Un viaje hacia adentro a través de la meditación y la quietud.", en: "A journey inward through meditation and stillness." } },
   ],
   1: [ // Monday
-    { time: "9:30 AM", name: "Stress Release", teacher: "Harold", desc: { es: "Libera tensión y estrés a través de movimiento consciente y respiración profunda.", en: "Release tension and stress through conscious movement and deep breathing." } },
+    { time: "9:30 AM", name: "Stress Release", teacher: "Karla", desc: { es: "Libera tensión y estrés a través de movimiento consciente y respiración profunda.", en: "Release tension and stress through conscious movement and deep breathing." } },
     { time: "11:00 AM", name: "Sculpt Your Body", teacher: "Karla", desc: { es: "Tonifica y fortalece tu cuerpo con movimientos precisos y controlados.", en: "Tone and strengthen your body with precise, controlled movements." } },
     { time: "7:15 PM", name: "Open Flow", teacher: "Violeta", desc: { es: "Secuencias fluidas para liberar, expandir y equilibrar tu energía.", en: "Fluid sequences to release, expand and balance your energy." } },
   ],
@@ -32,8 +32,8 @@ export const SCHEDULE: Record<number, ScheduleClass[]> = {
     { time: "7:15 PM", name: "Hip Opening · Hatha", teacher: "Alejandro", desc: { es: "Abre tus caderas y libera tensión profunda con posturas conscientes de hatha.", en: "Open your hips and release deep tension with conscious hatha postures." } },
   ],
   3: [ // Wednesday
-    { time: "9:30 AM", name: "Yogalates", teacher: "Harold", desc: { es: "Fusión de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
-    { time: "10:45 AM", name: "Pilates Flow", teacher: "Harold", desc: { es: "Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.", en: "Strengthen, align and tone your body with fluidity from the core." } },
+    { time: "9:30 AM", name: "Yogalates", teacher: "Karla", desc: { es: "Fusión de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
+    { time: "10:45 AM", name: "Pilates Flow", teacher: "Karla", desc: { es: "Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.", en: "Strengthen, align and tone your body with fluidity from the core." } },
     { time: "7:15 PM", name: "Open Flow", teacher: "Violeta", desc: { es: "Secuencias fluidas para liberar, expandir y equilibrar tu energía.", en: "Fluid sequences to release, expand and balance your energy." } },
   ],
   4: [ // Thursday
