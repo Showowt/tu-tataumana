@@ -26,7 +26,7 @@ const PRIVATE_SERVICE_PRICES: Record<string, number> = {
   "Discovery Session": 85000,
   "Personalized Yoga": 190000,
   "Video Connection": 170000,
-  "Quantum Surgery": 320000,
+  "Quantum Surgery": 360000,
   "Superior Connection": 730000,
   "Energy Cleansing": 485000,
   "Sacred Ceremonies": 3500000,

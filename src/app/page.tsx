@@ -38,7 +38,7 @@ const services = [
   {
     name: "Quantum Surgery",
     nameEs: "Cirugía Cuántica",
-    price: "$320,000 COP / $86 USD",
+    price: "$360,000 COP / $95 USD",
     duration: "60 min",
   },
   {

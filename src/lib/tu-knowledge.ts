@@ -254,7 +254,7 @@ PRICING STRUCTURE (2026):
 - Discovery Session: $85,000 COP / $23 USD (30 min)
 - Personalized Yoga: $190,000 COP / $51 USD (60 min), Pack 10: $1,500,000 COP / $388 USD
 - Video Connection: $170,000 COP / $46 USD (60 min), $120,000 COP / $33 USD (30 min)
-- Quantum Surgery: $320,000 COP / $86 USD (60 min)
+- Quantum Surgery: $360,000 COP / $95 USD (60 min)
 - Superior Connection: $730,000 COP / $197 USD (75 min)
 - Energy Cleansing: $485,000 COP / $131 USD (75 min)
 - Sacred Ceremonies: $3,500,000 COP / $945 USD
@@ -360,13 +360,13 @@ What I customize for you:
 
 QUANTUM SURGERY (CIRUGÍA CUÁNTICA)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Price: $320,000 COP / $86 USD
+Price: $360,000 COP / $95 USD
 Duration: 60 minutes
 A powerful energetic transmutation session for holistic wellbeing — deep cellular restoration through energy work.
 
 SOUND HEALING
 ━━━━━━━━━━━━━
-Price: $320,000 COP / $86 USD
+Price: $360,000 COP / $95 USD
 Duration: 75-90 minutes
 
 My instruments:

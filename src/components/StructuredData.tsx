@@ -119,7 +119,7 @@ export default function StructuredData() {
             offer("Personalized Private Yoga", "Tailored sessions in Hatha, Vinyasa, Kundalini, Yin, or Ashtanga", "190000", "COP", "PT60M"),
             offer("Sound Healing Private Session", "Crystal singing bowls, Tibetan bowls, tuning forks — deep cellular healing", "320000", "COP", "PT90M"),
             offer("Reiki & Integrated Energy Therapy", "Japanese energy healing + cellular memory release", "485000", "COP", "PT75M"),
-            offer("Quantum Surgery", "Powerful energetic transmutation for deep cellular restoration", "320000", "COP", "PT60M"),
+            offer("Quantum Surgery", "Powerful energetic transmutation for deep cellular restoration", "360000", "COP", "PT60M"),
             offer("Superior Connection", "Profound session connecting you with higher consciousness", "730000", "COP", "PT75M"),
             offer("Energy Cleansing", "For couples, homes, or workspaces — honoring authentic love", "485000", "COP", "PT75M"),
             offer("Sacred Ceremonies", "Cacao, Full Moon, New Moon, Fire ceremonies — marking life's moments", "3500000", "COP"),
