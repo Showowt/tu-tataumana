@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { verifyAdmin } from "@/lib/admin-auth";
 
 /**
@@ -67,4 +68,106 @@ export async function GET(
     packs: packs || [],
     transactions: transactions || [],
   });
+}
+
+/**
+ * POST /api/admin/students/[id]
+ * Generate a login link for the student.
+ * Creates an auth account if one doesn't exist yet.
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const admin = await verifyAdmin(request);
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const supabase = admin.supabase;
+
+  // Fetch student
+  const { data: student, error: studentError } = await supabase
+    .from("tu_students")
+    .select("id, email, full_name, phone, auth_id")
+    .eq("id", id)
+    .single();
+
+  if (studentError || !student) {
+    return NextResponse.json({ error: "Student not found" }, { status: 404 });
+  }
+
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) {
+    return NextResponse.json(
+      { error: "Service key not configured" },
+      { status: 500 },
+    );
+  }
+
+  const adminClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceKey,
+  );
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
+
+  try {
+    // If student doesn't have an auth account, create one
+    if (!student.auth_id) {
+      const { data: authData, error: authError } =
+        await adminClient.auth.admin.createUser({
+          email: student.email,
+          email_confirm: true,
+          user_metadata: {
+            full_name: student.full_name,
+            phone: student.phone || null,
+          },
+        });
+
+      if (authError) {
+        console.error("[admin/students/invite] Create user failed:", authError.message);
+        return NextResponse.json(
+          { error: `No se pudo crear la cuenta: ${authError.message}` },
+          { status: 500 },
+        );
+      }
+
+      if (authData?.user) {
+        await supabase
+          .from("tu_students")
+          .update({ auth_id: authData.user.id })
+          .eq("id", id);
+      }
+    }
+
+    // Generate magic link
+    const { data: linkData, error: linkError } =
+      await adminClient.auth.admin.generateLink({
+        type: "magiclink",
+        email: student.email,
+        options: {
+          redirectTo: `${baseUrl}/auth/callback?redirect=/portal`,
+        },
+      });
+
+    if (linkError || !linkData?.properties?.action_link) {
+      console.error("[admin/students/invite] Link generation failed:", linkError?.message);
+      return NextResponse.json(
+        { error: "No se pudo generar el enlace de acceso" },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      loginLink: linkData.properties.action_link,
+      message: `Enlace de acceso generado para ${student.full_name}`,
+    });
+  } catch (err) {
+    console.error("[admin/students/invite] Error:", err);
+    return NextResponse.json(
+      { error: "Error generando enlace de acceso" },
+      { status: 500 },
+    );
+  }
 }

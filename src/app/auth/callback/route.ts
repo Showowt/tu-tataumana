@@ -55,11 +55,35 @@ export async function GET(request: NextRequest) {
   }
 
   // Auto-create student profile if it doesn't exist
-  const { data: existingStudent } = await supabase
+  // Check by auth_id first, then by email (for admin-created students without auth_id)
+  let existingStudent: { id: string; role: string } | null = null;
+
+  const { data: byAuthId } = await supabase
     .from("tu_students")
     .select("id, role")
     .eq("auth_id", user.id)
     .single();
+
+  if (byAuthId) {
+    existingStudent = byAuthId;
+  } else {
+    // Check if admin created this student (has email but no auth_id)
+    const { data: byEmail } = await supabase
+      .from("tu_students")
+      .select("id, role")
+      .eq("email", user.email)
+      .is("auth_id", null)
+      .single();
+
+    if (byEmail) {
+      // Link the auth_id to the existing admin-created student
+      await supabase
+        .from("tu_students")
+        .update({ auth_id: user.id })
+        .eq("id", byEmail.id);
+      existingStudent = byEmail;
+    }
+  }
 
   if (!existingStudent) {
     const isAdmin = ADMIN_EMAILS.includes(user.email.toLowerCase());

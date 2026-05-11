@@ -89,6 +89,15 @@ export default function AdminStudentDetailPage() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Login link + edit state
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const [loginLink, setLoginLink] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
   /* ---------- Data fetching ---------- */
 
   const loadStudent = useCallback(async () => {
@@ -201,6 +210,86 @@ export default function AdminStudentDetailPage() {
       showToast("Error de conexion");
     }
     setSubmitting(false);
+  }
+
+  /* ---------- Login link + edit handlers ---------- */
+
+  async function handleGenerateLink() {
+    if (!id) return;
+    setGeneratingLink(true);
+    setLoginLink("");
+    try {
+      const res = await fetch(`/api/admin/students/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "Error generando enlace");
+      } else if (data.loginLink) {
+        setLoginLink(data.loginLink);
+        showToast("Enlace generado");
+      }
+    } catch {
+      showToast("Error de conexion");
+    }
+    setGeneratingLink(false);
+  }
+
+  function startEditing() {
+    if (!student) return;
+    setEditName(student.full_name);
+    setEditPhone(student.phone || "");
+    setEditNotes(student.notes || "");
+    setEditing(true);
+  }
+
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/students", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          full_name: editName.trim(),
+          phone: editPhone.trim() || null,
+          notes: editNotes.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || "Error guardando");
+      } else {
+        showToast("Datos actualizados");
+        setEditing(false);
+        await loadStudent();
+      }
+    } catch {
+      showToast("Error de conexion");
+    }
+    setSaving(false);
+  }
+
+  async function copyLink(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast("Enlace copiado");
+    } catch {
+      showToast("No se pudo copiar");
+    }
+  }
+
+  function sendViaWhatsApp(link: string) {
+    const name = student?.full_name || "";
+    const msg = encodeURIComponent(
+      `Hola ${name}! Tu cuenta en TU. by Tata Umana esta lista. Haz clic en este enlace para acceder a tu portal:\n\n${link}\n\nEste enlace es de un solo uso.`
+    );
+    const phone = student?.phone?.replace(/[\s\-\+]/g, "") || "";
+    const waUrl = phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`;
+    window.open(waUrl, "_blank");
   }
 
   /* ---------- Formatters ---------- */
@@ -327,18 +416,127 @@ export default function AdminStudentDetailPage() {
       {/* Tab Content */}
       {tab === "info" && (
         <div className="space-y-4">
+          {/* Edit mode */}
+          {editing ? (
+            <form onSubmit={handleSaveEdit} className="bg-white border border-[#C9A96E]/20 p-4 space-y-3">
+              <p className="text-[10px] tracking-[0.2em] text-[#C9A96E] uppercase">Editar Alumno</p>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                required
+                minLength={2}
+                placeholder="Nombre completo"
+                className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
+              />
+              <input
+                type="tel"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                placeholder="WhatsApp (opcional)"
+                className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
+              />
+              <textarea
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="Notas (opcional)"
+                rows={2}
+                className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E] resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 py-2 bg-[#C9A96E] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-30"
+                >
+                  {saving ? "Guardando..." : "Guardar"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  className="px-4 py-2 border border-[#2C2C2C]/10 text-[10px] tracking-[0.15em] uppercase text-[#2C2C2C]/40 hover:text-[#2C2C2C] transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="bg-white border border-[#2C2C2C]/5 p-4 space-y-3">
+              <InfoRow label="Nombre" value={student.full_name} />
+              <InfoRow label="Email" value={student.email} />
+              <InfoRow label="Telefono" value={student.phone || "---"} />
+              <InfoRow label="Rol" value={student.role} />
+              <InfoRow label="Idioma" value={student.preferred_lang === "es" ? "Espanol" : "English"} />
+              <InfoRow label="Registrado" value={formatDate(student.created_at)} />
+              {student.emergency_contact && (
+                <InfoRow label="Contacto emergencia" value={student.emergency_contact} />
+              )}
+              {student.notes && (
+                <InfoRow label="Notas" value={student.notes} />
+              )}
+              <button
+                onClick={startEditing}
+                className="w-full mt-2 py-2 border border-[#2C2C2C]/10 text-[10px] tracking-[0.15em] uppercase text-[#2C2C2C]/40 hover:text-[#2C2C2C] hover:border-[#2C2C2C]/30 transition-colors"
+              >
+                Editar Datos
+              </button>
+            </div>
+          )}
+
+          {/* Login link section */}
           <div className="bg-white border border-[#2C2C2C]/5 p-4 space-y-3">
-            <InfoRow label="Nombre" value={student.full_name} />
-            <InfoRow label="Email" value={student.email} />
-            <InfoRow label="Telefono" value={student.phone || "---"} />
-            <InfoRow label="Rol" value={student.role} />
-            <InfoRow label="Idioma" value={student.preferred_lang === "es" ? "Espanol" : "English"} />
-            <InfoRow label="Registrado" value={formatDate(student.created_at)} />
-            {student.emergency_contact && (
-              <InfoRow label="Contacto emergencia" value={student.emergency_contact} />
-            )}
-            {student.notes && (
-              <InfoRow label="Notas" value={student.notes} />
+            <p className="text-[10px] tracking-[0.2em] text-[#C9A96E] uppercase">
+              Acceso al Portal
+            </p>
+            {loginLink ? (
+              <div className="space-y-3">
+                <p className="text-xs text-green-600">
+                  Enlace generado. Envialo al alumno por WhatsApp:
+                </p>
+                <div className="bg-green-50 border border-green-200 p-2 rounded text-[10px] text-[#2C2C2C]/60 break-all select-all">
+                  {loginLink}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => copyLink(loginLink)}
+                    className="flex-1 py-2 bg-[#2C2C2C] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors"
+                  >
+                    Copiar
+                  </button>
+                  <button
+                    onClick={() => sendViaWhatsApp(loginLink)}
+                    className="flex-1 py-2 bg-[#25D366] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#20bd5a] transition-colors"
+                  >
+                    Enviar WhatsApp
+                  </button>
+                </div>
+                <button
+                  onClick={() => setLoginLink("")}
+                  className="w-full text-center text-[9px] text-[#2C2C2C]/30 hover:text-[#2C2C2C]/50 py-1"
+                >
+                  Cerrar
+                </button>
+              </div>
+            ) : (
+              <div>
+                <p className="text-xs text-[#2C2C2C]/40 mb-3">
+                  Genera un enlace de acceso unico para que el alumno pueda entrar a su portal sin necesidad de contrasena.
+                </p>
+                <button
+                  onClick={handleGenerateLink}
+                  disabled={generatingLink}
+                  className="w-full py-2 bg-[#2C2C2C] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-30 flex items-center justify-center gap-2"
+                >
+                  {generatingLink ? (
+                    <>
+                      <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Generando...
+                    </>
+                  ) : (
+                    "Generar Enlace de Acceso"
+                  )}
+                </button>
+              </div>
             )}
           </div>
 

@@ -26,6 +26,7 @@ export default function AdminStudentsPage() {
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [creating, setCreating] = useState(false);
+  const [loginLink, setLoginLink] = useState("");
 
   const loadStudents = useCallback(async () => {
     setLoading(true);
@@ -51,6 +52,7 @@ export default function AdminStudentsPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
+    setLoginLink("");
     try {
       const res = await fetch("/api/admin/students", {
         method: "POST",
@@ -59,23 +61,45 @@ export default function AdminStudentsPage() {
           email: newEmail.trim().toLowerCase(),
           full_name: newName.trim(),
           phone: newPhone.trim() || null,
+          create_account: true,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
         showMessage(data.error || "Error creando alumno");
       } else {
-        showMessage("Alumno creado");
+        if (data.loginLink) {
+          setLoginLink(data.loginLink);
+          showMessage("Alumno creado con cuenta de acceso");
+        } else {
+          showMessage(data.accountCreated ? "Alumno creado con cuenta" : "Alumno creado");
+          setShowCreate(false);
+        }
         setNewEmail("");
         setNewName("");
         setNewPhone("");
-        setShowCreate(false);
         await loadStudents();
       }
     } catch {
-      showMessage("Error de conexión");
+      showMessage("Error de conexion");
     }
     setCreating(false);
+  }
+
+  async function copyLink(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showMessage("Enlace copiado");
+    } catch {
+      showMessage("No se pudo copiar");
+    }
+  }
+
+  function sendViaWhatsApp(link: string, studentName: string) {
+    const msg = encodeURIComponent(
+      `Hola ${studentName}! Tu cuenta en TU. by Tata Umana esta lista. Haz clic en este enlace para acceder a tu portal:\n\n${link}\n\nEste enlace es de un solo uso. Una vez dentro, podras ver tus clases, packs y reservas.`
+    );
+    window.open(`https://wa.me/?text=${msg}`, "_blank");
   }
 
   function showMessage(msg: string) {
@@ -145,9 +169,51 @@ export default function AdminStudentsPage() {
             disabled={creating}
             className="w-full py-2 bg-[#C9A96E] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-30"
           >
-            {creating ? "Creando..." : "Crear Alumno"}
+            {creating ? "Creando cuenta..." : "Crear Alumno + Cuenta"}
           </button>
+          <p className="text-[9px] text-[#2C2C2C]/30 text-center">
+            Se crea cuenta de acceso automaticamente. Recibes un enlace para enviar por WhatsApp.
+          </p>
         </form>
+      )}
+
+      {/* Login link after creating student */}
+      {loginLink && (
+        <div className="bg-green-50 border border-green-200 p-4 space-y-3">
+          <p className="text-[10px] tracking-[0.2em] text-green-700 uppercase font-medium">
+            Cuenta creada - Enlace de acceso
+          </p>
+          <p className="text-xs text-green-600">
+            Envia este enlace al alumno por WhatsApp para que pueda acceder a su portal:
+          </p>
+          <div className="bg-white border border-green-200 p-2 rounded text-[10px] text-[#2C2C2C]/60 break-all select-all">
+            {loginLink}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => copyLink(loginLink)}
+              className="flex-1 py-2 bg-[#2C2C2C] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors"
+            >
+              Copiar Enlace
+            </button>
+            <button
+              onClick={() => {
+                sendViaWhatsApp(loginLink, "");
+                setLoginLink("");
+                setShowCreate(false);
+              }}
+              className="flex-1 py-2 bg-[#25D366] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#20bd5a] transition-colors"
+            >
+              Enviar por WhatsApp
+            </button>
+          </div>
+          <button
+            onClick={() => { setLoginLink(""); setShowCreate(false); }}
+            className="w-full text-center text-[9px] text-[#2C2C2C]/30 hover:text-[#2C2C2C]/50 transition-colors py-1"
+          >
+            Cerrar
+          </button>
+        </div>
       )}
 
       {/* Search */}
