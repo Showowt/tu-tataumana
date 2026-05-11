@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = admin.supabase;
   const { searchParams } = request.nextUrl;
-  const search = searchParams.get("search");
+  const search = searchParams.get("search")?.slice(0, 100) ?? null;
   const role = searchParams.get("role");
 
   let query = supabase
@@ -172,9 +172,18 @@ export async function POST(request: NextRequest) {
   );
 }
 
+const PatchStudentSchema = z.object({
+  id: z.string().min(1),
+  full_name: z.string().min(2).max(100).optional(),
+  phone: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  emergency_contact: z.string().nullable().optional(),
+  preferred_lang: z.enum(["en", "es"]).optional(),
+});
+
 /**
  * PATCH /api/admin/students
- * Update a student. Requires `id` in body.
+ * Update a student. Only allows safe fields.
  */
 export async function PATCH(request: NextRequest) {
   const admin = await verifyAdmin(request);
@@ -184,11 +193,16 @@ export async function PATCH(request: NextRequest) {
 
   const supabase = admin.supabase;
   const body = await request.json();
-  const { id, ...updates } = body;
+  const parsed = PatchStudentSchema.safeParse(body);
 
-  if (!id) {
-    return NextResponse.json({ error: "Student id is required" }, { status: 400 });
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: parsed.error.issues },
+      { status: 400 },
+    );
   }
+
+  const { id, ...updates } = parsed.data;
 
   const { data, error } = await supabase
     .from("tu_students")
@@ -198,6 +212,9 @@ export async function PATCH(request: NextRequest) {
     .single();
 
   if (error) {
+    if (error.code === "PGRST116") {
+      return NextResponse.json({ error: "Student not found" }, { status: 404 });
+    }
     console.error("[admin/students PATCH]", error.message);
     return NextResponse.json({ error: "Failed to update student" }, { status: 500 });
   }

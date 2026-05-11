@@ -27,6 +27,7 @@ export default function AdminStudentsPage() {
   const [newPhone, setNewPhone] = useState("");
   const [creating, setCreating] = useState(false);
   const [loginLink, setLoginLink] = useState("");
+  const [createdName, setCreatedName] = useState("");
 
   const loadStudents = useCallback(async () => {
     setLoading(true);
@@ -39,7 +40,7 @@ export default function AdminStudentsPage() {
         setStudents(data.data || []);
       }
     } catch {
-      // fail silently
+      showMessage("Error cargando alumnos");
     }
     setLoading(false);
   }, [search]);
@@ -69,6 +70,7 @@ export default function AdminStudentsPage() {
         showMessage(data.error || "Error creando alumno");
       } else {
         if (data.loginLink) {
+          setCreatedName(newName.trim());
           setLoginLink(data.loginLink);
           showMessage("Alumno creado con cuenta de acceso");
         } else {
@@ -198,8 +200,9 @@ export default function AdminStudentsPage() {
             </button>
             <button
               onClick={() => {
-                sendViaWhatsApp(loginLink, "");
+                sendViaWhatsApp(loginLink, createdName);
                 setLoginLink("");
+                setCreatedName("");
                 setShowCreate(false);
               }}
               className="flex-1 py-2 bg-[#25D366] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#20bd5a] transition-colors"

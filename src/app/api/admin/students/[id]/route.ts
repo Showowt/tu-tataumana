@@ -126,18 +126,26 @@ export async function POST(
         });
 
       if (authError) {
-        console.error("[admin/students/invite] Create user failed:", authError.message);
-        return NextResponse.json(
-          { error: `No se pudo crear la cuenta: ${authError.message}` },
-          { status: 500 },
-        );
+        // If user already exists in auth (e.g. self-registered but not linked),
+        // continue to generate the magic link — don't block
+        if (!authError.message?.includes("already been registered")) {
+          console.error("[admin/students/invite] Create user failed:", authError.message);
+          return NextResponse.json(
+            { error: `No se pudo crear la cuenta: ${authError.message}` },
+            { status: 500 },
+          );
+        }
+        console.warn("[admin/students/invite] Auth user exists but not linked:", student.email);
       }
 
       if (authData?.user) {
-        await supabase
+        const { error: linkErr } = await supabase
           .from("tu_students")
           .update({ auth_id: authData.user.id })
           .eq("id", id);
+        if (linkErr) {
+          console.error("[admin/students/invite] Failed to link auth_id:", linkErr.message);
+        }
       }
     }
 
