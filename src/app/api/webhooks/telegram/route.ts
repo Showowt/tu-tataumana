@@ -1456,6 +1456,7 @@ function handleHelp(): string {
     `<b>TU. Bot — Comandos</b>\n\n` +
     `<b>/hoy</b> — Clases de hoy\n` +
     `<b>/manana</b> — Clases de manana\n` +
+    `<b>/clases</b> — Ver todas las clases de la semana con reservas\n` +
     `<b>/semana</b> — Horario de la semana\n` +
     `<b>/reservas</b> — Reservas de hoy con nombres\n` +
     `<b>/resumen</b> — Dashboard general\n\n` +
@@ -1653,6 +1654,68 @@ async function handleCreateStudentAccount(supabase: SupabaseClient, params: Reco
 }
 
 // ---------------------------------------------------------------------------
+// Weekly class roster handler
+// ---------------------------------------------------------------------------
+
+async function handleWeekClassRoster(supabase: SupabaseClient): Promise<string> {
+  const today = getColombiaDateStr();
+  const endDate = getColombiaDateStr(6);
+
+  const { data: sessions, error } = await supabase
+    .from("tu_class_sessions")
+    .select("id, session_date, start_time, teacher, capacity, enrolled, status, definition:tu_class_definitions(name, name_es)")
+    .gte("session_date", today)
+    .lte("session_date", endDate)
+    .eq("status", "scheduled")
+    .order("session_date", { ascending: true })
+    .order("start_time", { ascending: true });
+
+  if (error) return `Error: ${error.message}`;
+  if (!sessions || sessions.length === 0) return "No hay clases programadas esta semana.";
+
+  // Group by date
+  const byDate: Record<string, typeof sessions> = {};
+  for (const s of sessions) {
+    const date = s.session_date;
+    if (!byDate[date]) byDate[date] = [];
+    byDate[date].push(s);
+  }
+
+  const lines: string[] = ["📋 <b>CLASES DE LA SEMANA</b>\n"];
+
+  for (const [date, daySessions] of Object.entries(byDate)) {
+    const dateLabel = spanishDate(date);
+    lines.push(`\n<b>${dateLabel}</b>`);
+
+    for (const s of daySessions) {
+      const def = s.definition as unknown as { name: string; name_es: string } | null;
+      const className = def?.name_es || def?.name || "Clase";
+      const time = s.start_time.slice(0, 5);
+      const enrolled = s.enrolled || 0;
+      const capacity = s.capacity || 15;
+      const pct = capacity > 0 ? (enrolled / capacity) * 100 : 0;
+
+      // Status indicator
+      let indicator = "⚪";
+      if (enrolled === 0) indicator = "⚪";
+      else if (pct >= 100) indicator = "🔴";
+      else if (pct >= 70) indicator = "🟠";
+      else if (pct >= 40) indicator = "🟡";
+      else indicator = "🟢";
+
+      lines.push(`${indicator} ${time} ${className} — <b>${enrolled}/${capacity}</b> — ${s.teacher}`);
+    }
+  }
+
+  // Summary
+  const totalEnrolled = sessions.reduce((sum, s) => sum + (s.enrolled || 0), 0);
+  const totalSessions = sessions.length;
+  lines.push(`\n<b>Total:</b> ${totalSessions} clases · ${totalEnrolled} reservas`);
+
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // Main webhook handler
 // ---------------------------------------------------------------------------
 
@@ -1716,6 +1779,7 @@ export async function POST(request: NextRequest) {
       "/hoy": "que hay hoy",
       "/manana": "clases de manana",
       "/semana": "semana",
+      "/clases": "clases de la semana",
       "/reservas": "reservas de hoy",
       "/resumen": "resumen",
       "/alumnos": "alumnos",
@@ -1820,6 +1884,8 @@ export async function POST(request: NextRequest) {
       } else {
         directResponse = "Necesito nombre y email. Ejemplo:\n/alumno Maria Garcia maria@email.com +573001234567";
       }
+    } else if (firstWord === "/clases" || firstWord === "/semana") {
+      directResponse = await handleWeekClassRoster(supabase);
     }
 
     if (directResponse) {

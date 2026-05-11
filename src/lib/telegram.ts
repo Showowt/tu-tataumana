@@ -357,6 +357,7 @@ export async function setTelegramBotCommands(): Promise<boolean> {
   const commands = [
     { command: "ayuda", description: "Ver todos los comandos disponibles" },
     { command: "hoy", description: "Clases y reservas de hoy" },
+    { command: "clases", description: "Clases de la semana con reservas" },
     { command: "buscar", description: "Buscar alumno por nombre" },
     { command: "reservas", description: "Ver reservas de hoy" },
     { command: "descuento", description: "Crear codigo de descuento" },

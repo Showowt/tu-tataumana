@@ -548,18 +548,34 @@ export default function AdminSessionsPage() {
                                   startEditCapacity(s)
                                 }
                                 disabled={isCancelled || isCompleted}
-                                className={`text-xs transition-colors ${
-                                  isCancelled || isCompleted
-                                    ? "text-[#2C2C2C]/40"
-                                    : "text-[#2C2C2C]/40 hover:text-[#C9A96E] cursor-pointer"
-                                }`}
                                 title={
                                   isCancelled || isCompleted
                                     ? undefined
                                     : "Toca para cambiar cupos"
                                 }
+                                className="focus:outline-none"
                               >
-                                {s.enrolled}/{s.capacity}
+                                {(() => {
+                                  const pct = s.capacity > 0 ? (s.enrolled / s.capacity) * 100 : 0;
+                                  const isFull = s.enrolled >= s.capacity;
+                                  let badgeClass = "bg-green-100 text-green-700 border-green-200";
+                                  if (isCancelled || isCompleted) {
+                                    badgeClass = "bg-[#2C2C2C]/5 text-[#2C2C2C]/40 border-transparent";
+                                  } else if (isFull) {
+                                    badgeClass = "bg-red-100 text-red-700 border-red-200";
+                                  } else if (pct > 80) {
+                                    badgeClass = "bg-rose-100 text-rose-700 border-rose-200";
+                                  } else if (pct >= 50) {
+                                    badgeClass = "bg-amber-100 text-amber-700 border-amber-200";
+                                  }
+                                  return (
+                                    <span
+                                      className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold border rounded-full ${badgeClass} ${!isCancelled && !isCompleted ? "hover:opacity-80 cursor-pointer" : ""}`}
+                                    >
+                                      {s.enrolled}/{s.capacity}
+                                    </span>
+                                  );
+                                })()}
                               </button>
                             )}
 
