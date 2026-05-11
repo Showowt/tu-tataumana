@@ -1754,7 +1754,52 @@ export async function POST(request: NextRequest) {
       text = "buscar " + rawText.slice("/buscar".length).trim();
     }
 
-    // Parse intent with Claude
+    // Direct command parsing for discount + student commands (bypass Claude for reliability)
+    let directResponse: string | null = null;
+
+    if (firstWord === "/descuento" || firstWord === "/descuentos") {
+      const parts = rawText.split(/\s+/);
+      if (firstWord === "/descuentos") {
+        directResponse = await handleListDiscounts(supabase);
+      } else if (parts.length >= 4) {
+        // /descuento CODE type value [max N]
+        const maxMatch = rawText.match(/max\s+(\d+)/i);
+        directResponse = await handleCreateDiscount(supabase, {
+          code: parts[1],
+          type: parts[2],
+          value: parts[3],
+          max_uses: maxMatch ? maxMatch[1] : "",
+        });
+      } else {
+        directResponse = "Falta el codigo. Ejemplo:\n/descuento WELCOME10 percentage 10\n/descuento MAYO50K fixed 50000\n/descuento VIP20 percentage 20 max 5";
+      }
+    } else if (rawText.toLowerCase().startsWith("desactivar descuento")) {
+      const code = rawText.slice("desactivar descuento".length).trim();
+      directResponse = await handleDeactivateDiscount(supabase, { code });
+    } else if (firstWord === "/alumno" || firstWord === "/cuenta") {
+      const parts = rawText.split(/\s+/).slice(1);
+      if (parts.length >= 2) {
+        // Try to extract: name (can be multi-word), email, optional phone
+        const emailIdx = parts.findIndex(p => p.includes("@"));
+        if (emailIdx >= 0) {
+          const name = parts.slice(0, emailIdx).join(" ");
+          const email = parts[emailIdx];
+          const phone = parts.slice(emailIdx + 1).join(" ") || "";
+          directResponse = await handleCreateStudentAccount(supabase, { name, email, phone });
+        } else {
+          directResponse = "Necesito nombre y email. Ejemplo:\n/alumno Maria Garcia maria@email.com +573001234567";
+        }
+      } else {
+        directResponse = "Necesito nombre y email. Ejemplo:\n/alumno Maria Garcia maria@email.com +573001234567";
+      }
+    }
+
+    if (directResponse) {
+      await sendTelegram(directResponse);
+      return NextResponse.json({ ok: true });
+    }
+
+    // Parse intent with Claude (for natural language messages)
     const intent = await parseIntent(text);
     console.log(
       `[Telegram] Intent: ${intent.action}`,
