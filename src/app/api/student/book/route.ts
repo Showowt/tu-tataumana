@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { z } from "zod";
+import { notifyClassBooking } from "@/lib/telegram";
 
 const BookSchema = z.object({
   session_id: z.string().uuid("Invalid session ID"),
@@ -70,6 +71,56 @@ export async function POST(request: NextRequest) {
         { error: result.error as string },
         { status: 400 },
       );
+    }
+
+    // Fire-and-forget Telegram notification — never fails the booking
+    try {
+      const [sessionRes, studentRes] = await Promise.all([
+        supabase
+          .from("tu_class_sessions")
+          .select(`
+            start_time, teacher,
+            definition:tu_class_definitions (name, name_es)
+          `)
+          .eq("id", parsed.data.session_id)
+          .single<{
+            start_time: string;
+            teacher: string;
+            definition: { name: string; name_es: string } | null;
+          }>(),
+        supabase
+          .from("tu_students")
+          .select("full_name, email")
+          .eq("id", student.id)
+          .single<{ full_name: string; email: string | null }>(),
+      ]);
+
+      const packRes = parsed.data.pack_id
+        ? await supabase
+            .from("tu_packs")
+            .select("pack_type, total_classes, classes_used")
+            .eq("id", parsed.data.pack_id)
+            .single<{ pack_type: string; total_classes: number; classes_used: number }>()
+        : null;
+
+      const session = sessionRes.data;
+      const studentData = studentRes.data;
+      const pack = packRes?.data ?? null;
+
+      await notifyClassBooking({
+        studentName: studentData?.full_name ?? "Alumno",
+        studentEmail: studentData?.email ?? undefined,
+        className: session?.definition?.name_es ?? session?.definition?.name ?? "Clase",
+        classDate: String(result.session_date ?? ""),
+        classTime: session?.start_time ?? String(result.start_time ?? ""),
+        teacher: session?.teacher ?? "Tata",
+        packType: pack?.pack_type ?? "drop_in",
+        creditsRemaining: pack
+          ? pack.total_classes - (pack.classes_used ?? 0)
+          : -1,
+      });
+    } catch (notifyErr) {
+      console.error("[student/book] Telegram notification failed:", notifyErr);
     }
 
     return NextResponse.json(

@@ -252,6 +252,93 @@ export async function notifyNewAccount(data: {
   await sendTelegramMessage(lines.join("\n"));
 }
 
+export async function notifyClassBooking(data: {
+  studentName: string;
+  studentEmail?: string;
+  className: string;
+  classDate: string;
+  classTime: string;
+  teacher: string;
+  packType: string;
+  creditsRemaining: number;
+}): Promise<void> {
+  const creditsText = data.creditsRemaining === -1 ? "Ilimitado" : `${data.creditsRemaining}`;
+  const msg = [
+    "📋 <b>NUEVA RESERVA</b>",
+    "",
+    `<b>Alumno:</b> ${data.studentName}`,
+    data.studentEmail ? `<b>Email:</b> ${data.studentEmail}` : "",
+    `<b>Clase:</b> ${data.className}`,
+    `<b>Fecha:</b> ${data.classDate} · ${data.classTime}`,
+    `<b>Profesor:</b> ${data.teacher}`,
+    `<b>Pack:</b> ${data.packType.replace(/_/g, " ")} (${creditsText} creditos restantes)`,
+  ].filter(Boolean).join("\n");
+  await sendTelegramMessage(msg);
+}
+
+export async function notifyPackPurchase(data: {
+  studentName: string;
+  studentEmail?: string;
+  packName: string;
+  packType: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  discountCode?: string;
+  discountAmount?: number;
+  originalAmount?: number;
+}): Promise<void> {
+  const formatMoney = (amt: number, cur: string) =>
+    cur === "USD"
+      ? `$${amt} USD`
+      : new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amt);
+
+  const lines = [
+    "💰 <b>COMPRA DE PACK</b>",
+    "",
+    `<b>Alumno:</b> ${data.studentName}`,
+    data.studentEmail ? `<b>Email:</b> ${data.studentEmail}` : "",
+    `<b>Pack:</b> ${data.packName}`,
+    `<b>Monto:</b> ${formatMoney(data.amount, data.currency)}`,
+    `<b>Metodo:</b> ${data.paymentMethod}`,
+  ];
+
+  if (data.discountCode) {
+    lines.push("");
+    lines.push(`<b>Descuento:</b> ${data.discountCode} (-${formatMoney(data.discountAmount || 0, data.currency)})`);
+    if (data.originalAmount) {
+      lines.push(`<b>Precio original:</b> ${formatMoney(data.originalAmount, data.currency)}`);
+    }
+  }
+
+  await sendTelegramMessage(lines.filter(Boolean).join("\n"));
+}
+
+export async function notifyDiscountUsed(data: {
+  studentName: string;
+  code: string;
+  discountType: string;
+  discountValue: number;
+  packName: string;
+  originalPrice: number;
+  finalPrice: number;
+}): Promise<void> {
+  const discountLabel = data.discountType === "percentage"
+    ? `${data.discountValue}%`
+    : new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(data.discountValue);
+
+  const msg = [
+    "🏷️ <b>CODIGO DE DESCUENTO USADO</b>",
+    "",
+    `<b>Codigo:</b> ${data.code}`,
+    `<b>Alumno:</b> ${data.studentName}`,
+    `<b>Pack:</b> ${data.packName}`,
+    `<b>Descuento:</b> ${discountLabel}`,
+    `<b>Precio final:</b> ${new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(data.finalPrice)}`,
+  ].join("\n");
+  await sendTelegramMessage(msg);
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")

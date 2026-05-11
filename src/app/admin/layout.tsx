@@ -12,6 +12,7 @@ const tabs = [
   { href: "/admin/students", label: "Alumnos", icon: "\u25CE" },
   { href: "/admin/packs", label: "Packs", icon: "\u25C6" },
   { href: "/admin/payments", label: "Pagos", icon: "\u25C8" },
+  { href: "/admin/discounts", label: "Descuentos", icon: "\u25D9" },
 ];
 
 export default function AdminLayout({

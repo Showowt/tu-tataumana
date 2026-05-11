@@ -103,11 +103,7 @@ export default function SchedulePage() {
     );
 
     if (!usablePack) {
-      setBookingStatus(
-        lang === "es"
-          ? "No tienes créditos disponibles. Compra un pack primero."
-          : "No credits available. Buy a pack first.",
-      );
+      setBookingStatus("__no_credits__");
       return;
     }
 
@@ -183,6 +179,30 @@ export default function SchedulePage() {
           </p>
         </div>
       </div>
+
+      {/* Low credits warning banner */}
+      {(() => {
+        const hasUnlimited = packs.some((p) => p.total_classes === -1);
+        const totalRemaining = packs.reduce((s, p) => s + p.classes_remaining, 0);
+        if (!hasUnlimited && totalRemaining > 0 && totalRemaining <= 2) {
+          return (
+            <div className="flex items-center justify-between bg-amber-50 border border-amber-200 px-4 py-3">
+              <p className="text-xs text-amber-700">
+                {lang === "es"
+                  ? `Te ${totalRemaining === 1 ? "queda" : "quedan"} ${totalRemaining} ${totalRemaining === 1 ? "credito" : "creditos"}`
+                  : `You have ${totalRemaining} credit${totalRemaining === 1 ? "" : "s"} left`}
+              </p>
+              <a
+                href="/portal/packs"
+                className="text-[10px] tracking-[0.15em] uppercase px-3 py-1 bg-amber-600 text-white hover:bg-[#B87777] transition-colors"
+              >
+                {lang === "es" ? "Renovar Pack" : "Renew Pack"}
+              </a>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {/* Week navigation */}
       <div className="flex items-center justify-between bg-white border border-[#2C2C2C]/5 px-4 py-2">
@@ -310,15 +330,31 @@ export default function SchedulePage() {
                             </span>
 
                             {isBooking && bookingStatus ? (
-                              <span
-                                className={`text-[10px] px-3 py-1 ${
-                                  bookingStatus.includes("Reservado") || bookingStatus.includes("Booked")
-                                    ? "text-green-600 bg-green-50"
-                                    : "text-red-500 bg-red-50"
-                                }`}
-                              >
-                                {bookingStatus}
-                              </span>
+                              bookingStatus === "__no_credits__" ? (
+                                <div className="text-right">
+                                  <p className="text-[10px] text-red-500 mb-1">
+                                    {lang === "es"
+                                      ? "Sin creditos disponibles"
+                                      : "No credits available"}
+                                  </p>
+                                  <a
+                                    href="/portal/packs"
+                                    className="text-[10px] text-[#B87777] underline"
+                                  >
+                                    {lang === "es" ? "Comprar Pack" : "Buy Pack"}
+                                  </a>
+                                </div>
+                              ) : (
+                                <span
+                                  className={`text-[10px] px-3 py-1 ${
+                                    bookingStatus.includes("Reservado") || bookingStatus.includes("Booked")
+                                      ? "text-green-600 bg-green-50"
+                                      : "text-red-500 bg-red-50"
+                                  }`}
+                                >
+                                  {bookingStatus}
+                                </span>
+                              )
                             ) : (
                               <button
                                 onClick={() => handleBook(s.id)}

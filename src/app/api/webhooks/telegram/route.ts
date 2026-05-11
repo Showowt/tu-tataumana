@@ -47,6 +47,9 @@ interface ParsedIntent {
     | "bookings_today"
     | "health_check"
     | "help"
+    | "create_discount"
+    | "list_discounts"
+    | "deactivate_discount"
     | "unknown";
   params: Record<string, string>;
 }
@@ -247,6 +250,9 @@ Acciones posibles:
 - "bookings_today": ver reservas de hoy con nombres. Params: {}
 - "health_check": verificar que el sitio funciona. Params: {}
 - "help": mostrar ayuda. Params: {}
+- "create_discount": crear codigo de descuento. Params: { "code": "...", "type": "percentage|fixed", "value": numero, "max_uses": numero o null, "valid_days": numero o null }
+- "list_discounts": ver codigos de descuento activos
+- "deactivate_discount": desactivar un codigo. Params: { "code": "..." }
 - "unknown": no se entiende. Params: {}
 
 Reglas:
@@ -270,7 +276,10 @@ Reglas:
 - Si dice "resumen" o "dashboard" o "estadisticas" -> dashboard
 - Si dice "reservas" o "reservas de hoy" -> bookings_today
 - Si dice "sitio" o "health" o "status" o "verificar" -> health_check
-- Si dice "ayuda" o "help" -> help`;
+- Si dice "ayuda" o "help" -> help
+- Si dice "descuento" y quiere CREAR uno -> create_discount
+- Si dice "descuentos activos" o "ver descuentos" -> list_discounts
+- Si dice "desactivar" y menciona un codigo -> deactivate_discount`;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -1460,6 +1469,11 @@ function handleHelp(): string {
     `<b>/pagos</b> — Pagos pendientes\n` +
     `<b>/leads</b> — Leads recientes\n` +
     `<b>/sitio</b> — Verificar que todo funciona\n\n` +
+    `<b>Descuentos:</b>\n` +
+    `<b>/descuento</b> WELCOME10 percentage 10 — Crear codigo\n` +
+    `<b>/descuento</b> MAYO50K fixed 50000 — Descuento fijo\n` +
+    `<b>/descuentos</b> — Ver codigos activos\n` +
+    `desactivar descuento WELCOME10 — Desactivar\n\n` +
     `<b>/ayuda</b> — Este mensaje\n\n` +
     `Tambien puedes escribir en lenguaje natural!`
   );
@@ -1487,6 +1501,81 @@ function convertTo24h(timeStr: string): string {
     return `${match24[1].padStart(2, "0")}:${match24[2]}`;
   }
   return timeStr;
+}
+
+// ---------------------------------------------------------------------------
+// Discount handlers
+// ---------------------------------------------------------------------------
+
+async function handleCreateDiscount(supabase: SupabaseClient, params: Record<string, string>): Promise<string> {
+  const code = (params.code || "").toUpperCase().trim();
+  const type = params.type === "fixed" ? "fixed" : "percentage";
+  const value = parseFloat(params.value) || 0;
+  const maxUses = params.max_uses ? parseInt(params.max_uses) : null;
+  const validDays = params.valid_days ? parseInt(params.valid_days) : null;
+
+  if (!code) return "Falta el codigo. Ejemplo: /descuento WELCOME10 percentage 10";
+  if (value <= 0) return "El valor debe ser mayor a 0";
+  if (type === "percentage" && value > 100) return "El porcentaje no puede ser mayor a 100";
+
+  const validUntil = validDays ? new Date(Date.now() + validDays * 24 * 60 * 60 * 1000).toISOString() : null;
+
+  const { error } = await supabase.from("tu_discount_codes").insert({
+    code,
+    discount_type: type,
+    discount_value: value,
+    max_uses: maxUses,
+    valid_until: validUntil,
+    one_time_per_student: false,
+    created_by: "telegram",
+  });
+
+  if (error) {
+    if (error.code === "23505") return `El codigo ${code} ya existe`;
+    return `Error: ${error.message}`;
+  }
+
+  const discountLabel = type === "percentage" ? `${value}%` : `$${value.toLocaleString()} COP`;
+  const usesLabel = maxUses ? `${maxUses} usos` : "Ilimitado";
+  const expiryLabel = validDays ? `${validDays} dias` : "Sin expiracion";
+
+  return `✅ Codigo creado!\n\n<b>${code}</b>\nDescuento: ${discountLabel}\nUsos: ${usesLabel}\nVigencia: ${expiryLabel}\n\nCompartelo con tus alumnos para que lo apliquen al comprar packs.`;
+}
+
+async function handleListDiscounts(supabase: SupabaseClient): Promise<string> {
+  const { data, error } = await supabase
+    .from("tu_discount_codes")
+    .select("*")
+    .eq("active", true)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) return `Error: ${error.message}`;
+  if (!data || data.length === 0) return "No hay codigos de descuento activos.";
+
+  const lines = data.map((d: Record<string, unknown>) => {
+    const type = d.discount_type === "percentage" ? `${d.discount_value}%` : `$${Number(d.discount_value).toLocaleString()} COP`;
+    const uses = d.max_uses ? `${d.uses_count}/${d.max_uses}` : `${d.uses_count}/∞`;
+    const expiry = d.valid_until ? new Date(d.valid_until as string).toLocaleDateString("es-CO", { month: "short", day: "numeric" }) : "∞";
+    return `<b>${d.code}</b> — ${type} — Usos: ${uses} — Hasta: ${expiry}`;
+  });
+
+  return `🏷️ <b>Codigos activos (${data.length})</b>\n\n${lines.join("\n")}`;
+}
+
+async function handleDeactivateDiscount(supabase: SupabaseClient, params: Record<string, string>): Promise<string> {
+  const code = (params.code || "").toUpperCase().trim();
+  if (!code) return "Cual codigo quieres desactivar? Ejemplo: desactivar descuento WELCOME10";
+
+  const { data, error } = await supabase
+    .from("tu_discount_codes")
+    .update({ active: false })
+    .eq("code", code)
+    .select()
+    .single();
+
+  if (error || !data) return `Codigo ${code} no encontrado`;
+  return `❌ Codigo <b>${code}</b> desactivado. Ya no se puede usar.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1563,6 +1652,8 @@ export async function POST(request: NextRequest) {
       "/ayuda": "ayuda",
       "/help": "ayuda",
       "/start": "ayuda",
+      "/descuento": "crear descuento",
+      "/descuentos": "ver descuentos activos",
     };
 
     let text = rawText;
@@ -1663,6 +1754,18 @@ export async function POST(request: NextRequest) {
 
       case "help":
         response = handleHelp();
+        break;
+
+      case "create_discount":
+        response = await handleCreateDiscount(supabase, intent.params);
+        break;
+
+      case "list_discounts":
+        response = await handleListDiscounts(supabase);
+        break;
+
+      case "deactivate_discount":
+        response = await handleDeactivateDiscount(supabase, intent.params);
         break;
 
       case "unknown":

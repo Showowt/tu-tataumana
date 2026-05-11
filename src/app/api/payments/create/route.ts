@@ -14,7 +14,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { getPackDefinition } from "@/lib/constants/packs";
 import { createSquareCheckout } from "@/lib/square";
-import { notifyPaymentReceived } from "@/lib/telegram";
+import { notifyPaymentReceived, notifyPackPurchase, notifyDiscountUsed } from "@/lib/telegram";
 
 // -------------------------------------------------------------------
 // Types
@@ -25,6 +25,17 @@ type PaymentMethod = "square" | "nequi" | "bancolombia" | "zelle";
 interface CreatePaymentBody {
   pack_type: string;
   payment_method: PaymentMethod;
+  discount_code?: string;
+}
+
+interface DiscountApplication {
+  code_id: string;
+  code: string;
+  discount_type: "percentage" | "fixed";
+  discount_value: number;
+  original_price: number;
+  discounted_price: number;
+  savings: number;
 }
 
 interface StudentRecord {
@@ -156,6 +167,109 @@ function isValidPaymentMethod(method: unknown): method is PaymentMethod {
   return typeof method === "string" && VALID_PAYMENT_METHODS.includes(method as PaymentMethod);
 }
 
+function applyDiscountCalc(
+  originalPrice: number,
+  type: "percentage" | "fixed",
+  value: number,
+): number {
+  if (type === "percentage") {
+    return Math.round(originalPrice * (1 - value / 100));
+  }
+  return Math.max(originalPrice - value, 0);
+}
+
+/**
+ * Validates a discount code and atomically increments its uses_count.
+ * Returns null if no discount code provided.
+ * Throws a structured error string if the code is invalid.
+ */
+async function resolveDiscountCode(
+  serviceDb: ReturnType<typeof getServiceSupabase>,
+  discountCode: string,
+  packType: string,
+  studentId: string,
+  originalPrice: number,
+): Promise<DiscountApplication> {
+  // Look up code (exact match, uppercase)
+  const { data: discount } = await serviceDb
+    .from("tu_discount_codes")
+    .select("*")
+    .eq("code", discountCode.trim().toUpperCase())
+    .single();
+
+  if (!discount) throw "Codigo de descuento no valido";
+  if (!discount.active) throw "Codigo de descuento inactivo";
+
+  const now = new Date();
+  if (new Date(discount.valid_from) > now) throw "Codigo aun no vigente";
+  if (discount.valid_until && new Date(discount.valid_until) < now) {
+    throw "Codigo de descuento expirado";
+  }
+  if (
+    discount.max_uses !== null &&
+    discount.uses_count >= discount.max_uses
+  ) {
+    throw "Codigo de descuento agotado";
+  }
+  if (
+    discount.specific_student_id &&
+    discount.specific_student_id !== studentId
+  ) {
+    throw "Codigo no valido para esta cuenta";
+  }
+  if (
+    discount.applicable_packs &&
+    !discount.applicable_packs.includes(packType)
+  ) {
+    throw "Codigo no aplica para este pack";
+  }
+
+  // Check one-time-per-student
+  if (discount.one_time_per_student) {
+    const { data: existingUsage } = await serviceDb
+      .from("tu_discount_usage")
+      .select("id")
+      .eq("discount_code_id", discount.id)
+      .eq("student_id", studentId)
+      .single();
+
+    if (existingUsage) throw "Ya usaste este codigo de descuento";
+  }
+
+  // Atomic increment — only succeeds if uses_count < max_uses (or max_uses is null)
+  const { data: updated, error: updateError } = await serviceDb
+    .from("tu_discount_codes")
+    .update({ uses_count: discount.uses_count + 1 })
+    .eq("id", discount.id)
+    .or(
+      discount.max_uses !== null
+        ? `max_uses.is.null,uses_count.lt.${discount.max_uses}`
+        : "max_uses.is.null,max_uses.gte.0",
+    )
+    .select("id")
+    .single();
+
+  if (updateError || !updated) {
+    throw "Codigo de descuento agotado";
+  }
+
+  const discountedPrice = applyDiscountCalc(
+    originalPrice,
+    discount.discount_type as "percentage" | "fixed",
+    Number(discount.discount_value),
+  );
+
+  return {
+    code_id: discount.id,
+    code: discount.code,
+    discount_type: discount.discount_type as "percentage" | "fixed",
+    discount_value: Number(discount.discount_value),
+    original_price: originalPrice,
+    discounted_price: discountedPrice,
+    savings: originalPrice - discountedPrice,
+  };
+}
+
 // -------------------------------------------------------------------
 // POST handler
 // -------------------------------------------------------------------
@@ -172,7 +286,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
       );
     }
 
-    const { pack_type, payment_method } = body as CreatePaymentBody;
+    const {
+      pack_type,
+      payment_method,
+      discount_code,
+    } = body as CreatePaymentBody;
 
     if (!pack_type || typeof pack_type !== "string") {
       return NextResponse.json(
@@ -214,10 +332,52 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
     const serviceDb = getServiceSupabase();
 
     // -------------------------------------------------------------------
+    // DISCOUNT CODE (optional) — resolve and atomically claim before payment
+    // -------------------------------------------------------------------
+    let discountApplication: DiscountApplication | null = null;
+
+    if (discount_code && typeof discount_code === "string" && discount_code.trim().length > 0) {
+      if (!student) {
+        return NextResponse.json(
+          {
+            data: null,
+            error: "auth_required",
+            message: "Debes iniciar sesion para usar un codigo de descuento",
+          },
+          { status: 401 },
+        );
+      }
+
+      try {
+        discountApplication = await resolveDiscountCode(
+          serviceDb,
+          discount_code,
+          pack_type,
+          student.id,
+          packDef.priceCop,
+        );
+      } catch (discountError) {
+        return NextResponse.json(
+          {
+            data: null,
+            error: "invalid_discount",
+            message: typeof discountError === "string" ? discountError : "Codigo no valido",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Effective price after discount (falls back to full price)
+    const effectivePrice = discountApplication
+      ? discountApplication.discounted_price
+      : packDef.priceCop;
+
+    // -------------------------------------------------------------------
     // SQUARE CHECKOUT
     // -------------------------------------------------------------------
     if (payment_method === "square") {
-      const amountCents = packDef.priceCop * 100;
+      const amountCents = effectivePrice * 100;
 
       const checkout = await createSquareCheckout({
         amountCents,
@@ -229,24 +389,37 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
       });
 
       // Insert pending transaction
-      const { error: txError } = await serviceDb.from("tu_transactions").insert({
-        wompi_reference: reference,
-        amount: amountCents,
-        currency: "COP",
-        payment_method: "square",
-        status: "pending",
-        student_id: student?.id || null,
-        related_pack_type: pack_type,
-        description: `${packDef.name.en} — Square checkout`,
-        metadata: {
-          pack_name: packDef.name.en,
-          pack_classes: packDef.totalClasses,
-          customer_email: student?.email || null,
-          customer_name: student?.full_name || null,
-          square_order_id: checkout.orderId,
-          initiated_at: new Date().toISOString(),
-        },
-      });
+      const { data: txData, error: txError } = await serviceDb
+        .from("tu_transactions")
+        .insert({
+          wompi_reference: reference,
+          amount: amountCents,
+          currency: "COP",
+          payment_method: "square",
+          status: "pending",
+          student_id: student?.id || null,
+          related_pack_type: pack_type,
+          description: `${packDef.name.en} — Square checkout`,
+          metadata: {
+            pack_name: packDef.name.en,
+            pack_classes: packDef.totalClasses,
+            customer_email: student?.email || null,
+            customer_name: student?.full_name || null,
+            square_order_id: checkout.orderId,
+            initiated_at: new Date().toISOString(),
+            ...(discountApplication && {
+              discount_code: discountApplication.code,
+              discount_code_id: discountApplication.code_id,
+              discount_type: discountApplication.discount_type,
+              discount_value: discountApplication.discount_value,
+              original_price: discountApplication.original_price,
+              discounted_price: discountApplication.discounted_price,
+              savings: discountApplication.savings,
+            }),
+          },
+        })
+        .select("id")
+        .single();
 
       if (txError) {
         console.error("[payments/create] Transaction insert failed:", txError.message);
@@ -254,6 +427,20 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
           { data: null, error: "db_error", message: "Failed to create payment record" },
           { status: 500 },
         );
+      }
+
+      // Record discount usage if applicable
+      if (discountApplication && student?.id && txData?.id) {
+        const { error: usageError } = await serviceDb
+          .from("tu_discount_usage")
+          .insert({
+            discount_code_id: discountApplication.code_id,
+            student_id: student.id,
+            transaction_id: txData.id,
+          });
+        if (usageError) {
+          console.error("[payments/create] Discount usage insert failed:", usageError.message);
+        }
       }
 
       return NextResponse.json({
@@ -273,25 +460,38 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
     const account = MANUAL_ACCOUNTS[payment_method];
 
     // Insert pending transaction
-    const { error: txError } = await serviceDb.from("tu_transactions").insert({
-      wompi_reference: reference,
-      amount: packDef.priceCop,
-      currency: "COP",
-      payment_method,
-      status: "pending",
-      student_id: student?.id || null,
-      related_pack_type: pack_type,
-      description: `${packDef.name.en} — ${account.label} (manual)`,
-      metadata: {
-        pack_name: packDef.name.en,
-        pack_classes: packDef.totalClasses,
-        customer_email: student?.email || null,
-        customer_name: student?.full_name || null,
-        account_label: account.label,
-        account_info: account.info,
-        initiated_at: new Date().toISOString(),
-      },
-    });
+    const { data: manualTxData, error: txError } = await serviceDb
+      .from("tu_transactions")
+      .insert({
+        wompi_reference: reference,
+        amount: effectivePrice,
+        currency: "COP",
+        payment_method,
+        status: "pending",
+        student_id: student?.id || null,
+        related_pack_type: pack_type,
+        description: `${packDef.name.en} — ${account.label} (manual)`,
+        metadata: {
+          pack_name: packDef.name.en,
+          pack_classes: packDef.totalClasses,
+          customer_email: student?.email || null,
+          customer_name: student?.full_name || null,
+          account_label: account.label,
+          account_info: account.info,
+          initiated_at: new Date().toISOString(),
+          ...(discountApplication && {
+            discount_code: discountApplication.code,
+            discount_code_id: discountApplication.code_id,
+            discount_type: discountApplication.discount_type,
+            discount_value: discountApplication.discount_value,
+            original_price: discountApplication.original_price,
+            discounted_price: discountApplication.discounted_price,
+            savings: discountApplication.savings,
+          }),
+        },
+      })
+      .select("id")
+      .single();
 
     if (txError) {
       console.error("[payments/create] Transaction insert failed:", txError.message);
@@ -301,16 +501,46 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
       );
     }
 
+    // Record discount usage if applicable
+    if (discountApplication && student?.id && manualTxData?.id) {
+      const { error: usageError } = await serviceDb
+        .from("tu_discount_usage")
+        .insert({
+          discount_code_id: discountApplication.code_id,
+          student_id: student.id,
+          transaction_id: manualTxData.id,
+        });
+      if (usageError) {
+        console.error("[payments/create] Discount usage insert failed:", usageError.message);
+      }
+    }
+
     // Notify Tata of pending manual payment
     try {
-      await notifyPaymentReceived({
-        reference,
-        amount: packDef.priceCop * 100,
+      await notifyPackPurchase({
+        studentName: student?.full_name || "Guest",
+        studentEmail: student?.email || undefined,
+        packName: packDef.name.en,
+        packType: pack_type,
+        amount: effectivePrice,
         currency: "COP",
-        customerEmail: student?.email || undefined,
-        customerName: student?.full_name || undefined,
-        status: "PENDING_MANUAL",
+        paymentMethod: account.label,
+        discountCode: discountApplication?.code,
+        discountAmount: discountApplication ? packDef.priceCop - discountApplication.discounted_price : undefined,
+        originalAmount: discountApplication ? packDef.priceCop : undefined,
       });
+
+      if (discountApplication) {
+        await notifyDiscountUsed({
+          studentName: student?.full_name || "Guest",
+          code: discountApplication.code,
+          discountType: discountApplication.discount_type,
+          discountValue: discountApplication.discount_value,
+          packName: packDef.name.en,
+          originalPrice: packDef.priceCop,
+          finalPrice: discountApplication.discounted_price,
+        });
+      }
     } catch (notifyErr) {
       console.error("[payments/create] Telegram notification failed:", notifyErr);
     }
@@ -321,10 +551,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
       currency: "COP",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(packDef.priceCop);
+    }).format(effectivePrice);
+
+    const discountNote = discountApplication
+      ? ` (con descuento ${discountApplication.discount_type === "percentage" ? discountApplication.discount_value + "%" : "$" + discountApplication.discount_value + " COP"})`
+      : "";
 
     const waMessage = encodeURIComponent(
-      `Hola Tata! Acabo de hacer un pago por ${account.label} para el pack ${packDef.name.es} (${priceFormatted}). Referencia: ${reference}`,
+      `Hola Tata! Acabo de hacer un pago por ${account.label} para el pack ${packDef.name.es}${discountNote} (${priceFormatted}). Referencia: ${reference}`,
     );
     const whatsappUrl = `https://wa.me/${TATA_WHATSAPP}?text=${waMessage}`;
 

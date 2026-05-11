@@ -527,6 +527,81 @@ export type Database = {
           reason?: string | null;
         };
       };
+      tu_discount_codes: {
+        Row: {
+          id: string;
+          code: string;
+          discount_type: "percentage" | "fixed";
+          discount_value: number;
+          max_uses: number | null;
+          uses_count: number;
+          valid_from: string;
+          valid_until: string | null;
+          one_time_per_student: boolean;
+          specific_student_id: string | null;
+          applicable_packs: string[] | null;
+          active: boolean;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          discount_type: "percentage" | "fixed";
+          discount_value: number;
+          max_uses?: number | null;
+          uses_count?: number;
+          valid_from?: string;
+          valid_until?: string | null;
+          one_time_per_student?: boolean;
+          specific_student_id?: string | null;
+          applicable_packs?: string[] | null;
+          active?: boolean;
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          code?: string;
+          discount_type?: "percentage" | "fixed";
+          discount_value?: number;
+          max_uses?: number | null;
+          uses_count?: number;
+          valid_from?: string;
+          valid_until?: string | null;
+          one_time_per_student?: boolean;
+          specific_student_id?: string | null;
+          applicable_packs?: string[] | null;
+          active?: boolean;
+          created_by?: string;
+          updated_at?: string;
+        };
+      };
+      tu_discount_usage: {
+        Row: {
+          id: string;
+          discount_code_id: string;
+          student_id: string;
+          transaction_id: string | null;
+          used_at: string;
+        };
+        Insert: {
+          id?: string;
+          discount_code_id: string;
+          student_id: string;
+          transaction_id?: string | null;
+          used_at?: string;
+        };
+        Update: {
+          id?: string;
+          discount_code_id?: string;
+          student_id?: string;
+          transaction_id?: string | null;
+          used_at?: string;
+        };
+      };
     };
     Functions: {
       tu_is_admin: {
@@ -582,3 +657,7 @@ export type TransactionInsert = Database["public"]["Tables"]["tu_transactions"][
 export type TuEvent = Database["public"]["Tables"]["tu_events"]["Row"];
 export type BookingResult = Database["public"]["Functions"]["tu_book_class"]["Returns"];
 export type CancelResult = Database["public"]["Functions"]["tu_cancel_booking"]["Returns"];
+export type DiscountCode = Database["public"]["Tables"]["tu_discount_codes"]["Row"];
+export type DiscountCodeInsert = Database["public"]["Tables"]["tu_discount_codes"]["Insert"];
+export type DiscountUsage = Database["public"]["Tables"]["tu_discount_usage"]["Row"];
+export type DiscountUsageInsert = Database["public"]["Tables"]["tu_discount_usage"]["Insert"];

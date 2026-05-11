@@ -119,6 +119,28 @@ export default function PackPaymentModal({
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Discount state
+  const [discountCode, setDiscountCode] = useState("");
+  const [validatingCode, setValidatingCode] = useState(false);
+  const [discountError, setDiscountError] = useState<string | null>(null);
+  const [discountResult, setDiscountResult] = useState<{
+    valid: boolean;
+    code_id: string;
+    discount_type: "percentage" | "fixed";
+    discount_value: number;
+    original_price: number;
+    discounted_price: number;
+    savings: number;
+  } | null>(null);
+
+  // Computed effective prices
+  const effectivePrice = discountResult
+    ? discountResult.discounted_price
+    : pack.priceCop;
+  const effectivePriceUsd = discountResult
+    ? Math.round(pack.priceUsd * (discountResult.discounted_price / pack.priceCop))
+    : pack.priceUsd;
+
   const packName = lang === "es" ? pack.name.es : pack.name.en;
   const classesLabel =
     pack.totalClasses === -1
@@ -146,6 +168,39 @@ export default function PackPaymentModal({
     }
   }
 
+  async function validateDiscount() {
+    if (!discountCode.trim()) return;
+    setValidatingCode(true);
+    setDiscountError(null);
+    setDiscountResult(null);
+
+    try {
+      const res = await fetch("/api/discounts/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: discountCode.trim(), pack_type: pack.type }),
+      });
+      const data = await res.json();
+
+      if (data.valid) {
+        setDiscountResult(data);
+        setDiscountError(null);
+      } else {
+        setDiscountError(data.error || "Codigo no valido");
+        setDiscountResult(null);
+      }
+    } catch {
+      setDiscountError("Error validando codigo");
+    }
+    setValidatingCode(false);
+  }
+
+  function clearDiscount() {
+    setDiscountCode("");
+    setDiscountResult(null);
+    setDiscountError(null);
+  }
+
   async function handleSquarePayment() {
     setLoading(true);
     setError(null);
@@ -157,6 +212,7 @@ export default function PackPaymentModal({
         body: JSON.stringify({
           pack_type: pack.type,
           payment_method: "square",
+          discount_code: discountResult ? discountCode.trim() : undefined,
         }),
       });
 
@@ -187,6 +243,7 @@ export default function PackPaymentModal({
         body: JSON.stringify({
           pack_type: pack.type,
           payment_method: method,
+          discount_code: discountResult ? discountCode.trim() : undefined,
         }),
       });
 
@@ -272,7 +329,7 @@ export default function PackPaymentModal({
               className="text-sm text-[#B87777] mt-2"
               style={{ fontFamily: "Outfit, sans-serif" }}
             >
-              {lang === "es" ? "Monto" : "Amount"}: {formatCOP(pack.priceCop)}
+              {lang === "es" ? "Monto" : "Amount"}: {formatCOP(effectivePrice)}
             </p>
           </div>
           <button
@@ -331,7 +388,7 @@ export default function PackPaymentModal({
               className="text-sm text-[#B87777] mt-2"
               style={{ fontFamily: "Outfit, sans-serif" }}
             >
-              {lang === "es" ? "Monto" : "Amount"}: {formatCOP(pack.priceCop)}
+              {lang === "es" ? "Monto" : "Amount"}: {formatCOP(effectivePrice)}
             </p>
           </div>
           <button
@@ -390,7 +447,7 @@ export default function PackPaymentModal({
               className="text-sm text-[#B87777] mt-2"
               style={{ fontFamily: "Outfit, sans-serif" }}
             >
-              {lang === "es" ? "Monto" : "Amount"}: ${pack.priceUsd} USD
+              {lang === "es" ? "Monto" : "Amount"}: ${effectivePriceUsd} USD
             </p>
           </div>
           <button
@@ -457,13 +514,104 @@ export default function PackPaymentModal({
             {packName}
           </h2>
           <p className="text-lg text-[#B87777]" style={{ fontFamily: "Cormorant Garamond, serif" }}>
-            {formatCOP(pack.priceCop)}{" "}
-            <span className="text-sm text-[#2C2C2C]/30">${pack.priceUsd} USD</span>
+            {discountResult ? (
+              <>
+                <span className="line-through text-[#2C2C2C]/30 mr-2">
+                  {formatCOP(pack.priceCop)}
+                </span>
+                <span className="text-[#B87777]">
+                  {formatCOP(discountResult.discounted_price)}
+                </span>
+              </>
+            ) : (
+              formatCOP(pack.priceCop)
+            )}{" "}
+            <span className="text-sm text-[#2C2C2C]/30">${effectivePriceUsd} USD</span>
           </p>
           <p className="text-xs text-[#2C2C2C]/40 mt-1">
             {classesLabel} &middot;{" "}
             {lang === "es" ? "Valido" : "Valid"} {validityLabel}
           </p>
+        </div>
+
+        {/* Discount Code */}
+        <div className="mb-4 p-3 bg-[#FAF8F5] border border-[#2C2C2C]/5">
+          <p className="text-[10px] tracking-[0.2em] text-[#C9A96E] uppercase mb-2">
+            {lang === "es" ? "Codigo de Descuento" : "Discount Code"}
+          </p>
+
+          {discountResult ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                    <svg
+                      className="w-2.5 h-2.5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={3}
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4.5 12.75l6 6 9-13.5"
+                      />
+                    </svg>
+                  </span>
+                  <span className="text-sm text-green-700 font-medium">
+                    {discountCode.toUpperCase()}
+                  </span>
+                </div>
+                <button
+                  onClick={clearDiscount}
+                  className="text-[9px] text-[#2C2C2C]/30 hover:text-red-500 transition-colors uppercase"
+                >
+                  {lang === "es" ? "Quitar" : "Remove"}
+                </button>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-[#2C2C2C]/5">
+                <span className="text-xs text-[#2C2C2C]/50 line-through">
+                  {formatCOP(discountResult.original_price)}
+                </span>
+                <span className="text-sm text-[#B87777] font-medium">
+                  {formatCOP(discountResult.discounted_price)}
+                </span>
+              </div>
+              <p className="text-[9px] text-green-600">
+                {discountResult.discount_type === "percentage"
+                  ? `${discountResult.discount_value}% de descuento`
+                  : `${formatCOP(discountResult.savings)} de descuento`}
+              </p>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={discountCode}
+                onChange={(e) => {
+                  setDiscountCode(e.target.value.toUpperCase());
+                  setDiscountError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") validateDiscount();
+                }}
+                placeholder={lang === "es" ? "Ingresa tu codigo" : "Enter code"}
+                className="flex-1 px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/20 focus:outline-none focus:border-[#C9A96E]"
+              />
+              <button
+                onClick={validateDiscount}
+                disabled={!discountCode.trim() || validatingCode}
+                className="px-4 py-2 bg-[#2C2C2C] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                {validatingCode ? "..." : lang === "es" ? "Aplicar" : "Apply"}
+              </button>
+            </div>
+          )}
+
+          {discountError && (
+            <p className="text-[10px] text-red-500 mt-2">{discountError}</p>
+          )}
         </div>
 
         {/* Payment methods */}
