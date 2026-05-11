@@ -31,12 +31,15 @@ export const DEFAULT_CLASS_DURATION = 60;
 
 /** Pack expiration windows in days, keyed by pack type */
 export const PACK_EXPIRATION_DAYS: Record<string, number> = {
+  WALK_IN: 14,
   DROP_IN: 14,
-  JUST_FLOW_PACK: 30,
+  JUST_FLOW_PACK: 45,
   TU_HEALING_PACK: 60,
-  TU_EQUILIBRIUM: 90,
-  TU_LIFE_PACK: 30,
-  MAYO_2X1: 30,
+  TU_BALANCE_PACK: 90,
+  TU_UNLIMITED: 30,
+  MAYO_MAMA: 30,
+  MAYO_2X1: 14,
+  INDUSTRY_SPECIAL: 7,
 };
 
 /** Value representing unlimited classes */
@@ -49,17 +52,17 @@ export const UNLIMITED_DISPLAY = 999;
 // PRICING (COP)
 // ============================================
 
-/** Standard drop-in class price in COP */
-export const DROP_IN_PRICE_COP = 45000;
+/** Standard walk-in class price in COP */
+export const DROP_IN_PRICE_COP = 80000;
 
-/** Standard drop-in class price in USD */
-export const DROP_IN_PRICE_USD = 12;
+/** Standard walk-in class price in USD */
+export const DROP_IN_PRICE_USD = 19;
 
-/** Industry rate (Tuesday) price in COP */
+/** Industry rate (Tuesday & Friday) price in COP */
 export const INDUSTRY_RATE_COP = 45000;
 
-/** Industry rate (Tuesday) price in USD */
-export const INDUSTRY_RATE_USD = 12;
+/** Industry rate (Tuesday & Friday) price in USD */
+export const INDUSTRY_RATE_USD = 11;
 
 // ============================================
 // SCHEDULE

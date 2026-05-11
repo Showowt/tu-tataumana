@@ -635,14 +635,16 @@ export default function BookingModal({
                               {service}
                             </p>
                             <p className="font-[family-name:var(--font-body)] text-xs text-gold/70 mt-1">
-                              {service.includes("Mamá") ? "$160,000 COP · 4 classes" :
-                               service.includes("WALK-IN") ? "$80,000 COP" :
-                               service.includes("2x1") ? "$80,000 COP · Bring a friend" :
-                               service.includes("MARTES") ? "$45,000 COP · Tuesdays" :
+                              {service.includes("Mamá") || service.includes("Mother") ? "$160,000 COP · 4 classes" :
+                               service.includes("WALK-IN") || service.includes("Walk-In") ? "$80,000 COP" :
+                               service.includes("2x1") || service.includes("2X1") ? "$80,000 COP · Bring a friend" :
+                               service.includes("MARTES") || service.includes("Industry") ? "$45,000 COP · Tuesdays & Fridays" :
                                service.includes("VIERNES") ? "$45,000 COP · Fridays" :
                                service.includes("JUST FLOW") ? "$295,000 COP · 6 classes" :
                                service.includes("HEALING") ? "$420,000 COP · 8 classes" :
+                               service.includes("BALANCE") ? "$630,000 COP · 12 classes" :
                                service.includes("EQUILIBRIUM") ? "$630,000 COP · 12 classes" :
+                               service.includes("UNLIMITED") || service.includes("Unlimited") ? "$1,050,000 COP · Unlimited" :
                                service.includes("LIFE") ? "$1,050,000 COP · Unlimited" :
                                "Special promotion"}
                             </p>

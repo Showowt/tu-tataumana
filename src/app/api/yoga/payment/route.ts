@@ -34,8 +34,8 @@ const PRIVATE_SERVICE_PRICES: Record<string, number> = {
   "TUISYOU Program": 7750000,
 };
 
-// Walk-in group class price (matches DROP_IN pack)
-const GROUP_CLASS_PRICE_COP = 45000;
+// Walk-in group class price
+const GROUP_CLASS_PRICE_COP = 80000;
 
 /**
  * Look up the canonical COP price for a service.

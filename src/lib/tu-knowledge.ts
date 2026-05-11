@@ -193,7 +193,7 @@ Promo 2x1: $80,000 COP (bring a friend!)
 CLASS PACKS (2026):
 Just Flow Pack: $295,000 COP (6 classes)
 TU Healing Pack: $420,000 COP (8 classes)
-TU Equilibrium Pack: $630,000 COP (12 classes)
+TU Balance Pack: $630,000 COP (12 classes)
 TU Life Pack: $1,050,000 COP (unlimited monthly)
 
 IMPORTANT: When someone asks "what's the next class" or "what classes today" — use the CURRENT DAY and TIME (provided in the system context) to look up THIS schedule and tell them exactly what's coming next. Be specific with day and time. If today's classes have already passed, tell them about tomorrow's classes.
@@ -619,7 +619,7 @@ Promo 2x1: $80,000 COP (bring a friend)
 TU Intro Pack: $160,000 COP (4 classes)
 Just Flow Pack: $295,000 COP (6 classes)
 TU Healing Pack: $420,000 COP (8 classes)
-TU Equilibrium Pack: $630,000 COP (12 classes)
+TU Balance Pack: $630,000 COP (12 classes)
 TU Life Pack: $1,050,000 COP (unlimited monthly)
 
 SPECIAL DAYS:
