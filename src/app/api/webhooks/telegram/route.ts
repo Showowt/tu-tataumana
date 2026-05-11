@@ -1761,33 +1761,45 @@ export async function POST(request: NextRequest) {
       const parts = rawText.split(/\s+/);
       if (firstWord === "/descuentos") {
         directResponse = await handleListDiscounts(supabase);
-      } else if (parts.length >= 4) {
-        // Full format: /descuento CODE type value [max N]
-        const maxMatch = rawText.match(/max\s+(\d+)/i);
+      } else if (parts.length >= 2) {
+        // Smart parser: /descuento CODE [value] [type] [max N]
+        const afterCode = rawText.slice(parts[0].length + parts[1].length + 2).trim().toLowerCase();
+        const code = parts[1];
+
+        // Extract max uses
+        const maxMatch = afterCode.match(/max\s*(\d+)/i);
+        const maxUses = maxMatch ? maxMatch[1] : "";
+
+        // Extract type keyword
+        let type = "";
+        if (afterCode.includes("percentage") || afterCode.includes("porcentaje") || afterCode.includes("%")) {
+          type = "percentage";
+        } else if (afterCode.includes("fixed") || afterCode.includes("fijo") || afterCode.includes("cop")) {
+          type = "fixed";
+        }
+
+        // Extract numeric value
+        const numMatch = afterCode.replace(/max\s*\d+/i, "").match(/(\d+(?:\.\d+)?)/);
+        let value = numMatch ? numMatch[1] : "";
+
+        // Smart defaults
+        if (!value) {
+          // No value given: default 10%
+          value = "10";
+          type = "percentage";
+        } else if (!type) {
+          // Value given but no type: auto-detect
+          type = parseFloat(value) > 100 ? "fixed" : "percentage";
+        }
+
         directResponse = await handleCreateDiscount(supabase, {
-          code: parts[1],
-          type: parts[2],
-          value: parts[3],
-          max_uses: maxMatch ? maxMatch[1] : "",
-        });
-      } else if (parts.length === 3) {
-        // Short format: /descuento CODE value → auto-detect type
-        const val = parseFloat(parts[2]);
-        const autoType = val > 100 ? "fixed" : "percentage";
-        directResponse = await handleCreateDiscount(supabase, {
-          code: parts[1],
-          type: autoType,
-          value: parts[2],
-        });
-      } else if (parts.length === 2) {
-        // Shortest format: /descuento CODE → default 10% discount
-        directResponse = await handleCreateDiscount(supabase, {
-          code: parts[1],
-          type: "percentage",
-          value: "10",
+          code,
+          type,
+          value,
+          max_uses: maxUses,
         });
       } else {
-        directResponse = "Ejemplo:\n/descuento WELCOME10 percentage 10\n/descuento MAYO50K fixed 50000\n/descuento VIP20 percentage 20 max 5\n\nAtajo rapido:\n/descuento WELCOME10 → crea 10% descuento\n/descuento MAYO50K 50000 → descuento fijo COP";
+        directResponse = "Escribe el nombre del codigo.\n\nEjemplos:\n/descuento BIENVENIDA → 10% descuento\n/descuento VIP 20 → 20% descuento\n/descuento MAYO 50000 → $50,000 COP descuento\n/descuento PROMO 15% max 10 → 15% con limite de 10 usos";
       }
     } else if (rawText.toLowerCase().startsWith("desactivar descuento")) {
       const code = rawText.slice("desactivar descuento".length).trim();
