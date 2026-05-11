@@ -25,6 +25,14 @@ export default function ProfilePage() {
   const [emergencyContact, setEmergencyContact] = useState("");
   const [preferredLang, setPreferredLang] = useState<"en" | "es">("es");
 
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
   const lang = preferredLang;
 
   useEffect(() => {
@@ -43,6 +51,44 @@ export default function ProfilePage() {
     }
     load();
   }, []);
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordMessage("");
+
+    if (newPassword.length < 6) {
+      setPasswordError("La contrasena debe tener al menos 6 caracteres");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Las contrasenas no coinciden / Passwords don't match");
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const res = await fetch("/api/student/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPasswordError(data.error || "Error cambiando contrasena");
+      } else {
+        setPasswordMessage(data.message || "Contrasena cambiada!");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setShowPasswordForm(false);
+      }
+    } catch {
+      setPasswordError("Error de conexion");
+    }
+    setPasswordLoading(false);
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -203,6 +249,67 @@ export default function ProfilePage() {
               : "Save Changes"}
         </button>
       </form>
+
+      {/* Password Change Section */}
+      <div className="bg-white border border-[#2C2C2C]/5 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] tracking-[0.2em] text-[#C9A96E] uppercase">
+            Contrasena / Password
+          </p>
+          <button
+            onClick={() => { setShowPasswordForm(!showPasswordForm); setPasswordError(""); setPasswordMessage(""); }}
+            className="text-[10px] tracking-[0.15em] uppercase text-[#2C2C2C]/40 hover:text-[#B87777] transition-colors"
+          >
+            {showPasswordForm ? "Cancelar" : "Cambiar"}
+          </button>
+        </div>
+
+        {passwordMessage && (
+          <div className="bg-green-50 border border-green-200 p-3">
+            <p className="text-xs text-green-700">{passwordMessage}</p>
+          </div>
+        )}
+
+        {showPasswordForm && (
+          <form onSubmit={handleChangePassword} className="space-y-3">
+            <input
+              type="password"
+              placeholder="Contrasena actual / Current password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/20 focus:outline-none focus:border-[#C9A96E]"
+            />
+            <input
+              type="password"
+              placeholder="Nueva contrasena / New password (min 6 chars)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              minLength={6}
+              className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/20 focus:outline-none focus:border-[#C9A96E]"
+            />
+            <input
+              type="password"
+              placeholder="Confirmar contrasena / Confirm password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/20 focus:outline-none focus:border-[#C9A96E]"
+            />
+            {passwordError && (
+              <p className="text-xs text-red-500">{passwordError}</p>
+            )}
+            <button
+              type="submit"
+              disabled={passwordLoading}
+              className="w-full py-2 bg-[#2C2C2C] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-30"
+            >
+              {passwordLoading ? "Cambiando..." : "Cambiar Contrasena"}
+            </button>
+          </form>
+        )}
+      </div>
 
       {/* Account info */}
       <div className="pt-4 border-t border-[#2C2C2C]/5">

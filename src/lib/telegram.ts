@@ -345,3 +345,35 @@ function escapeHtml(text: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
+
+/**
+ * Set the Telegram bot menu commands.
+ * Call once to register commands with BotFather.
+ */
+export async function setTelegramBotCommands(): Promise<boolean> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return false;
+
+  const commands = [
+    { command: "ayuda", description: "Ver todos los comandos disponibles" },
+    { command: "hoy", description: "Clases y reservas de hoy" },
+    { command: "buscar", description: "Buscar alumno por nombre" },
+    { command: "reservas", description: "Ver reservas de hoy" },
+    { command: "descuento", description: "Crear codigo de descuento" },
+    { command: "descuentos", description: "Ver codigos activos" },
+    { command: "alumno", description: "Crear cuenta para alumno" },
+    { command: "ingresos", description: "Ver ingresos del mes" },
+  ];
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/setMyCommands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ commands }),
+    });
+    const data = await res.json();
+    return data.ok === true;
+  } catch {
+    return false;
+  }
+}

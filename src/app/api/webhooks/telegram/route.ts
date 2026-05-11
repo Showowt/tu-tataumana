@@ -50,6 +50,7 @@ interface ParsedIntent {
     | "create_discount"
     | "list_discounts"
     | "deactivate_discount"
+    | "create_student_account"
     | "unknown";
   params: Record<string, string>;
 }
@@ -253,6 +254,7 @@ Acciones posibles:
 - "create_discount": crear codigo de descuento. Params: { "code": "...", "type": "percentage|fixed", "value": numero, "max_uses": numero o null, "valid_days": numero o null }
 - "list_discounts": ver codigos de descuento activos
 - "deactivate_discount": desactivar un codigo. Params: { "code": "..." }
+- "create_student_account": crear cuenta para un alumno. Params: { "name": "nombre completo", "email": "email@example.com", "phone": "telefono (opcional)" }
 - "unknown": no se entiende. Params: {}
 
 Reglas:
@@ -279,7 +281,8 @@ Reglas:
 - Si dice "ayuda" o "help" -> help
 - Si dice "descuento" y quiere CREAR uno -> create_discount
 - Si dice "descuentos activos" o "ver descuentos" -> list_discounts
-- Si dice "desactivar" y menciona un codigo -> deactivate_discount`;
+- Si dice "desactivar" y menciona un codigo -> deactivate_discount
+- Si dice "crear cuenta" o "nueva cuenta" o "registrar alumno" o "crear alumno" o "crear perfil" -> create_student_account`;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -1474,6 +1477,8 @@ function handleHelp(): string {
     `<b>/descuento</b> MAYO50K fixed 50000 — Descuento fijo\n` +
     `<b>/descuentos</b> — Ver codigos activos\n` +
     `desactivar descuento WELCOME10 — Desactivar\n\n` +
+    `<b>Alumnos:</b>\n` +
+    `<b>/alumno</b> Maria Garcia maria@email.com +573001234567 — Crear cuenta\n\n` +
     `<b>/ayuda</b> — Este mensaje\n\n` +
     `Tambien puedes escribir en lenguaje natural!`
   );
@@ -1579,6 +1584,75 @@ async function handleDeactivateDiscount(supabase: SupabaseClient, params: Record
 }
 
 // ---------------------------------------------------------------------------
+// Student account creation handler
+// ---------------------------------------------------------------------------
+
+async function handleCreateStudentAccount(supabase: SupabaseClient, params: Record<string, string>): Promise<string> {
+  const name = (params.name || "").trim();
+  const email = (params.email || "").trim().toLowerCase();
+  const phone = (params.phone || "").trim();
+
+  if (!name || !email) {
+    return "Necesito nombre y email. Ejemplo:\n\ncrear cuenta para Maria Garcia maria@email.com +573001234567";
+  }
+
+  // Validate email format
+  if (!email.includes("@") || !email.includes(".")) {
+    return `El email "${email}" no parece valido. Revisa e intenta de nuevo.`;
+  }
+
+  try {
+    // Create student via admin API
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com"}/api/admin/students`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-key": process.env.TU_ADMIN_KEY || "",
+      },
+      body: JSON.stringify({
+        email,
+        full_name: name,
+        phone: phone || null,
+        create_account: true,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (res.status === 409) {
+        return `Ya existe un alumno con el email ${email}`;
+      }
+      return `Error: ${data.error || "No se pudo crear la cuenta"}`;
+    }
+
+    const lines = [
+      `✅ Cuenta creada para <b>${name}</b>`,
+      `Email: ${email}`,
+    ];
+
+    if (phone) lines.push(`Tel: ${phone}`);
+
+    if (data.loginLink) {
+      lines.push("");
+      lines.push("Enlace de acceso (envialo por WhatsApp):");
+      lines.push(`<code>${data.loginLink}</code>`);
+    } else if (data.accountCreated) {
+      lines.push("");
+      lines.push("Cuenta creada. El alumno puede acceder con magic link desde tataumana.com/login");
+    } else {
+      lines.push("");
+      lines.push("Perfil creado (sin cuenta de login). Puedes generar un enlace desde /admin/students");
+    }
+
+    return lines.join("\n");
+  } catch (err) {
+    console.error("[telegram/create_student]", err);
+    return "Error de conexion al crear la cuenta. Intenta de nuevo.";
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main webhook handler
 // ---------------------------------------------------------------------------
 
@@ -1654,6 +1728,8 @@ export async function POST(request: NextRequest) {
       "/start": "ayuda",
       "/descuento": "crear descuento",
       "/descuentos": "ver descuentos activos",
+      "/alumno": "crear cuenta para alumno",
+      "/cuenta": "crear cuenta para alumno",
     };
 
     let text = rawText;
@@ -1766,6 +1842,10 @@ export async function POST(request: NextRequest) {
 
       case "deactivate_discount":
         response = await handleDeactivateDiscount(supabase, intent.params);
+        break;
+
+      case "create_student_account":
+        response = await handleCreateStudentAccount(supabase, intent.params);
         break;
 
       case "unknown":
