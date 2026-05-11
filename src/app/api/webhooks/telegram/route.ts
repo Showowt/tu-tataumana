@@ -1762,7 +1762,7 @@ export async function POST(request: NextRequest) {
       if (firstWord === "/descuentos") {
         directResponse = await handleListDiscounts(supabase);
       } else if (parts.length >= 4) {
-        // /descuento CODE type value [max N]
+        // Full format: /descuento CODE type value [max N]
         const maxMatch = rawText.match(/max\s+(\d+)/i);
         directResponse = await handleCreateDiscount(supabase, {
           code: parts[1],
@@ -1770,8 +1770,24 @@ export async function POST(request: NextRequest) {
           value: parts[3],
           max_uses: maxMatch ? maxMatch[1] : "",
         });
+      } else if (parts.length === 3) {
+        // Short format: /descuento CODE value → auto-detect type
+        const val = parseFloat(parts[2]);
+        const autoType = val > 100 ? "fixed" : "percentage";
+        directResponse = await handleCreateDiscount(supabase, {
+          code: parts[1],
+          type: autoType,
+          value: parts[2],
+        });
+      } else if (parts.length === 2) {
+        // Shortest format: /descuento CODE → default 10% discount
+        directResponse = await handleCreateDiscount(supabase, {
+          code: parts[1],
+          type: "percentage",
+          value: "10",
+        });
       } else {
-        directResponse = "Falta el codigo. Ejemplo:\n/descuento WELCOME10 percentage 10\n/descuento MAYO50K fixed 50000\n/descuento VIP20 percentage 20 max 5";
+        directResponse = "Ejemplo:\n/descuento WELCOME10 percentage 10\n/descuento MAYO50K fixed 50000\n/descuento VIP20 percentage 20 max 5\n\nAtajo rapido:\n/descuento WELCOME10 → crea 10% descuento\n/descuento MAYO50K 50000 → descuento fijo COP";
       }
     } else if (rawText.toLowerCase().startsWith("desactivar descuento")) {
       const code = rawText.slice("desactivar descuento".length).trim();
