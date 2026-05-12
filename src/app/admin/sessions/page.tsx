@@ -51,15 +51,14 @@ export default function AdminSessionsPage() {
   const [showClosedDates, setShowClosedDates] = useState(false);
 
   const getWeekDates = useCallback(() => {
-    const now = new Date();
-    const start = new Date(now);
-    start.setDate(start.getDate() + weekOffset * 7);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    return {
-      from: start.toISOString().split("T")[0],
-      to: end.toISOString().split("T")[0],
-    };
+    const todayStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date());
+    const [y, m, d] = todayStr.split("-").map(Number);
+    const start = new Date(y, m - 1, d + weekOffset * 7, 12, 0, 0);
+    const end = new Date(y, m - 1, d + weekOffset * 7 + 6, 12, 0, 0);
+    const fmt = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+    return { from: fmt(start), to: fmt(end) };
   }, [weekOffset]);
 
   const loadSessions = useCallback(async () => {
@@ -337,7 +336,7 @@ export default function AdminSessionsPage() {
                   type="date"
                   value={newClosedDate}
                   onChange={(e) => setNewClosedDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
+                  min={new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())}
                   className="flex-1 px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#B87777]"
                 />
                 <button
@@ -454,7 +453,7 @@ export default function AdminSessionsPage() {
               month: "long",
               day: "numeric",
             });
-            const isToday = date === new Date().toISOString().split("T")[0];
+            const isToday = date === new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 
             return (
               <div key={date}>

@@ -50,15 +50,15 @@ export default function SchedulePage() {
   const lang = profile?.preferred_lang || "es";
 
   const getWeekDates = useCallback(() => {
-    const now = new Date();
-    const start = new Date(now);
-    start.setDate(start.getDate() + weekOffset * 7);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    return {
-      from: start.toISOString().split("T")[0],
-      to: end.toISOString().split("T")[0],
-    };
+    // Use Colombia timezone to avoid UTC date shift after 7 PM
+    const todayStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date());
+    const [y, m, d] = todayStr.split("-").map(Number);
+    const start = new Date(y, m - 1, d + weekOffset * 7, 12, 0, 0);
+    const end = new Date(y, m - 1, d + weekOffset * 7 + 6, 12, 0, 0);
+    const fmt = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+    return { from: fmt(start), to: fmt(end) };
   }, [weekOffset]);
 
   const loadSchedule = useCallback(async () => {
@@ -252,7 +252,9 @@ export default function SchedulePage() {
               { weekday: "long", month: "long", day: "numeric" },
             );
 
-            const isToday = date === new Date().toISOString().split("T")[0];
+            const isToday = date === new Intl.DateTimeFormat("en-CA", {
+              timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit",
+            }).format(new Date());
 
             return (
               <div key={date}>
