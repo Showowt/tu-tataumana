@@ -168,33 +168,56 @@ const weeklySchedule: ScheduleDay[] = [
   },
 ];
 
-function getNextDateForDay(dayIndex: number): string {
-  // Use Colombia timezone to determine "today"
+/**
+ * Get Colombia date/time components using Intl API (no UTC conversion bugs).
+ * toISOString() converts to UTC which shifts the date after 7 PM Colombia.
+ */
+function getColombiaNowPage(): { dateStr: string; hours: number; minutes: number; dayOfWeek: number } {
   const now = new Date();
-  const colombiaNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
-  const todayDay = colombiaNow.getDay();
-  let daysUntil = dayIndex - todayDay;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+
+  const get = (type: string) => parts.find((p) => p.type === type)?.value || "0";
+  const year = parseInt(get("year"));
+  const month = parseInt(get("month"));
+  const day = parseInt(get("day"));
+  const hours = parseInt(get("hour"));
+  const minutes = parseInt(get("minute"));
+  const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const dateObj = new Date(year, month - 1, day, 12, 0, 0);
+
+  return { dateStr, hours, minutes, dayOfWeek: dateObj.getDay() };
+}
+
+function getNextDateForDay(dayIndex: number): string {
+  const colombia = getColombiaNowPage();
+  let daysUntil = dayIndex - colombia.dayOfWeek;
   if (daysUntil < 0) daysUntil += 7;
   // daysUntil === 0 means today — show today so users can book same-day classes
-  const next = new Date(colombiaNow);
-  next.setDate(colombiaNow.getDate() + daysUntil);
-  return next.toISOString().split("T")[0];
+  const [y, m, d] = colombia.dateStr.split("-").map(Number);
+  const next = new Date(y, m - 1, d + daysUntil, 12, 0, 0);
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
 }
 
 /**
  * Check if a class is bookable — must be at least 2 hours before class time.
- * Uses Colombia timezone (UTC-5, no DST).
+ * Uses Colombia timezone via Intl API (no UTC conversion bugs).
  */
 function isClassBookable(dateStr: string, timeStr: string): boolean {
-  const now = new Date();
-  const colombiaNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
-  const todayStr = colombiaNow.toISOString().split("T")[0];
+  const colombia = getColombiaNowPage();
 
   // Future dates are always bookable
-  if (dateStr > todayStr) return true;
+  if (dateStr > colombia.dateStr) return true;
 
   // Past dates are never bookable
-  if (dateStr < todayStr) return false;
+  if (dateStr < colombia.dateStr) return false;
 
   // Today — check 2-hour window
   const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
@@ -205,7 +228,7 @@ function isClassBookable(dateStr: string, timeStr: string): boolean {
   if (period === "PM" && hours !== 12) hours += 12;
   if (period === "AM" && hours === 12) hours = 0;
 
-  const nowMinutes = colombiaNow.getHours() * 60 + colombiaNow.getMinutes();
+  const nowMinutes = colombia.hours * 60 + colombia.minutes;
   const classMinutes = hours * 60 + minutes;
   return (classMinutes - nowMinutes) >= 120;
 }

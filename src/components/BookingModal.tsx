@@ -68,6 +68,34 @@ const dayNames = [
 ];
 
 /**
+ * Get current Colombia time components WITHOUT using toISOString()
+ * (toISOString converts to UTC which shifts the date after 7 PM Colombia)
+ */
+function getColombiaNow(): { year: number; month: number; day: number; hours: number; minutes: number; dateStr: string } {
+  const now = new Date();
+  // Get Colombia time parts using Intl (reliable across all timezones)
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+
+  const get = (type: string) => parts.find((p) => p.type === type)?.value || "0";
+  const year = parseInt(get("year"));
+  const month = parseInt(get("month"));
+  const day = parseInt(get("day"));
+  const hours = parseInt(get("hour"));
+  const minutes = parseInt(get("minute"));
+  const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+  return { year, month, day, hours, minutes, dateStr };
+}
+
+/**
  * Parse class time string like "9:30 AM" or "7:15 PM" into 24h hours/minutes
  */
 function parseClassTime(timeStr: string): { hours: number; minutes: number } {
@@ -83,44 +111,28 @@ function parseClassTime(timeStr: string): { hours: number; minutes: number } {
 
 /**
  * Check if a class can be booked (must be at least 2 hours from now)
- * Uses Colombia timezone (UTC-5, no DST)
+ * Uses Colombia timezone via Intl API (no UTC conversion bugs)
  */
 function isClassBookable(dateStr: string, timeStr: string): boolean {
-  const now = new Date();
-  // Convert to Colombia time
-  const colombiaNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+  const colombia = getColombiaNow();
+  const { hours: classHours, minutes: classMinutes } = parseClassTime(timeStr);
 
-  // Parse the class date and time
-  const classDate = new Date(dateStr + "T12:00:00");
-  const { hours, minutes } = parseClassTime(timeStr);
+  // Compare dates as strings (YYYY-MM-DD format sorts correctly)
+  if (dateStr > colombia.dateStr) return true; // Future day — always bookable
+  if (dateStr < colombia.dateStr) return false; // Past day — not bookable
 
-  // Build the full class datetime in Colombia time
-  const classDateTime = new Date(classDate);
-  classDateTime.setHours(hours, minutes, 0, 0);
-
-  // If class is on a future day (not today), always bookable
-  const todayStr = colombiaNow.toISOString().split("T")[0];
-  const classDateStr = classDate.toISOString().split("T")[0];
-  if (classDateStr > todayStr) return true;
-
-  // If class is today, check 2-hour window
-  if (classDateStr === todayStr) {
-    const colombiaHours = colombiaNow.getHours();
-    const colombiaMinutes = colombiaNow.getMinutes();
-    const nowMinutes = colombiaHours * 60 + colombiaMinutes;
-    const classMinutes = hours * 60 + minutes;
-    const diffMinutes = classMinutes - nowMinutes;
-    return diffMinutes >= 120; // Must be at least 2 hours away
-  }
-
-  // Past date — not bookable
-  return false;
+  // Same day — check 2-hour window
+  const nowTotalMinutes = colombia.hours * 60 + colombia.minutes;
+  const classTotalMinutes = classHours * 60 + classMinutes;
+  return (classTotalMinutes - nowTotalMinutes) >= 120;
 }
 
 function getClassesForDate(dateStr: string) {
   if (!dateStr) return [];
-  const d = new Date(dateStr + "T12:00:00");
-  const day = d.getDay();
+  // Parse YYYY-MM-DD manually to avoid timezone-shifting bugs
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d, 12, 0, 0); // noon local — getDay() is safe
+  const day = date.getDay();
   const classes = scheduleByDay[day] || [];
 
   // Filter out classes within the 2-hour booking window
@@ -129,11 +141,11 @@ function getClassesForDate(dateStr: string) {
 
 function formatDateDisplay(dateStr: string) {
   if (!dateStr) return "";
-  const d = new Date(dateStr + "T12:00:00");
-  const dayName = dayNames[d.getDay()];
-  const month = d.toLocaleDateString("en-US", { month: "short" });
-  const date = d.getDate();
-  return `${dayName}, ${month} ${date}`;
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d, 12, 0, 0);
+  const dayName = dayNames[date.getDay()];
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  return `${dayName}, ${month} ${d}`;
 }
 
 /**
@@ -144,13 +156,18 @@ function getNextAvailableClass(
   bookedDateStr: string,
   bookedClassName: string,
 ): { date: string; dateDisplay: string; time: string; name: string } | null {
-  const bookedDate = new Date(bookedDateStr + "T12:00:00");
+  const [y, m, d] = bookedDateStr.split("-").map(Number);
+  const bookedDate = new Date(y, m - 1, d, 12, 0, 0);
+
+  function offsetDateStr(base: Date, offset: number): string {
+    const nd = new Date(base);
+    nd.setDate(nd.getDate() + offset);
+    return `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, "0")}-${String(nd.getDate()).padStart(2, "0")}`;
+  }
 
   // First pass: find the next occurrence of the SAME class
   for (let offset = 1; offset <= 14; offset++) {
-    const nextDate = new Date(bookedDate);
-    nextDate.setDate(nextDate.getDate() + offset);
-    const dateStr = nextDate.toISOString().split("T")[0];
+    const dateStr = offsetDateStr(bookedDate, offset);
     const dayClasses = getClassesForDate(dateStr);
     const sameClass = dayClasses.find((c) => c.name === bookedClassName);
     if (sameClass) {
@@ -165,9 +182,7 @@ function getNextAvailableClass(
 
   // Second pass: find ANY available class
   for (let offset = 1; offset <= 14; offset++) {
-    const nextDate = new Date(bookedDate);
-    nextDate.setDate(nextDate.getDate() + offset);
-    const dateStr = nextDate.toISOString().split("T")[0];
+    const dateStr = offsetDateStr(bookedDate, offset);
     const dayClasses = getClassesForDate(dateStr);
     if (dayClasses.length > 0) {
       return {
@@ -443,10 +458,7 @@ export default function BookingModal({
   };
 
   const getToday = () => {
-    // Use Colombia timezone for date minimum
-    const now = new Date();
-    const colombia = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
-    return colombia.toISOString().split("T")[0];
+    return getColombiaNow().dateStr;
   };
 
   if (!isOpen) return null;
@@ -528,9 +540,7 @@ export default function BookingModal({
 
                   {/* Alert: this is NOT today */}
                   {(() => {
-                    const now = new Date();
-                    const colombiaNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
-                    const todayStr = colombiaNow.toISOString().split("T")[0];
+                    const todayStr = getColombiaNow().dateStr;
                     if (date && date !== todayStr) {
                       return (
                         <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex items-start gap-3">
