@@ -619,7 +619,7 @@ export default function PackPaymentModal({
           <p className="text-[10px] tracking-[0.2em] text-[#C9A96E] uppercase mb-2">
             {lang === "es" ? "Metodo de Pago" : "Payment Method"}
           </p>
-          {PAYMENT_METHODS.map((method) => {
+          {PAYMENT_METHODS.filter((m) => m.value !== "square" || process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY).map((method) => {
             const isSelected = selected === method.value;
             const Icon = method.icon;
             return (

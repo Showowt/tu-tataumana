@@ -847,7 +847,8 @@ export default function BookingModal({
               )}
 
               <div className="space-y-3">
-                {/* Wompi - Card Payment */}
+                {/* Wompi - Card Payment — only show if Wompi public key is configured */}
+                {process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY && (
                 <button
                   onClick={() => handlePaymentSelect("wompi")}
                   disabled={wompiState === "loading"}
@@ -881,6 +882,7 @@ export default function BookingModal({
                     </svg>
                   )}
                 </button>
+                )}
 
                 {/* Nequi */}
                 <button
