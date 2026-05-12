@@ -188,29 +188,55 @@ function LoginForm() {
       return;
     }
 
-    const callbackUrl = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
-
-    const { error: authError } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-      options: {
-        emailRedirectTo: callbackUrl,
-        data: {
+    try {
+      // Create account via server API (auto-confirms email, no confirmation email needed)
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
           full_name: fullName.trim(),
           phone: phone.trim() || undefined,
-        },
-      },
-    });
+        }),
+      });
 
-    setLoading(false);
+      const data = await res.json();
 
-    if (authError) {
-      console.error("[signup]", authError.message);
+      if (!res.ok) {
+        setError(data.error || t.signupError[lang]);
+        setLoading(false);
+        return;
+      }
+
+      // Account created — now sign in immediately
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      setLoading(false);
+
+      if (signInError) {
+        // Account was created but sign-in failed — let them try manually
+        console.error("[signup/signin]", signInError.message);
+        setError(
+          lang === "es"
+            ? "Cuenta creada. Inicia sesion con tu email y contrasena."
+            : "Account created! Sign in with your email and password.",
+        );
+        setMode("password");
+        return;
+      }
+
+      // Signed in — redirect
+      const isAdmin = ADMIN_EMAILS.includes(email.trim().toLowerCase());
+      router.push(isAdmin ? "/admin" : redirect);
+      router.refresh();
+    } catch {
+      setLoading(false);
       setError(t.signupError[lang]);
-      return;
     }
-
-    setSent(true);
   }
 
   return (
