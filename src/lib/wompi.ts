@@ -217,7 +217,14 @@ export async function createPaymentLink(
   }
 
   const result = await response.json();
-  return result.data as WompiPaymentLink;
+  const link = result.data as WompiPaymentLink;
+
+  // Wompi API returns an id but not the full URL — construct it
+  if (!link.payment_link_url && link.id) {
+    link.payment_link_url = `https://checkout.wompi.co/l/${link.id}`;
+  }
+
+  return link;
 }
 
 /**
