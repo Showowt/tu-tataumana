@@ -120,6 +120,10 @@ function LoginForm() {
       en: "Please enter your name",
       es: "Ingresa tu nombre",
     },
+    forgotPassword: {
+      en: "Forgot your password?",
+      es: "¿Olvidaste tu contraseña?",
+    },
   };
 
   async function handlePasswordLogin(e: React.FormEvent) {
@@ -408,6 +412,17 @@ function LoginForm() {
 
             {/* Toggle between modes */}
             <div className="text-center mt-4 space-y-3">
+              {mode === "password" && (
+                <button
+                  onClick={() => {
+                    setMode("magic");
+                    setError("");
+                  }}
+                  className="block mx-auto text-xs text-[#2C2C2C]/40 underline underline-offset-4 hover:text-[#B87777] transition-colors"
+                >
+                  {t.forgotPassword[lang]}
+                </button>
+              )}
               {mode !== "signup" && (
                 <button
                   onClick={() => {

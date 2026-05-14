@@ -2,12 +2,14 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
+
+type Lang = "en" | "es";
 
 const tabs = [
   {
@@ -65,7 +67,19 @@ export default function PortalLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
-  const lang = "es"; // Default language
+  const [lang, setLang] = useState<Lang>("es");
+
+  // Read student's preferred language from profile
+  useEffect(() => {
+    fetch("/api/student/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (json?.data?.preferred_lang) {
+          setLang(json.data.preferred_lang);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const isActive = (href: string) =>
     href === "/portal" ? pathname === "/portal" : pathname.startsWith(href);
@@ -109,20 +123,34 @@ export default function PortalLayout({
           ))}
         </nav>
 
-        <button
-          onClick={handleSignOut}
-          disabled={signingOut}
-          className="text-xs text-[#2C2C2C]/40 hover:text-[#B87777] transition-colors"
-          style={{ fontFamily: "Outfit, sans-serif" }}
-        >
-          {signingOut
-            ? lang === "es"
-              ? "Saliendo..."
-              : "Signing out..."
-            : lang === "es"
-              ? "Cerrar sesión"
-              : "Sign out"}
-        </button>
+        <div className="flex items-center gap-4">
+          {/* Language toggle */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setLang("es")}
+              className={`text-[10px] tracking-[0.15em] transition-colors ${lang === "es" ? "text-[#B87777]" : "text-[#2C2C2C]/30 hover:text-[#2C2C2C]/50"}`}
+            >
+              ES
+            </button>
+            <span className="text-[#2C2C2C]/15 text-[10px]">|</span>
+            <button
+              onClick={() => setLang("en")}
+              className={`text-[10px] tracking-[0.15em] transition-colors ${lang === "en" ? "text-[#B87777]" : "text-[#2C2C2C]/30 hover:text-[#2C2C2C]/50"}`}
+            >
+              EN
+            </button>
+          </div>
+          <button
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="text-xs text-[#2C2C2C]/40 hover:text-[#B87777] transition-colors"
+            style={{ fontFamily: "Outfit, sans-serif" }}
+          >
+            {signingOut
+              ? lang === "es" ? "Saliendo..." : "Signing out..."
+              : lang === "es" ? "Cerrar sesion" : "Sign out"}
+          </button>
+        </div>
       </header>
 
       {/* Mobile top bar */}
@@ -138,13 +166,30 @@ export default function PortalLayout({
             Portal
           </span>
         </a>
-        <button
-          onClick={handleSignOut}
-          disabled={signingOut}
-          className="text-xs text-[#2C2C2C]/40"
-        >
-          {signingOut ? "..." : lang === "es" ? "Salir" : "Out"}
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setLang("es")}
+              className={`text-[9px] ${lang === "es" ? "text-[#B87777]" : "text-[#2C2C2C]/30"}`}
+            >
+              ES
+            </button>
+            <span className="text-[#2C2C2C]/15 text-[9px]">|</span>
+            <button
+              onClick={() => setLang("en")}
+              className={`text-[9px] ${lang === "en" ? "text-[#B87777]" : "text-[#2C2C2C]/30"}`}
+            >
+              EN
+            </button>
+          </div>
+          <button
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="text-xs text-[#2C2C2C]/40"
+          >
+            {signingOut ? "..." : lang === "es" ? "Salir" : "Out"}
+          </button>
+        </div>
       </header>
 
       {/* Main content */}

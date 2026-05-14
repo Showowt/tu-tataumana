@@ -1,663 +1,1039 @@
-/**
- * WellnessOS — Database Types
- * Generated from schema. Update after migrations.
- */
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
-      tu_students: {
-        Row: {
-          id: string;
-          auth_id: string | null;
-          email: string;
-          phone: string | null;
-          full_name: string;
-          preferred_lang: "en" | "es";
-          role: "student" | "admin";
-          emergency_contact: string | null;
-          notes: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          auth_id?: string | null;
-          email: string;
-          phone?: string | null;
-          full_name: string;
-          preferred_lang?: "en" | "es";
-          role?: "student" | "admin";
-          emergency_contact?: string | null;
-          notes?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          auth_id?: string | null;
-          email?: string;
-          phone?: string | null;
-          full_name?: string;
-          preferred_lang?: "en" | "es";
-          role?: "student" | "admin";
-          emergency_contact?: string | null;
-          notes?: string | null;
-          updated_at?: string;
-        };
-      };
-      tu_class_definitions: {
-        Row: {
-          id: string;
-          name: string;
-          name_es: string;
-          description: string | null;
-          description_es: string | null;
-          day_of_week: number;
-          start_time: string;
-          duration_minutes: number;
-          teacher: string;
-          capacity: number;
-          style: string;
-          level: "beginner" | "intermediate" | "advanced" | "all";
-          price_cop: number;
-          price_usd: number;
-          location: string;
-          is_active: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          name_es: string;
-          description?: string | null;
-          description_es?: string | null;
-          day_of_week: number;
-          start_time: string;
-          duration_minutes?: number;
-          teacher: string;
-          capacity?: number;
-          style: string;
-          level?: "beginner" | "intermediate" | "advanced" | "all";
-          price_cop?: number;
-          price_usd?: number;
-          location?: string;
-          is_active?: boolean;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          name?: string;
-          name_es?: string;
-          description?: string | null;
-          description_es?: string | null;
-          day_of_week?: number;
-          start_time?: string;
-          duration_minutes?: number;
-          teacher?: string;
-          capacity?: number;
-          style?: string;
-          level?: "beginner" | "intermediate" | "advanced" | "all";
-          price_cop?: number;
-          price_usd?: number;
-          location?: string;
-          is_active?: boolean;
-          updated_at?: string;
-        };
-      };
-      tu_class_sessions: {
-        Row: {
-          id: string;
-          definition_id: string;
-          session_date: string;
-          start_time: string;
-          teacher: string;
-          capacity: number;
-          enrolled: number;
-          status: "scheduled" | "cancelled" | "completed";
-          cancel_reason: string | null;
-          notes: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          definition_id: string;
-          session_date: string;
-          start_time: string;
-          teacher: string;
-          capacity: number;
-          enrolled?: number;
-          status?: "scheduled" | "cancelled" | "completed";
-          cancel_reason?: string | null;
-          notes?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          definition_id?: string;
-          session_date?: string;
-          start_time?: string;
-          teacher?: string;
-          capacity?: number;
-          enrolled?: number;
-          status?: "scheduled" | "cancelled" | "completed";
-          cancel_reason?: string | null;
-          notes?: string | null;
-          updated_at?: string;
-        };
-      };
-      tu_class_bookings: {
-        Row: {
-          id: string;
-          student_id: string;
-          session_id: string;
-          pack_id: string | null;
-          status: "confirmed" | "cancelled" | "waitlisted" | "no_show";
-          cancelled_at: string | null;
-          cancel_reason: string | null;
-          checked_in: boolean;
-          checked_in_at: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          student_id: string;
-          session_id: string;
-          pack_id?: string | null;
-          status?: "confirmed" | "cancelled" | "waitlisted" | "no_show";
-          cancelled_at?: string | null;
-          cancel_reason?: string | null;
-          checked_in?: boolean;
-          checked_in_at?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          student_id?: string;
-          session_id?: string;
-          pack_id?: string | null;
-          status?: "confirmed" | "cancelled" | "waitlisted" | "no_show";
-          cancelled_at?: string | null;
-          cancel_reason?: string | null;
-          checked_in?: boolean;
-          checked_in_at?: string | null;
-          updated_at?: string;
-        };
-      };
-      tu_packs: {
-        Row: {
-          id: string;
-          student_id: string;
-          pack_type: string;
-          total_classes: number;
-          classes_used: number;
-          classes_remaining: number;
-          price_paid: number;
-          original_price: number | null;
-          currency: "COP" | "USD";
-          status: "active" | "expired" | "exhausted" | "cancelled";
-          purchased_at: string;
-          expires_at: string;
-          payment_method: string | null;
-          wompi_transaction_id: string | null;
-          transaction_id: string | null;
-          discount_type: string | null;
-          discount_value: number | null;
-          discount_reason: string | null;
-          verified_by: string | null;
-          verified_at: string | null;
-          notes: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          student_id: string;
-          pack_type: string;
-          total_classes: number;
-          classes_used?: number;
-          price_paid: number;
-          original_price?: number | null;
-          currency?: "COP" | "USD";
-          status?: "active" | "expired" | "exhausted" | "cancelled";
-          purchased_at?: string;
-          expires_at: string;
-          payment_method?: string | null;
-          wompi_transaction_id?: string | null;
-          transaction_id?: string | null;
-          discount_type?: string | null;
-          discount_value?: number | null;
-          discount_reason?: string | null;
-          verified_by?: string | null;
-          verified_at?: string | null;
-          notes?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          student_id?: string;
-          pack_type?: string;
-          total_classes?: number;
-          classes_used?: number;
-          price_paid?: number;
-          original_price?: number | null;
-          currency?: "COP" | "USD";
-          status?: "active" | "expired" | "exhausted" | "cancelled";
-          purchased_at?: string;
-          expires_at?: string;
-          payment_method?: string | null;
-          wompi_transaction_id?: string | null;
-          transaction_id?: string | null;
-          discount_type?: string | null;
-          discount_value?: number | null;
-          discount_reason?: string | null;
-          verified_by?: string | null;
-          verified_at?: string | null;
-          notes?: string | null;
-          updated_at?: string;
-        };
-      };
       tu_attendance: {
         Row: {
-          id: string;
-          booking_id: string;
-          student_id: string;
-          session_id: string;
-          status: "attended" | "no_show" | "late_cancel";
-          checked_in_at: string;
-          notes: string | null;
-          created_at: string;
-        };
+          booking_id: string
+          checked_in_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          session_id: string
+          status: string
+          student_id: string
+        }
         Insert: {
-          id?: string;
-          booking_id: string;
-          student_id: string;
-          session_id: string;
-          status?: "attended" | "no_show" | "late_cancel";
-          checked_in_at?: string;
-          notes?: string | null;
-          created_at?: string;
-        };
+          booking_id: string
+          checked_in_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          session_id: string
+          status?: string
+          student_id: string
+        }
         Update: {
-          id?: string;
-          booking_id?: string;
-          student_id?: string;
-          session_id?: string;
-          status?: "attended" | "no_show" | "late_cancel";
-          checked_in_at?: string;
-          notes?: string | null;
-        };
-      };
-      tu_transactions: {
-        Row: {
-          id: string;
-          student_id: string | null;
-          reference: string;
-          wompi_reference: string | null;
-          wompi_id: string | null;
-          amount: number;
-          currency: "COP" | "USD";
-          payment_method: string;
-          status: "pending" | "approved" | "declined" | "voided" | "error";
-          related_pack_type: string | null;
-          description: string | null;
-          metadata: Record<string, unknown>;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          student_id?: string | null;
-          reference?: string;
-          wompi_reference?: string | null;
-          wompi_id?: string | null;
-          amount: number;
-          currency?: "COP" | "USD";
-          payment_method: string;
-          status?: "pending" | "approved" | "declined" | "voided" | "error";
-          related_pack_type?: string | null;
-          description?: string | null;
-          metadata?: Record<string, unknown>;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          student_id?: string | null;
-          reference?: string;
-          wompi_reference?: string | null;
-          wompi_id?: string | null;
-          amount?: number;
-          currency?: "COP" | "USD";
-          payment_method?: string;
-          status?: "pending" | "approved" | "declined" | "voided" | "error";
-          related_pack_type?: string | null;
-          description?: string | null;
-          metadata?: Record<string, unknown>;
-          updated_at?: string;
-        };
-      };
-      tu_events: {
-        Row: {
-          id: string;
-          title: string;
-          title_es: string;
-          description: string | null;
-          description_es: string | null;
-          event_date: string;
-          start_time: string;
-          end_time: string | null;
-          duration_minutes: number;
-          teacher: string;
-          capacity: number;
-          enrolled: number;
-          price_cop: number;
-          price_usd: number;
-          presale_price_cop: number | null;
-          presale_price_usd: number | null;
-          presale_ends_at: string | null;
-          location: string;
-          image_url: string | null;
-          status: "upcoming" | "sold_out" | "cancelled" | "completed";
-          is_active: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          title: string;
-          title_es: string;
-          description?: string | null;
-          description_es?: string | null;
-          event_date: string;
-          start_time: string;
-          end_time?: string | null;
-          duration_minutes?: number;
-          teacher?: string;
-          capacity?: number;
-          enrolled?: number;
-          price_cop: number;
-          price_usd: number;
-          presale_price_cop?: number | null;
-          presale_price_usd?: number | null;
-          presale_ends_at?: string | null;
-          location?: string;
-          image_url?: string | null;
-          status?: "upcoming" | "sold_out" | "cancelled" | "completed";
-          is_active?: boolean;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          title?: string;
-          title_es?: string;
-          description?: string | null;
-          description_es?: string | null;
-          event_date?: string;
-          start_time?: string;
-          end_time?: string | null;
-          duration_minutes?: number;
-          teacher?: string;
-          capacity?: number;
-          enrolled?: number;
-          price_cop?: number;
-          price_usd?: number;
-          presale_price_cop?: number | null;
-          presale_price_usd?: number | null;
-          presale_ends_at?: string | null;
-          location?: string;
-          image_url?: string | null;
-          status?: "upcoming" | "sold_out" | "cancelled" | "completed";
-          is_active?: boolean;
-          updated_at?: string;
-        };
-      };
-      // Legacy tables — kept for backward compatibility
+          booking_id?: string
+          checked_in_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          session_id?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tu_attendance_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "tu_class_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tu_attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "tu_class_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tu_attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "tu_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tu_bookings: {
         Row: {
-          id: number;
-          created_at: string | null;
-          updated_at: string | null;
-          name: string;
-          email: string | null;
-          phone: string;
-          service: string;
-          preferred_date: string | null;
-          message: string | null;
-          source: string | null;
-          status: string | null;
-          class_date: string | null;
-          class_time: string | null;
-          class_name: string | null;
-        };
+          class_date: string | null
+          class_name: string | null
+          class_time: string | null
+          created_at: string | null
+          email: string | null
+          id: number
+          message: string | null
+          name: string
+          phone: string
+          preferred_date: string | null
+          service: string
+          source: string | null
+          status: string | null
+          updated_at: string | null
+        }
         Insert: {
-          name: string;
-          phone: string;
-          service: string;
-          email?: string | null;
-          preferred_date?: string | null;
-          message?: string | null;
-          source?: string | null;
-          status?: string | null;
-          class_date?: string | null;
-          class_time?: string | null;
-          class_name?: string | null;
-        };
+          class_date?: string | null
+          class_name?: string | null
+          class_time?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: number
+          message?: string | null
+          name: string
+          phone: string
+          preferred_date?: string | null
+          service: string
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
         Update: {
-          name?: string;
-          phone?: string;
-          service?: string;
-          email?: string | null;
-          preferred_date?: string | null;
-          message?: string | null;
-          source?: string | null;
-          status?: string | null;
-          class_date?: string | null;
-          class_time?: string | null;
-          class_name?: string | null;
-        };
-      };
-      tu_leads: {
+          class_date?: string | null
+          class_name?: string | null
+          class_time?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: number
+          message?: string | null
+          name?: string
+          phone?: string
+          preferred_date?: string | null
+          service?: string
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tu_chat_sessions: {
         Row: {
-          id: number;
-          created_at: string | null;
-          updated_at: string | null;
-          source: string;
-          name: string | null;
-          email: string | null;
-          phone: string | null;
-          service_interest: string | null;
-          preferred_date: string | null;
-          chat_session_id: string | null;
-          booking_step: string | null;
-          payment_method: string | null;
-          warmth: string | null;
-          status: string | null;
-          tata_notes: string | null;
-        };
+          created_at: string | null
+          extracted: Json | null
+          id: number
+          messages: Json | null
+          session_id: string | null
+          updated_at: string | null
+        }
         Insert: {
-          source: string;
-          name?: string | null;
-          email?: string | null;
-          phone?: string | null;
-          service_interest?: string | null;
-          preferred_date?: string | null;
-          chat_session_id?: string | null;
-          booking_step?: string | null;
-          payment_method?: string | null;
-          warmth?: string | null;
-          status?: string | null;
-          tata_notes?: string | null;
-        };
+          created_at?: string | null
+          extracted?: Json | null
+          id?: number
+          messages?: Json | null
+          session_id?: string | null
+          updated_at?: string | null
+        }
         Update: {
-          source?: string;
-          name?: string | null;
-          email?: string | null;
-          phone?: string | null;
-          service_interest?: string | null;
-          preferred_date?: string | null;
-          chat_session_id?: string | null;
-          booking_step?: string | null;
-          payment_method?: string | null;
-          warmth?: string | null;
-          status?: string | null;
-          tata_notes?: string | null;
-        };
-      };
+          created_at?: string | null
+          extracted?: Json | null
+          id?: number
+          messages?: Json | null
+          session_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tu_class_bookings: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          checked_in: boolean
+          checked_in_at: string | null
+          created_at: string
+          id: string
+          pack_id: string | null
+          session_id: string
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          checked_in?: boolean
+          checked_in_at?: string | null
+          created_at?: string
+          id?: string
+          pack_id?: string | null
+          session_id: string
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          checked_in?: boolean
+          checked_in_at?: string | null
+          created_at?: string
+          id?: string
+          pack_id?: string | null
+          session_id?: string
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tu_class_bookings_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "tu_packs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tu_class_bookings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "tu_class_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tu_class_bookings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "tu_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tu_class_definitions: {
+        Row: {
+          capacity: number
+          created_at: string
+          day_of_week: number
+          description: string | null
+          description_es: string | null
+          duration_minutes: number
+          id: string
+          is_active: boolean
+          level: string
+          location: string
+          name: string
+          name_es: string
+          price_cop: number
+          price_usd: number
+          start_time: string
+          style: string
+          teacher: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          day_of_week: number
+          description?: string | null
+          description_es?: string | null
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          level?: string
+          location?: string
+          name: string
+          name_es: string
+          price_cop?: number
+          price_usd?: number
+          start_time: string
+          style: string
+          teacher: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          day_of_week?: number
+          description?: string | null
+          description_es?: string | null
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          level?: string
+          location?: string
+          name?: string
+          name_es?: string
+          price_cop?: number
+          price_usd?: number
+          start_time?: string
+          style?: string
+          teacher?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tu_class_sessions: {
+        Row: {
+          cancel_reason: string | null
+          capacity: number
+          created_at: string
+          definition_id: string
+          enrolled: number
+          id: string
+          notes: string | null
+          session_date: string
+          start_time: string
+          status: string
+          teacher: string
+          updated_at: string
+        }
+        Insert: {
+          cancel_reason?: string | null
+          capacity?: number
+          created_at?: string
+          definition_id: string
+          enrolled?: number
+          id?: string
+          notes?: string | null
+          session_date: string
+          start_time: string
+          status?: string
+          teacher: string
+          updated_at?: string
+        }
+        Update: {
+          cancel_reason?: string | null
+          capacity?: number
+          created_at?: string
+          definition_id?: string
+          enrolled?: number
+          id?: string
+          notes?: string | null
+          session_date?: string
+          start_time?: string
+          status?: string
+          teacher?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tu_class_sessions_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "tu_class_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tu_class_slots: {
+        Row: {
+          capacity: number
+          class_date: string
+          class_name: string | null
+          class_time: string
+          created_at: string | null
+          day_of_week: number | null
+          enrolled: number | null
+          id: number
+        }
+        Insert: {
+          capacity: number
+          class_date: string
+          class_name?: string | null
+          class_time: string
+          created_at?: string | null
+          day_of_week?: number | null
+          enrolled?: number | null
+          id?: number
+        }
+        Update: {
+          capacity?: number
+          class_date?: string
+          class_name?: string | null
+          class_time?: string
+          created_at?: string | null
+          day_of_week?: number | null
+          enrolled?: number | null
+          id?: number
+        }
+        Relationships: []
+      }
       tu_closed_dates: {
         Row: {
-          date: string;
-          reason: string | null;
-          created_at: string | null;
-        };
+          created_at: string | null
+          date: string
+          reason: string | null
+        }
         Insert: {
-          date: string;
-          reason?: string | null;
-        };
+          created_at?: string | null
+          date: string
+          reason?: string | null
+        }
         Update: {
-          date?: string;
-          reason?: string | null;
-        };
-      };
+          created_at?: string | null
+          date?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       tu_discount_codes: {
         Row: {
-          id: string;
-          code: string;
-          discount_type: "percentage" | "fixed";
-          discount_value: number;
-          max_uses: number | null;
-          uses_count: number;
-          valid_from: string;
-          valid_until: string | null;
-          one_time_per_student: boolean;
-          specific_student_id: string | null;
-          applicable_packs: string[] | null;
-          active: boolean;
-          created_by: string;
-          created_at: string;
-          updated_at: string;
-        };
+          active: boolean
+          applicable_packs: string[] | null
+          code: string
+          created_at: string
+          created_by: string
+          discount_type: string
+          discount_value: number
+          id: string
+          max_uses: number | null
+          one_time_per_student: boolean
+          specific_student_id: string | null
+          updated_at: string
+          uses_count: number
+          valid_from: string
+          valid_until: string | null
+        }
         Insert: {
-          id?: string;
-          code: string;
-          discount_type: "percentage" | "fixed";
-          discount_value: number;
-          max_uses?: number | null;
-          uses_count?: number;
-          valid_from?: string;
-          valid_until?: string | null;
-          one_time_per_student?: boolean;
-          specific_student_id?: string | null;
-          applicable_packs?: string[] | null;
-          active?: boolean;
-          created_by?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
+          active?: boolean
+          applicable_packs?: string[] | null
+          code: string
+          created_at?: string
+          created_by?: string
+          discount_type: string
+          discount_value: number
+          id?: string
+          max_uses?: number | null
+          one_time_per_student?: boolean
+          specific_student_id?: string | null
+          updated_at?: string
+          uses_count?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
         Update: {
-          id?: string;
-          code?: string;
-          discount_type?: "percentage" | "fixed";
-          discount_value?: number;
-          max_uses?: number | null;
-          uses_count?: number;
-          valid_from?: string;
-          valid_until?: string | null;
-          one_time_per_student?: boolean;
-          specific_student_id?: string | null;
-          applicable_packs?: string[] | null;
-          active?: boolean;
-          created_by?: string;
-          updated_at?: string;
-        };
-      };
+          active?: boolean
+          applicable_packs?: string[] | null
+          code?: string
+          created_at?: string
+          created_by?: string
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          max_uses?: number | null
+          one_time_per_student?: boolean
+          specific_student_id?: string | null
+          updated_at?: string
+          uses_count?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tu_discount_codes_specific_student_id_fkey"
+            columns: ["specific_student_id"]
+            isOneToOne: false
+            referencedRelation: "tu_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tu_discount_usage: {
         Row: {
-          id: string;
-          discount_code_id: string;
-          student_id: string;
-          transaction_id: string | null;
-          used_at: string;
-        };
+          discount_code_id: string
+          id: string
+          student_id: string
+          transaction_id: string | null
+          used_at: string
+        }
         Insert: {
-          id?: string;
-          discount_code_id: string;
-          student_id: string;
-          transaction_id?: string | null;
-          used_at?: string;
-        };
+          discount_code_id: string
+          id?: string
+          student_id: string
+          transaction_id?: string | null
+          used_at?: string
+        }
         Update: {
-          id?: string;
-          discount_code_id?: string;
-          student_id?: string;
-          transaction_id?: string | null;
-          used_at?: string;
-        };
-      };
-    };
+          discount_code_id?: string
+          id?: string
+          student_id?: string
+          transaction_id?: string | null
+          used_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tu_discount_usage_discount_code_id_fkey"
+            columns: ["discount_code_id"]
+            isOneToOne: false
+            referencedRelation: "tu_discount_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tu_discount_usage_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "tu_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tu_discount_usage_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "tu_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tu_events: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          description: string | null
+          description_es: string | null
+          end_time: string | null
+          enrolled: number
+          event_date: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          location: string
+          price_cop: number
+          price_usd: number
+          start_time: string | null
+          status: string
+          title: string
+          title_es: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          description_es?: string | null
+          end_time?: string | null
+          enrolled?: number
+          event_date: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          location?: string
+          price_cop?: number
+          price_usd?: number
+          start_time?: string | null
+          status?: string
+          title: string
+          title_es: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          description_es?: string | null
+          end_time?: string | null
+          enrolled?: number
+          event_date?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          location?: string
+          price_cop?: number
+          price_usd?: number
+          start_time?: string | null
+          status?: string
+          title?: string
+          title_es?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tu_leads: {
+        Row: {
+          booking_step: string | null
+          chat_session_id: string | null
+          created_at: string | null
+          email: string | null
+          id: number
+          name: string | null
+          payment_method: string | null
+          phone: string | null
+          preferred_date: string | null
+          service_interest: string | null
+          source: string
+          status: string | null
+          tata_notes: string | null
+          updated_at: string | null
+          warmth: string | null
+        }
+        Insert: {
+          booking_step?: string | null
+          chat_session_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: number
+          name?: string | null
+          payment_method?: string | null
+          phone?: string | null
+          preferred_date?: string | null
+          service_interest?: string | null
+          source: string
+          status?: string | null
+          tata_notes?: string | null
+          updated_at?: string | null
+          warmth?: string | null
+        }
+        Update: {
+          booking_step?: string | null
+          chat_session_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: number
+          name?: string | null
+          payment_method?: string | null
+          phone?: string | null
+          preferred_date?: string | null
+          service_interest?: string | null
+          source?: string
+          status?: string | null
+          tata_notes?: string | null
+          updated_at?: string | null
+          warmth?: string | null
+        }
+        Relationships: []
+      }
+      tu_packs: {
+        Row: {
+          classes_remaining: number | null
+          classes_used: number
+          created_at: string
+          currency: string
+          discount_reason: string | null
+          discount_type: string | null
+          discount_value: number | null
+          expires_at: string
+          id: string
+          notes: string | null
+          original_price: number | null
+          pack_type: string
+          payment_method: string | null
+          price_paid: number
+          status: string
+          student_id: string
+          total_classes: number
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+          wompi_transaction_id: string | null
+        }
+        Insert: {
+          classes_remaining?: number | null
+          classes_used?: number
+          created_at?: string
+          currency?: string
+          discount_reason?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          expires_at: string
+          id?: string
+          notes?: string | null
+          original_price?: number | null
+          pack_type: string
+          payment_method?: string | null
+          price_paid?: number
+          status?: string
+          student_id: string
+          total_classes: number
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          wompi_transaction_id?: string | null
+        }
+        Update: {
+          classes_remaining?: number | null
+          classes_used?: number
+          created_at?: string
+          currency?: string
+          discount_reason?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          expires_at?: string
+          id?: string
+          notes?: string | null
+          original_price?: number | null
+          pack_type?: string
+          payment_method?: string | null
+          price_paid?: number
+          status?: string
+          student_id?: string
+          total_classes?: number
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          wompi_transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tu_packs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "tu_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tu_passes: {
+        Row: {
+          classes_remaining: number | null
+          classes_used: number
+          created_at: string
+          email: string | null
+          expires_at: string | null
+          id: number
+          name: string | null
+          pass_type: string
+          payment_confirmed: boolean
+          payment_method: string | null
+          phone: string
+          status: string
+          total_classes: number
+          updated_at: string
+        }
+        Insert: {
+          classes_remaining?: number | null
+          classes_used?: number
+          created_at?: string
+          email?: string | null
+          expires_at?: string | null
+          id?: number
+          name?: string | null
+          pass_type: string
+          payment_confirmed?: boolean
+          payment_method?: string | null
+          phone: string
+          status?: string
+          total_classes: number
+          updated_at?: string
+        }
+        Update: {
+          classes_remaining?: number | null
+          classes_used?: number
+          created_at?: string
+          email?: string | null
+          expires_at?: string | null
+          id?: number
+          name?: string | null
+          pass_type?: string
+          payment_confirmed?: boolean
+          payment_method?: string | null
+          phone?: string
+          status?: string
+          total_classes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tu_students: {
+        Row: {
+          auth_id: string | null
+          created_at: string
+          email: string
+          emergency_contact: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string | null
+          preferred_lang: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          auth_id?: string | null
+          created_at?: string
+          email: string
+          emergency_contact?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          preferred_lang?: string
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          auth_id?: string | null
+          created_at?: string
+          email?: string
+          emergency_contact?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          preferred_lang?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tu_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          pack_id: string | null
+          payment_method: string | null
+          related_pack_type: string | null
+          status: string
+          student_id: string | null
+          wompi_id: string | null
+          wompi_reference: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          pack_id?: string | null
+          payment_method?: string | null
+          related_pack_type?: string | null
+          status?: string
+          student_id?: string | null
+          wompi_id?: string | null
+          wompi_reference?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          pack_id?: string | null
+          payment_method?: string | null
+          related_pack_type?: string | null
+          status?: string
+          student_id?: string | null
+          wompi_id?: string | null
+          wompi_reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tu_transactions_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "tu_packs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tu_transactions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "tu_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tu_waitlist: {
+        Row: {
+          created_at: string
+          id: string
+          notified_at: string | null
+          session_id: number
+          status: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notified_at?: string | null
+          session_id: number
+          status?: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notified_at?: string | null
+          session_id?: number
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tu_waitlist_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "tu_class_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tu_waitlist_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "tu_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
-      tu_is_admin: {
-        Args: Record<string, never>;
-        Returns: boolean;
-      };
-      tu_current_student_id: {
-        Args: Record<string, never>;
-        Returns: string;
-      };
+      check_auth_integrity: {
+        Args: never
+        Returns: {
+          null_columns: string
+          user_email: string
+          user_id: string
+        }[]
+      }
+      fix_auth_nulls: { Args: never; Returns: number }
       tu_book_class: {
-        Args: {
-          p_student_id: string;
-          p_session_id: string;
-          p_pack_id?: string | null;
-        };
-        Returns: {
-          success?: boolean;
-          error?: string;
-          booking_id?: string;
-          session_date?: string;
-          start_time?: string;
-        };
-      };
+        Args: { p_pack_id: string; p_session_id: string; p_student_id: string }
+        Returns: Json
+      }
       tu_cancel_booking: {
-        Args: {
-          p_booking_id: string;
-          p_student_id: string;
-          p_reason?: string | null;
-        };
-        Returns: {
-          success?: boolean;
-          error?: string;
-          refunded_credit?: boolean;
-        };
-      };
-    };
-  };
+        Args: { p_booking_id: string; p_reason?: string; p_student_id: string }
+        Returns: Json
+      }
+      tu_current_student_id: { Args: never; Returns: string }
+      tu_is_admin: { Args: never; Returns: boolean }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
 
-// Convenience type aliases
-export type Student = Database["public"]["Tables"]["tu_students"]["Row"];
-export type StudentInsert = Database["public"]["Tables"]["tu_students"]["Insert"];
-export type ClassDefinition = Database["public"]["Tables"]["tu_class_definitions"]["Row"];
-export type ClassSession = Database["public"]["Tables"]["tu_class_sessions"]["Row"];
-export type ClassSessionInsert = Database["public"]["Tables"]["tu_class_sessions"]["Insert"];
-export type ClassBooking = Database["public"]["Tables"]["tu_class_bookings"]["Row"];
-export type Pack = Database["public"]["Tables"]["tu_packs"]["Row"];
-export type PackInsert = Database["public"]["Tables"]["tu_packs"]["Insert"];
-export type Attendance = Database["public"]["Tables"]["tu_attendance"]["Row"];
-export type Transaction = Database["public"]["Tables"]["tu_transactions"]["Row"];
-export type TransactionInsert = Database["public"]["Tables"]["tu_transactions"]["Insert"];
-export type TuEvent = Database["public"]["Tables"]["tu_events"]["Row"];
-export type BookingResult = Database["public"]["Functions"]["tu_book_class"]["Returns"];
-export type CancelResult = Database["public"]["Functions"]["tu_cancel_booking"]["Returns"];
-export type DiscountCode = Database["public"]["Tables"]["tu_discount_codes"]["Row"];
-export type DiscountCodeInsert = Database["public"]["Tables"]["tu_discount_codes"]["Insert"];
-export type DiscountUsage = Database["public"]["Tables"]["tu_discount_usage"]["Row"];
-export type DiscountUsageInsert = Database["public"]["Tables"]["tu_discount_usage"]["Insert"];
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

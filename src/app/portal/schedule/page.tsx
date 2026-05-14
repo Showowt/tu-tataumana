@@ -180,10 +180,31 @@ export default function SchedulePage() {
         </div>
       </div>
 
-      {/* Low credits warning banner */}
+      {/* Credits warning banners */}
       {(() => {
         const hasUnlimited = packs.some((p) => p.total_classes === -1);
         const totalRemaining = packs.reduce((s, p) => s + p.classes_remaining, 0);
+
+        // No packs at all — prominent banner
+        if (!hasUnlimited && totalRemaining === 0) {
+          return (
+            <div className="bg-[#B87777]/10 border border-[#B87777]/20 px-4 py-4 text-center">
+              <p className="text-sm text-[#2C2C2C]/70 mb-2">
+                {lang === "es"
+                  ? "Necesitas un pack para reservar clases"
+                  : "You need a pack to book classes"}
+              </p>
+              <a
+                href="/portal/packs"
+                className="inline-block text-xs tracking-[0.15em] uppercase px-5 py-2 bg-[#B87777] text-white hover:bg-[#2C2C2C] transition-colors"
+              >
+                {lang === "es" ? "Comprar Pack" : "Buy a Pack"}
+              </a>
+            </div>
+          );
+        }
+
+        // Low credits — warning
         if (!hasUnlimited && totalRemaining > 0 && totalRemaining <= 2) {
           return (
             <div className="flex items-center justify-between bg-amber-50 border border-amber-200 px-4 py-3">
