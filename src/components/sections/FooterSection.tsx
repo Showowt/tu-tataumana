@@ -77,6 +77,12 @@ export default function FooterSection({ lang, L, openBooking, showStickyBar }: F
                 >
                   {lang === "en" ? "My Account" : "Mi Cuenta"}
                 </a>
+                <a
+                  href="/faq"
+                  className="block font-[family-name:var(--font-body)] text-sm text-charcoal/50 hover:text-rose transition-colors py-1"
+                >
+                  FAQ
+                </a>
               </div>
             </div>
 

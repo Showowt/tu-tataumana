@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { z } from "zod";
+import { notifyNextOnWaitlist } from "@/app/api/student/waitlist/route";
 
 const CancelSchema = z.object({
   booking_id: z.string().uuid("Invalid booking ID"),
@@ -71,6 +72,21 @@ export async function POST(request: NextRequest) {
         { error: result.error as string },
         { status: 400 },
       );
+    }
+
+    // Notify waitlisted students that a spot opened
+    if (result.session_id) {
+      notifyNextOnWaitlist(result.session_id as string).catch(() => {});
+    } else {
+      // Fallback: look up session_id from the booking
+      const { data: booking } = await supabase
+        .from("tu_bookings")
+        .select("session_id")
+        .eq("id", parsed.data.booking_id)
+        .single();
+      if (booking?.session_id) {
+        notifyNextOnWaitlist(booking.session_id).catch(() => {});
+      }
     }
 
     return NextResponse.json({
