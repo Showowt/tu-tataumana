@@ -163,8 +163,23 @@ function LoginForm() {
     setLoading(false);
 
     if (authError) {
-      console.error("[login]", authError.message);
-      setError(t.sendError[lang]);
+      console.error("[login] Magic link error:", authError.message, authError.status);
+      // If it's a server-side DB error, suggest password login as fallback
+      if (authError.status === 500 || authError.message?.includes("Database")) {
+        setError(
+          lang === "es"
+            ? "Error temporal del servidor. Intenta con contraseña o vuelve en unos minutos."
+            : "Temporary server error. Try password login or come back in a few minutes.",
+        );
+      } else if (authError.message?.includes("rate") || authError.status === 429) {
+        setError(
+          lang === "es"
+            ? "Demasiados intentos. Espera unos minutos antes de intentar de nuevo."
+            : "Too many attempts. Wait a few minutes before trying again.",
+        );
+      } else {
+        setError(t.sendError[lang]);
+      }
       return;
     }
 
@@ -204,8 +219,13 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
+        // Show the specific error from the server (now includes details)
         setError(data.error || t.signupError[lang]);
         setLoading(false);
+        // If account already exists, switch to login mode
+        if (res.status === 409) {
+          setMode("password");
+        }
         return;
       }
 
@@ -222,8 +242,8 @@ function LoginForm() {
         console.error("[signup/signin]", signInError.message);
         setError(
           lang === "es"
-            ? "Cuenta creada. Inicia sesion con tu email y contrasena."
-            : "Account created! Sign in with your email and password.",
+            ? "Cuenta creada exitosamente. Inicia sesion con tu email y contraseña."
+            : "Account created successfully! Sign in with your email and password.",
         );
         setMode("password");
         return;
@@ -233,9 +253,14 @@ function LoginForm() {
       const isAdmin = ADMIN_EMAILS.includes(email.trim().toLowerCase());
       router.push(isAdmin ? "/admin" : redirect);
       router.refresh();
-    } catch {
+    } catch (err) {
+      console.error("[signup] Network error:", err);
       setLoading(false);
-      setError(t.signupError[lang]);
+      setError(
+        lang === "es"
+          ? "Error de conexion. Verifica tu internet e intenta de nuevo."
+          : "Connection error. Check your internet and try again.",
+      );
     }
   }
 
