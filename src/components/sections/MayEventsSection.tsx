@@ -48,12 +48,13 @@ export default function MayEventsSection({
 
           {/* LEFT — TU Naturaleza Habla (May 22) */}
           <div className="fade-in rounded-2xl border border-gold/20 bg-white/[0.03] overflow-hidden flex flex-col">
-            <div className="relative aspect-[3/4] max-h-[500px]">
+            <div className="relative">
               <Image
                 src="/event-may22.png"
                 alt="TU Naturaleza Habla — Sound healing event May 22 at Casa Carolina Cartagena"
-                fill
-                className="object-cover object-top"
+                width={848}
+                height={1200}
+                className="w-full h-auto"
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
             </div>
@@ -98,12 +99,13 @@ export default function MayEventsSection({
 
           {/* RIGHT — Mayo Mes Mamá Promo */}
           <div className="fade-in fade-in-delay-1 rounded-2xl border border-rose-soft/20 bg-white/[0.03] overflow-hidden flex flex-col">
-            <div className="relative aspect-[3/4] max-h-[500px]">
+            <div className="relative">
               <Image
                 src="/promo-mothers.png"
                 alt="Edición Especial Mamás — Mother's Month 4 classes for $160,000 COP at JustbYoga Cartagena"
-                fill
-                className="object-cover object-top"
+                width={900}
+                height={1200}
+                className="w-full h-auto"
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
             </div>
