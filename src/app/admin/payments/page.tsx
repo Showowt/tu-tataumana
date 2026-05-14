@@ -62,7 +62,8 @@ const STATUS_BADGES: Record<string, { label: string; color: string }> = {
 };
 
 const METHOD_LABELS: Record<string, string> = {
-  square: "Square",
+  wompi: "Wompi",
+  square: "Tarjeta",
   nequi: "Nequi",
   bancolombia: "Bancolombia",
   zelle: "Zelle",

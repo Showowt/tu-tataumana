@@ -1074,7 +1074,7 @@ async function handlePendingPayments(
   supabase: SupabaseClient
 ): Promise<string> {
   const { data: payments, error } = await supabase
-    .from("tu_payments")
+    .from("tu_transactions")
     .select("id, amount, currency, payment_method, status, reference, created_at, student:tu_students(full_name)")
     .eq("status", "pending")
     .order("created_at", { ascending: false })
@@ -1260,24 +1260,25 @@ async function handleDashboard(
   // Today's sessions
   const { data: todaySessions } = await supabase
     .from("tu_class_sessions")
-    .select("enrolled, capacity, status")
+    .select("id, enrolled, capacity, status")
     .eq("session_date", todayStr);
 
-  const sessions = (todaySessions || []) as Array<{ enrolled: number; capacity: number; status: string }>;
+  const sessions = (todaySessions || []) as Array<{ id: string; enrolled: number; capacity: number; status: string }>;
   const activeSessions = sessions.filter((s) => s.status !== "cancelled");
   const todayEnrolled = activeSessions.reduce((sum, s) => sum + (s.enrolled || 0), 0);
   const todayCapacity = activeSessions.reduce((sum, s) => sum + (s.capacity || 0), 0);
 
   // Today's bookings
+  const activeSessionIds = activeSessions.map((s: { id: string }) => s.id);
   const { count: todayBookings } = await supabase
     .from("tu_class_bookings")
     .select("id", { count: "exact", head: true })
     .eq("status", "confirmed")
-    .in("session_id", activeSessions.map(() => "").length > 0 ? ["placeholder"] : []);
+    .in("session_id", activeSessionIds.length > 0 ? activeSessionIds : ["__none__"]);
 
   // Pending payments
   const { count: pendingPayments } = await supabase
-    .from("tu_payments")
+    .from("tu_transactions")
     .select("id", { count: "exact", head: true })
     .eq("status", "pending");
 

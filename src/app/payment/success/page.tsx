@@ -20,12 +20,18 @@ interface PaymentStatusData {
 // ---------------------------------------------------------------------------
 
 const PACK_LABELS: Record<string, { es: string; classes: string }> = {
+  WALK_IN: { es: "Clase Individual", classes: "1 clase" },
   DROP_IN: { es: "Clase Individual", classes: "1 clase" },
-  JUST_FLOW_PACK: { es: "Just Flow Pack", classes: "4 clases" },
+  JUST_FLOW_PACK: { es: "Just Flow Pack", classes: "6 clases" },
   TU_HEALING_PACK: { es: "TU Healing Pack", classes: "8 clases" },
-  TU_EQUILIBRIUM: { es: "TU Equilibrium", classes: "12 clases" },
-  TU_LIFE_PACK: { es: "TU Life Pack", classes: "Ilimitado" },
-  MAYO_MES_MAMA: { es: "Mayo Mes Mama", classes: "4 clases" },
+  TU_BALANCE_PACK: { es: "TU Balance Pack", classes: "12 clases" },
+  TU_UNLIMITED: { es: "Ilimitado Mensual", classes: "Ilimitado" },
+  TU_EQUILIBRIUM: { es: "TU Balance Pack", classes: "12 clases" },
+  TU_LIFE_PACK: { es: "Ilimitado Mensual", classes: "Ilimitado" },
+  PRIVATE_SESSION: { es: "Sesion Privada", classes: "1 sesion" },
+  MAYO_MAMA: { es: "Promo Dia de la Madre", classes: "4 clases" },
+  MAYO_2X1: { es: "Promo 2x1", classes: "2 clases" },
+  INDUSTRY_SPECIAL: { es: "Especial Industria", classes: "1 clase" },
 };
 
 // ---------------------------------------------------------------------------

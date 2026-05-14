@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { formatTime, TIMEZONE } from "@/lib/constants/business-rules";
+import { formatTime } from "@/lib/constants/business-rules";
 
 interface SessionData {
   id: string;
@@ -281,7 +281,7 @@ export default function SchedulePage() {
 
                     // Check if session is in the past or within 2h cutoff
                     const sessionDT = new Date(
-                      `${s.session_date}T${s.start_time}`,
+                      `${s.session_date}T${s.start_time}-05:00`,
                     );
                     const cutoff = new Date(
                       sessionDT.getTime() - 2 * 60 * 60 * 1000,

@@ -20,7 +20,9 @@ export async function GET(request: NextRequest) {
   const supabase = admin.supabase;
   const { searchParams } = request.nextUrl;
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
   const from = searchParams.get("from") || today;
   let to = searchParams.get("to");
   if (!to) {
@@ -216,11 +218,14 @@ export async function POST(request: NextRequest) {
       const end = new Date();
       end.setDate(end.getDate() + weeks * 7);
 
+      const nowDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const endDateStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
+
       const { data: closedDates } = await supabase
         .from("tu_closed_dates")
         .select("date")
-        .gte("date", now.toISOString().split("T")[0])
-        .lte("date", end.toISOString().split("T")[0]);
+        .gte("date", nowDateStr)
+        .lte("date", endDateStr);
 
       const closedSet = new Set((closedDates || []).map((d: { date: string }) => d.date));
 
@@ -228,8 +233,8 @@ export async function POST(request: NextRequest) {
       const { data: existing } = await supabase
         .from("tu_class_sessions")
         .select("definition_id, session_date")
-        .gte("session_date", now.toISOString().split("T")[0])
-        .lte("session_date", end.toISOString().split("T")[0]);
+        .gte("session_date", nowDateStr)
+        .lte("session_date", endDateStr);
 
       const existingSet = new Set(
         (existing || []).map(
@@ -252,7 +257,7 @@ export async function POST(request: NextRequest) {
 
       while (current <= end) {
         const dayOfWeek = current.getDay();
-        const dateStr = current.toISOString().split("T")[0];
+        const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`;
 
         if (!closedSet.has(dateStr)) {
           for (const def of definitions) {

@@ -17,7 +17,9 @@ export async function GET(request: NextRequest) {
   const supabase = admin.supabase;
   const date =
     request.nextUrl.searchParams.get("date") ||
-    new Date().toISOString().split("T")[0];
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date());
 
   // Today's sessions
   const { data: todaySessions } = await supabase

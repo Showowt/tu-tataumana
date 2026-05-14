@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     status: "approved",
     payment_method,
     related_pack_type: pack_type,
-    reference: txReference,
+    wompi_reference: txReference,
     description: "Manual pack creation by admin",
   });
 

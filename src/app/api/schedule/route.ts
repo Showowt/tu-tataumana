@@ -18,7 +18,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date());
     const from = searchParams.get("from") || today;
 
     let to = searchParams.get("to");

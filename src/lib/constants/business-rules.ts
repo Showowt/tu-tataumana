@@ -32,7 +32,6 @@ export const DEFAULT_CLASS_DURATION = 60;
 /** Pack expiration windows in days, keyed by pack type */
 export const PACK_EXPIRATION_DAYS: Record<string, number> = {
   WALK_IN: 14,
-  DROP_IN: 14,
   JUST_FLOW_PACK: 45,
   TU_HEALING_PACK: 60,
   TU_BALANCE_PACK: 90,
