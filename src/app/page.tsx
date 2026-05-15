@@ -10,7 +10,7 @@ import { t, type Lang } from "@/lib/translations";
 // ─── Section components ───────────────────────────────────────────────────────
 import StickyNav from "@/components/sections/StickyNav";
 import HeroSection from "@/components/sections/HeroSection";
-import MayEventsSection from "@/components/sections/MayEventsSection";
+
 import PhilosophySection from "@/components/sections/PhilosophySection";
 import FeaturedPressSection from "@/components/sections/FeaturedPressSection";
 import ThePracticeSection from "@/components/sections/ThePracticeSection";
@@ -28,9 +28,6 @@ const ChatBot = dynamic(() => import("@/components/ChatBot"), { ssr: false });
 const WhatsAppButton = dynamic(() => import("@/components/WhatsAppButton"), {
   ssr: false,
 });
-
-// ─── Workshop event target: May 22, 2026, 6:00 PM Colombia (UTC-5) ───────────
-const WORKSHOP_TARGET = new Date("2026-05-22T23:00:00Z"); // 6:00 PM COT = 23:00 UTC
 
 // ─── Scroll reveal hook ──────────────────────────────────────────────────────
 
@@ -73,8 +70,6 @@ export default function Home() {
   const [preselectedDate, setPreselectedDate] = useState("");
   const [preselectedTime, setPreselectedTime] = useState("");
   const [lang, setLang] = useState<Lang>("en");
-  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  const [countdownReady, setCountdownReady] = useState(false);
   const [closedDates, setClosedDates] = useState<string[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const sectionsRef = useScrollReveal();
@@ -124,29 +119,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Countdown timer for workshop
-  useEffect(() => {
-    const tick = () => {
-      const now = Date.now();
-      const diff = WORKSHOP_TARGET.getTime() - now;
-      if (diff <= 0) {
-        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        setCountdownReady(true);
-        return;
-      }
-      setCountdown({
-        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((diff / (1000 * 60)) % 60),
-        seconds: Math.floor((diff / 1000) % 60),
-      });
-      setCountdownReady(true);
-    };
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   // Hero parallax on scroll
   useEffect(() => {
     const handleScroll = () => {
@@ -190,8 +162,6 @@ export default function Home() {
     []
   );
 
-  const workshopPassed = countdownReady && WORKSHOP_TARGET.getTime() <= Date.now();
-
   return (
     <main ref={sectionsRef} className="w-full overflow-x-hidden">
 
@@ -209,15 +179,6 @@ export default function Home() {
         lang={lang}
         L={L}
         heroLoaded={heroLoaded}
-        openBooking={openBooking}
-      />
-
-      <MayEventsSection
-        lang={lang}
-        L={L}
-        workshopPassed={workshopPassed}
-        countdownReady={countdownReady}
-        countdown={countdown}
         openBooking={openBooking}
       />
 

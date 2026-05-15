@@ -368,32 +368,19 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
 
         {/* Pricing cards */}
         <div className="fade-in mt-12 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 stagger-reveal">
-          {([
-            { label: "WALK-IN CLASS", cop: "$80,000", usd: "$19", sub: lang === "en" ? "Single class" : "Clase individual", featured: false },
-            { label: "PROMO 2x1", cop: "$80,000", usd: "$19", sub: lang === "en" ? "Bring a friend" : "Trae un amigo", featured: false },
-            { label: "MARTES INDUSTRIA", cop: "$45,000", usd: "$11", sub: lang === "en" ? "Tuesdays only" : "Solo martes", featured: false },
-            { label: "VIERNES OPEN FLOW", cop: "$45,000", usd: "$11", sub: lang === "en" ? "Fridays only" : "Solo viernes", featured: false },
-            { label: "PRIVATE SESSION", cop: "$190,000", usd: "$51", sub: lang === "en" ? "One on One Experience" : "Experiencia Uno a Uno", featured: false },
-            // Mother's Day promo — auto-expires end of May 2026
-            ...(new Date() <= new Date("2026-05-31T23:59:59-05:00") ? [
-              { label: "MAYO MES MAMÁ", cop: "$160,000", usd: "$43", sub: lang === "en" ? "Mother's Month · 4 classes" : "Mes de las Madres · 4 clases", featured: true },
-            ] : []),
-          ] as { label: string; cop: string; usd: string; sub: string; featured: boolean }[]).map((promo) => (
+          {[
+            { label: "WALK-IN CLASS", cop: "$80,000", usd: "$19", sub: lang === "en" ? "Single class" : "Clase individual" },
+            { label: "PROMO 2x1", cop: "$80,000", usd: "$19", sub: lang === "en" ? "Bring a friend" : "Trae un amigo" },
+            { label: "MARTES INDUSTRIA", cop: "$45,000", usd: "$11", sub: lang === "en" ? "Tuesdays only" : "Solo martes" },
+            { label: "VIERNES OPEN FLOW", cop: "$45,000", usd: "$11", sub: lang === "en" ? "Fridays only" : "Solo viernes" },
+            { label: "PRIVATE SESSION", cop: "$190,000", usd: "$51", sub: lang === "en" ? "One on One Experience" : "Experiencia Uno a Uno" },
+          ].map((promo) => (
             <button
               key={promo.label}
               onClick={() => openBooking(promo.label)}
-              className={`btn-tactile schedule-promo-card rounded-2xl border p-4 sm:p-5 text-center transition-all duration-500 cursor-pointer ${
-                promo.featured
-                  ? "border-gold bg-gold/[0.15] col-span-2 sm:col-span-1 ring-2 ring-gold/30 shadow-lg shadow-gold/10"
-                  : "border-gold/10 bg-white/[0.03] hover:border-gold/30 hover:bg-white/[0.06]"
-              }`}
+              className="btn-tactile schedule-promo-card rounded-2xl border border-gold/10 bg-white/[0.03] p-4 sm:p-5 text-center hover:border-gold/30 hover:bg-white/[0.06] transition-all duration-500 cursor-pointer"
             >
-              {promo.featured && (
-                <span className="inline-block mb-2 px-2 py-0.5 bg-gold/20 text-gold text-[7px] tracking-[0.2em] rounded-full font-[family-name:var(--font-body)] gold-breath">
-                  {lang === "en" ? "PROMO OF THE MONTH" : "PROMO DEL MES"}
-                </span>
-              )}
-              <p className={`font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] mb-2 ${promo.featured ? "text-gold" : "text-gold/70"}`}>
+              <p className="font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] mb-2 text-gold/70">
                 {promo.label}
               </p>
               <p className="font-[family-name:var(--font-display)] text-xl sm:text-2xl text-white">
