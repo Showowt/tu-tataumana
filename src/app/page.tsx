@@ -23,7 +23,11 @@ import RetreatsSection from "@/components/sections/RetreatsSection";
 import TestimonialsSection from "@/components/sections/TestimonialsSection";
 import InstagramSection from "@/components/sections/InstagramSection";
 import FooterSection from "@/components/sections/FooterSection";
-import EventsSection from "@/components/sections/EventsSection";
+
+const EventsSection = dynamic(
+  () => import("@/components/sections/EventsSection"),
+  { ssr: false },
+);
 
 const ChatBot = dynamic(() => import("@/components/ChatBot"), { ssr: false });
 const WhatsAppButton = dynamic(() => import("@/components/WhatsAppButton"), {
