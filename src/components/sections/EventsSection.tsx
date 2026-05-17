@@ -19,6 +19,7 @@ interface HomepageEvent {
   cta_text_es: string | null;
   booking_service: string | null;
   accent_color: string | null;
+  link_url: string | null;
 }
 
 interface EventsSectionProps {
@@ -126,29 +127,51 @@ export default function EventsSection({ lang, openBooking }: EventsSectionProps)
                   )}
 
                   <div className="mt-auto">
-                    <button
-                      onClick={() =>
-                        openBooking(
-                          event.booking_service || event.title_es || event.title,
-                        )
-                      }
-                      className={`btn-tactile w-full inline-flex items-center justify-center gap-3 px-8 py-4 ${btnClass} font-[family-name:var(--font-body)] text-sm tracking-[0.25em] transition-all duration-500 rounded-full`}
-                    >
-                      {ctaText}
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={2}
-                        stroke="currentColor"
+                    {event.link_url ? (
+                      <a
+                        href={event.link_url}
+                        className={`btn-tactile w-full inline-flex items-center justify-center gap-3 px-8 py-4 ${btnClass} font-[family-name:var(--font-body)] text-sm tracking-[0.25em] transition-all duration-500 rounded-full`}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
-                        />
-                      </svg>
-                    </button>
+                        {ctaText}
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                          />
+                        </svg>
+                      </a>
+                    ) : (
+                      <button
+                        onClick={() =>
+                          openBooking(
+                            event.booking_service || event.title_es || event.title,
+                          )
+                        }
+                        className={`btn-tactile w-full inline-flex items-center justify-center gap-3 px-8 py-4 ${btnClass} font-[family-name:var(--font-body)] text-sm tracking-[0.25em] transition-all duration-500 rounded-full`}
+                      >
+                        {ctaText}
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                          />
+                        </svg>
+                      </button>
+                    )}
                     <p className="font-[family-name:var(--font-body)] text-[10px] text-white/25 text-center mt-3">
                       {lang === "en"
                         ? "Limited availability"

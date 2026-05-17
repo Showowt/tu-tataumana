@@ -39,12 +39,38 @@ const GROUP_CLASS_PRICE_COP = 80000;
 
 /**
  * Look up the canonical COP price for a service.
- * Private services match by exact name; everything else is a group class.
+ * Checks: private services → events DB → default group class price.
  */
-function getServicePriceCop(serviceName: string): number {
+async function getServicePriceCop(serviceName: string): Promise<number> {
+  // 1. Check hardcoded private service prices
   if (PRIVATE_SERVICE_PRICES[serviceName]) {
     return PRIVATE_SERVICE_PRICES[serviceName];
   }
+
+  // 2. Check tu_events for matching event/promo prices
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (url && key) {
+      const supabase = createClient(url, key);
+      const { data } = await supabase
+        .from("tu_events")
+        .select("price_cop")
+        .eq("is_active", true)
+        .or(`title.ilike.%${serviceName.split(" — ")[0]}%,title_es.ilike.%${serviceName.split(" — ")[0]}%,booking_service.eq.${serviceName}`)
+        .gt("price_cop", 0)
+        .limit(1)
+        .single();
+
+      if (data?.price_cop) {
+        return data.price_cop;
+      }
+    }
+  } catch {
+    // Fall through to default
+  }
+
   return GROUP_CLASS_PRICE_COP;
 }
 
@@ -123,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     if (newResult.success) {
       const data = newResult.data;
-      const priceCop = getServicePriceCop(data.serviceName);
+      const priceCop = await getServicePriceCop(data.serviceName);
       const reference = generateBookingReference();
 
       const baseUrl =

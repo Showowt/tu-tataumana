@@ -355,7 +355,8 @@ Extrae estos campos del flyer/imagen y responde SOLO con JSON valido, sin markdo
   "teacher": "nombre del profesor o Tata",
   "cta_text": "call-to-action button text in English (e.g. RESERVE YOUR SPOT, RESERVE PROMO)",
   "cta_text_es": "call-to-action en español (e.g. RESERVA TU CUPO, RESERVAR PROMO)",
-  "booking_service": "service name for booking system (e.g. Sound Healing May 22, Mayo Mes Mamá — 4 Clases)"
+  "booking_service": "service name for booking system (e.g. Sound Healing May 22, Mayo Mes Mamá — 4 Clases)",
+  "is_pack_promo": "true if this is a multi-class pack/bundle promotion, false if single event"
 }
 
 Si no puedes determinar algun campo, usa valores razonables por defecto. El estudio se llama TU. Tataumana.`;
@@ -490,6 +491,7 @@ async function handlePromoAdd(
     booking_service: extracted.booking_service || extracted.title_es || extracted.title || null,
     accent_color: "gold",
     display_order: 0,
+    link_url: extracted.is_pack_promo === "true" ? "/portal/packs" : null,
   };
 
   const { data, error } = await supabase
