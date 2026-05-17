@@ -1342,6 +1342,20 @@ async function handleActivePacks(
   return `<b>Packs Activos (${items.length})</b>\n\n${lines.join("\n\n")}`;
 }
 
+async function findStudentByName(
+  supabase: SupabaseClient,
+  name: string,
+): Promise<{ id: string; full_name: string; email: string; phone: string | null; auth_id: string | null; is_blocked: boolean; created_at: string } | null> {
+  const { data } = await supabase
+    .from("tu_students")
+    .select("id, full_name, email, phone, auth_id, is_blocked, created_at")
+    .ilike("full_name", `%${name}%`)
+    .order("full_name")
+    .limit(1);
+
+  return (data && data.length > 0) ? data[0] as { id: string; full_name: string; email: string; phone: string | null; auth_id: string | null; is_blocked: boolean; created_at: string } : null;
+}
+
 async function handleSearchStudent(
   supabase: SupabaseClient,
   params: Record<string, string>
@@ -1353,7 +1367,7 @@ async function handleSearchStudent(
 
   const { data: students, error } = await supabase
     .from("tu_students")
-    .select("id, full_name, email, phone, created_at")
+    .select("id, full_name, email, phone, auth_id, is_blocked, created_at")
     .ilike("full_name", `%${name}%`)
     .order("full_name")
     .limit(10);
@@ -1367,12 +1381,12 @@ async function handleSearchStudent(
     return `No encontre alumnos con nombre "${name}".`;
   }
 
-  // For each student, get their active packs and recent bookings
   const lines: string[] = [];
   for (const s of students) {
-    const { count: packCount } = await supabase
+    // Get packs with credit details
+    const { data: packs } = await supabase
       .from("tu_packs")
-      .select("id", { count: "exact", head: true })
+      .select("pack_type, total_classes, classes_used, classes_remaining, status, expires_at")
       .eq("student_id", s.id)
       .eq("status", "active");
 
@@ -1382,15 +1396,31 @@ async function handleSearchStudent(
       .eq("student_id", s.id)
       .eq("status", "confirmed");
 
+    // Get last login from auth
+    const hasAccount = s.auth_id ? "Si" : "No";
+    const blocked = s.is_blocked ? " BLOQUEADA" : "";
     const d = new Date(s.created_at);
     const dateStr = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
 
+    const activePacks = (packs || []) as Array<{ pack_type: string; total_classes: number; classes_used: number; classes_remaining: number; status: string; expires_at: string }>;
+    const totalCredits = activePacks.reduce((sum, p) => sum + (p.total_classes === -1 ? 999 : p.classes_remaining), 0);
+    const creditsLabel = totalCredits >= 999 ? "Ilimitados" : String(totalCredits);
+
+    let packLines = "  Sin packs activos";
+    if (activePacks.length > 0) {
+      packLines = activePacks.map((p) => {
+        const rem = p.total_classes === -1 ? "ilimitado" : `${p.classes_remaining} restantes`;
+        return `  ${p.pack_type.replace(/_/g, " ")} — ${rem}`;
+      }).join("\n");
+    }
+
     lines.push(
-      `<b>${s.full_name}</b>\n` +
+      `<b>${s.full_name}</b>${blocked}\n` +
       (s.email ? `  Email: ${s.email}\n` : "") +
       (s.phone ? `  Tel: ${s.phone}\n` : "") +
-      `  Packs activos: ${packCount || 0} | Reservas: ${bookingCount || 0}\n` +
-      `  Registrado: ${dateStr}`
+      `  Cuenta: ${hasAccount} | Registrada: ${dateStr}\n` +
+      `  Creditos: <b>${creditsLabel}</b> | Reservas: ${bookingCount || 0}\n` +
+      packLines
     );
   }
 
@@ -1649,6 +1679,220 @@ async function handleHealthCheck(): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
+// Student helper commands (Telegram-based student management)
+// ---------------------------------------------------------------------------
+
+async function handleGenerateStudentLink(
+  supabase: SupabaseClient,
+  name: string,
+): Promise<string> {
+  if (!name) {
+    return "Necesito el nombre. Ejemplo: /link Valentina";
+  }
+
+  const student = await findStudentByName(supabase, name);
+  if (!student) {
+    return `No encontre alumna con nombre "${name}".`;
+  }
+
+  // Need service role for auth admin operations
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!serviceKey || !supabaseUrl) {
+    return "Error de configuracion. Contacta a Phil.";
+  }
+
+  const { createClient: createAdminClient } = await import("@supabase/supabase-js");
+  const adminClient = createAdminClient(supabaseUrl, serviceKey);
+
+  // Create auth account if needed
+  if (!student.auth_id) {
+    const { data: newUser, error: createErr } = await adminClient.auth.admin.createUser({
+      email: student.email,
+      email_confirm: true,
+      user_metadata: { full_name: student.full_name },
+    });
+
+    if (createErr && !createErr.message?.includes("already been registered")) {
+      return `Error creando cuenta: ${createErr.message}`;
+    }
+
+    if (newUser?.user) {
+      await supabase
+        .from("tu_students")
+        .update({ auth_id: newUser.user.id })
+        .eq("id", student.id);
+    }
+  }
+
+  // Generate magic link
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
+  const { data: linkData, error: linkErr } = await adminClient.auth.admin.generateLink({
+    type: "magiclink",
+    email: student.email,
+    options: {
+      redirectTo: `${baseUrl}/auth/callback?redirect=/portal`,
+    },
+  });
+
+  if (linkErr || !linkData?.properties?.action_link) {
+    return `Error generando enlace: ${linkErr?.message || "intenta de nuevo"}`;
+  }
+
+  const link = linkData.properties.action_link;
+
+  return (
+    `<b>Enlace generado para ${student.full_name}</b>\n\n` +
+    `<code>${link}</code>\n\n` +
+    `Copialo y envialo por WhatsApp.\n` +
+    `Es de un solo uso — expira en 24 horas.`
+  );
+}
+
+async function handleStudentCredits(
+  supabase: SupabaseClient,
+  name: string,
+): Promise<string> {
+  if (!name) {
+    return "Necesito el nombre. Ejemplo: /creditos Valentina";
+  }
+
+  const student = await findStudentByName(supabase, name);
+  if (!student) {
+    return `No encontre alumna con nombre "${name}".`;
+  }
+
+  const { data: packs } = await supabase
+    .from("tu_packs")
+    .select("pack_type, total_classes, classes_used, classes_remaining, status, expires_at")
+    .eq("student_id", student.id)
+    .order("created_at", { ascending: false });
+
+  const allPacks = (packs || []) as Array<{ pack_type: string; total_classes: number; classes_used: number; classes_remaining: number; status: string; expires_at: string }>;
+
+  if (allPacks.length === 0) {
+    return `<b>${student.full_name}</b>\n\nSin packs registrados. Puedes crearle uno desde Admin → Alumnos → ${student.full_name} → + Pack`;
+  }
+
+  const active = allPacks.filter((p) => p.status === "active");
+  const other = allPacks.filter((p) => p.status !== "active");
+
+  const lines: string[] = [`<b>${student.full_name} — Creditos</b>\n`];
+
+  if (active.length > 0) {
+    lines.push("<b>Activos:</b>");
+    for (const p of active) {
+      const isUnlimited = p.total_classes === -1;
+      const remaining = isUnlimited ? "ilimitado" : `${p.classes_remaining} restantes`;
+      const used = `${p.classes_used} usadas`;
+      const expires = p.expires_at ? spanishDate(p.expires_at.split("T")[0]) : "---";
+      lines.push(`  ${p.pack_type.replace(/_/g, " ")} — ${remaining} (${used})\n  Vence: ${expires}`);
+    }
+  } else {
+    lines.push("Sin packs activos.");
+  }
+
+  if (other.length > 0) {
+    lines.push("\n<b>Historial:</b>");
+    for (const p of other) {
+      lines.push(`  ${p.pack_type.replace(/_/g, " ")} — ${p.status}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+async function handleBookForStudentTelegram(
+  supabase: SupabaseClient,
+  name: string,
+  time: string,
+  dateStr: string,
+): Promise<string> {
+  if (!name || !time || !dateStr) {
+    return "Necesito nombre, hora y dia.\n\nEjemplo: /reservar Valentina 9:30 manana";
+  }
+
+  const student = await findStudentByName(supabase, name);
+  if (!student) {
+    return `No encontre alumna con nombre "${name}".`;
+  }
+
+  // Find active pack with credits
+  const { data: packs } = await supabase
+    .from("tu_packs")
+    .select("id, pack_type, total_classes, classes_remaining, status")
+    .eq("student_id", student.id)
+    .eq("status", "active")
+    .order("created_at", { ascending: true });
+
+  const activePacks = (packs || []) as Array<{ id: string; pack_type: string; total_classes: number; classes_remaining: number; status: string }>;
+  const usablePack = activePacks.find((p) => p.total_classes === -1 || p.classes_remaining > 0);
+
+  if (!usablePack) {
+    return `<b>${student.full_name}</b> no tiene creditos disponibles.\n\nCreale un pack desde Admin → Alumnos → ${student.full_name} → + Pack`;
+  }
+
+  // Find the session
+  const targetTime = convertTo24h(time).padStart(5, "0");
+  const { data: sessions } = await supabase
+    .from("tu_class_sessions")
+    .select("id, session_date, start_time, teacher, capacity, enrolled, status, definition:tu_class_definitions(name_es)")
+    .eq("session_date", dateStr)
+    .eq("status", "scheduled");
+
+  const typedSessions = (sessions || []) as unknown as Array<{
+    id: string; session_date: string; start_time: string; teacher: string;
+    capacity: number; enrolled: number; status: string;
+    definition: { name_es: string } | null;
+  }>;
+
+  const match = typedSessions.find((s) => {
+    const converted = convertTo24h(s.start_time);
+    return converted === targetTime || s.start_time.replace(/\s*(AM|PM)/i, "") === targetTime;
+  });
+
+  if (!match) {
+    if (typedSessions.length === 0) {
+      return `No hay clases programadas el ${spanishDate(dateStr)}.`;
+    }
+    const available = typedSessions.map((s) => `  ${s.start_time} — ${s.definition?.name_es || "Clase"} (${s.teacher})`).join("\n");
+    return `No encontre clase a las ${time} el ${spanishDate(dateStr)}.\n\nClases disponibles:\n${available}`;
+  }
+
+  if (match.enrolled >= match.capacity) {
+    return `La clase de las ${match.start_time} esta llena (${match.capacity}/${match.capacity}).`;
+  }
+
+  // Book using tu_book_class
+  const { data, error } = await supabase.rpc("tu_book_class", {
+    p_student_id: student.id,
+    p_session_id: match.id,
+    p_pack_id: usablePack.id,
+  });
+
+  if (error) {
+    return `Error al reservar: ${error.message}`;
+  }
+
+  const result = data as Record<string, unknown>;
+  if (result.error) {
+    return `No se pudo reservar: ${result.error}`;
+  }
+
+  const className = match.definition?.name_es || "Clase";
+  const remaining = usablePack.total_classes === -1 ? "ilimitados" : `${usablePack.classes_remaining - 1}`;
+
+  return (
+    `<b>Clase reservada!</b>\n\n` +
+    `<b>${student.full_name}</b>\n` +
+    `${className} — ${match.start_time}\n` +
+    `${spanishDate(dateStr)} con ${match.teacher}\n\n` +
+    `Pack: ${usablePack.pack_type.replace(/_/g, " ")}\n` +
+    `Creditos restantes: ${remaining}`
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Teacher swap handler
 // ---------------------------------------------------------------------------
 
@@ -1744,7 +1988,10 @@ function handleHelp(): string {
     `<b>/cancelar_evento</b> Sound Healing\n` +
     `Enviar foto de flyer — Crear evento desde imagen\n\n` +
     `<b>/alumnos</b> — Conteo y registros recientes\n` +
-    `<b>/buscar</b> Maria — Buscar alumno\n` +
+    `<b>/buscar</b> Maria — Buscar alumno (creditos, packs, todo)\n` +
+    `<b>/creditos</b> Maria — Ver creditos de una alumna\n` +
+    `<b>/link</b> Maria — Generar enlace de acceso para enviar por WhatsApp\n` +
+    `<b>/reservar</b> Maria 9:30 manana — Reservar clase por una alumna\n` +
     `<b>/packs</b> — Packs activos\n` +
     `<b>/pagos</b> — Pagos pendientes\n` +
     `<b>/leads</b> — Leads recientes\n` +
@@ -2183,6 +2430,51 @@ export async function POST(request: NextRequest) {
       }
     } else if (firstWord === "/clases" || firstWord === "/semana") {
       directResponse = await handleWeekClassRoster(supabase);
+    } else if (firstWord === "/link" || firstWord === "/enlace") {
+      const targetName = rawText.slice(firstWord.length).trim();
+      directResponse = await handleGenerateStudentLink(supabase, targetName);
+    } else if (firstWord === "/creditos" || firstWord === "/credits") {
+      const targetName = rawText.slice(firstWord.length).trim();
+      directResponse = await handleStudentCredits(supabase, targetName);
+    } else if (firstWord === "/reservar" || firstWord === "/book") {
+      // /reservar Valentina 9:30 manana
+      const parts = rawText.split(/\s+/).slice(1);
+      if (parts.length >= 3) {
+        // Find where the time starts (a digit after the name)
+        let nameEnd = 0;
+        for (let i = 0; i < parts.length; i++) {
+          if (/^\d/.test(parts[i])) { nameEnd = i; break; }
+        }
+        if (nameEnd > 0 && nameEnd + 1 < parts.length) {
+          const studentName = parts.slice(0, nameEnd).join(" ");
+          const timeStr = parts[nameEnd];
+          const dateHint = parts[nameEnd + 1].toLowerCase();
+
+          // Resolve date
+          let dateStr: string;
+          const todayDate = getColombiaDate();
+          if (dateHint === "hoy") {
+            dateStr = getColombiaDateStr();
+          } else if (dateHint === "manana" || dateHint === "mañana") {
+            dateStr = getColombiaDateStr(1);
+          } else if (DAY_NAMES_ES.map((d) => d.toLowerCase()).includes(dateHint)) {
+            const targetDay = DAY_NAMES_ES.map((d) => d.toLowerCase()).indexOf(dateHint);
+            const currentDay = todayDate.getDay();
+            const daysAhead = targetDay > currentDay ? targetDay - currentDay : 7 - (currentDay - targetDay);
+            dateStr = getColombiaDateStr(daysAhead === 0 ? 7 : daysAhead);
+          } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateHint)) {
+            dateStr = dateHint;
+          } else {
+            dateStr = getColombiaDateStr();
+          }
+
+          directResponse = await handleBookForStudentTelegram(supabase, studentName, timeStr, dateStr);
+        } else {
+          directResponse = "Formato: /reservar [nombre] [hora] [dia]\n\nEjemplo: /reservar Valentina 9:30 manana";
+        }
+      } else {
+        directResponse = "Necesito nombre, hora y dia.\n\nEjemplo:\n/reservar Valentina 9:30 manana\n/reservar Mary 7:15 lunes";
+      }
     } else if (firstWord === "/teacher" || firstWord === "/profesor") {
       // Direct parse: /teacher TIME DATE TEACHER_NAME
       // e.g., /teacher 9:30 manana Karla
