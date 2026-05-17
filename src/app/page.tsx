@@ -23,6 +23,7 @@ import RetreatsSection from "@/components/sections/RetreatsSection";
 import TestimonialsSection from "@/components/sections/TestimonialsSection";
 import InstagramSection from "@/components/sections/InstagramSection";
 import FooterSection from "@/components/sections/FooterSection";
+import MayEventsSection from "@/components/sections/MayEventsSection";
 
 const ChatBot = dynamic(() => import("@/components/ChatBot"), { ssr: false });
 const WhatsAppButton = dynamic(() => import("@/components/WhatsAppButton"), {
@@ -72,6 +73,9 @@ export default function Home() {
   const [lang, setLang] = useState<Lang>("en");
   const [closedDates, setClosedDates] = useState<string[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [workshopPassed, setWorkshopPassed] = useState(false);
+  const [countdownReady, setCountdownReady] = useState(false);
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const sectionsRef = useScrollReveal();
 
   const L = useCallback(
@@ -152,6 +156,36 @@ export default function Home() {
     });
   }, []);
 
+  // May Events countdown (workshop May 22, promo all May)
+  useEffect(() => {
+    const workshopDate = new Date("2026-05-22T18:00:00-05:00"); // Cartagena time
+    const mayEnd = new Date("2026-05-31T23:59:59-05:00");
+
+    function tick() {
+      const now = new Date();
+      // Hide entire section only after May ends
+      if (now > mayEnd) {
+        setWorkshopPassed(true);
+        return;
+      }
+      // Countdown to workshop
+      const diff = workshopDate.getTime() - now.getTime();
+      if (diff <= 0) {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      } else {
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setCountdown({ days, hours, minutes, seconds });
+      }
+      setCountdownReady(true);
+    }
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const openBooking = useCallback(
     (serviceName?: string, date?: string, time?: string) => {
       setPreselectedService(serviceName || "");
@@ -183,6 +217,15 @@ export default function Home() {
       />
 
       <PhilosophySection lang={lang} L={L} />
+
+      <MayEventsSection
+        lang={lang}
+        L={L}
+        workshopPassed={workshopPassed}
+        countdownReady={countdownReady}
+        countdown={countdown}
+        openBooking={openBooking}
+      />
 
       <FeaturedPressSection lang={lang} L={L} />
 
