@@ -89,7 +89,7 @@ export default function EventsSection({ lang, openBooking }: EventsSectionProps)
       <div className="relative max-w-6xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="fade-in inline-flex items-center gap-2 px-5 py-2 rounded-full border border-gold/20 bg-gold/5 mb-6">
+          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-gold/20 bg-gold/5 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
             <span className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-gold">
               {lang === "en" ? "SPECIAL EVENTS" : "EVENTOS ESPECIALES"}
@@ -118,7 +118,7 @@ export default function EventsSection({ lang, openBooking }: EventsSectionProps)
             return (
               <div
                 key={event.id}
-                className={`fade-in ${i > 0 ? "fade-in-delay-1" : ""} rounded-2xl border ${borderClass} bg-white/[0.03] overflow-hidden flex flex-col`}
+                className={`rounded-2xl border ${borderClass} bg-white/[0.03] overflow-hidden flex flex-col`}
               >
                 {event.image_url && (
                   <div className="relative">
