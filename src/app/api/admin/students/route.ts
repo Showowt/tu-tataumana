@@ -204,22 +204,28 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  const { id, email, is_blocked, ...updates } = parsed.data;
+  const { id, email, is_blocked, ...rest } = parsed.data;
+  const updates: Record<string, unknown> = { ...rest };
 
   // Get current student to find auth_id
-  const { data: currentStudent } = await supabase
+  const { data: currentStudent, error: findErr } = await supabase
     .from("tu_students")
     .select("auth_id, email")
     .eq("id", id)
     .single();
 
-  if (!currentStudent) {
-    return NextResponse.json({ error: "Student not found" }, { status: 404 });
+  if (findErr || !currentStudent) {
+    const code = findErr && "code" in findErr ? (findErr as { code: string }).code : "";
+    if (code === "PGRST116" || !currentStudent) {
+      return NextResponse.json({ error: "Student not found" }, { status: 404 });
+    }
+    console.error("[admin/students PATCH] find error:", findErr);
+    return NextResponse.json({ error: "Failed to fetch student" }, { status: 500 });
   }
 
   // If email changed, update auth.users too
   if (email && email !== currentStudent.email) {
-    (updates as Record<string, unknown>).email = email;
+    updates.email = email;
 
     if (currentStudent.auth_id) {
       const serviceUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -243,7 +249,7 @@ export async function PATCH(request: NextRequest) {
 
   // If blocking/unblocking, update auth ban
   if (is_blocked !== undefined) {
-    (updates as Record<string, unknown>).is_blocked = is_blocked;
+    updates.is_blocked = is_blocked;
 
     if (currentStudent.auth_id) {
       const serviceUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

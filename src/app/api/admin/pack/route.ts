@@ -150,15 +150,30 @@ export async function PATCH(request: NextRequest) {
   }
 
   const supabase = admin.supabase;
-  const body = await request.json();
-  const { id, add_credits, remove_credits, set_classes_used, extend_days, ...updates } = body;
+  const PatchPackSchema = z.object({
+    id: z.string().uuid(),
+    status: z.enum(["active", "expired", "exhausted", "cancelled"]).optional(),
+    add_credits: z.number().int().positive().optional(),
+    remove_credits: z.number().int().positive().optional(),
+    set_classes_used: z.number().int().min(0).optional(),
+    extend_days: z.number().int().positive().optional(),
+    notes: z.string().nullable().optional(),
+  });
 
-  if (!id) {
-    return NextResponse.json({ error: "Pack id is required" }, { status: 400 });
+  const body = await request.json();
+  const parsed = PatchPackSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: parsed.error.issues },
+      { status: 400 },
+    );
   }
 
-  // Never update generated column
-  delete updates.classes_remaining;
+  const { id, add_credits, remove_credits, set_classes_used, extend_days, status, notes } = parsed.data;
+  const updates: Record<string, unknown> = {};
+  if (status !== undefined) updates.status = status;
+  if (notes !== undefined) updates.notes = notes;
 
   // Handle direct credit setting (set classes_used to exact value)
   if (typeof set_classes_used === "number" && set_classes_used >= 0) {

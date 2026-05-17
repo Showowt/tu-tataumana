@@ -344,7 +344,6 @@ export default function AdminStudentDetailPage() {
   /* ---------- Credit Adjustment ---------- */
 
   async function handleAdjustCredits(packId: string, delta: number) {
-    const action = delta > 0 ? "remove_credits" : "set_classes_used";
     try {
       const body: Record<string, unknown> = { id: packId };
       if (delta > 0) {

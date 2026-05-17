@@ -28,15 +28,19 @@ interface EventsSectionProps {
 
 export default function EventsSection({ lang, openBooking }: EventsSectionProps) {
   const [events, setEvents] = useState<HomepageEvent[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     fetch("/api/events?homepage=true")
       .then((r) => (r.ok ? r.json() : { data: [] }))
-      .then((json) => setEvents(json.data || []))
-      .catch(() => {});
+      .then((json) => {
+        setEvents(json.data || []);
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
   }, []);
 
-  if (events.length === 0) return null;
+  if (!loaded || events.length === 0) return null;
 
   return (
     <section className="relative py-16 md:py-24 bg-charcoal overflow-clip grain-overlay">
@@ -85,56 +89,40 @@ export default function EventsSection({ lang, openBooking }: EventsSectionProps)
               >
                 {event.image_url && (
                   <div className="relative">
-                    {event.image_url.startsWith("/") ? (
-                      // Local images from /public
-                      <Image
-                        src={event.image_url}
-                        alt={title}
-                        width={900}
-                        height={1200}
-                        className="w-full h-auto"
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                      />
-                    ) : (
-                      // Remote images (Supabase Storage)
-                      <Image
-                        src={event.image_url}
-                        alt={title}
-                        width={900}
-                        height={1200}
-                        className="w-full h-auto"
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                        unoptimized
-                      />
-                    )}
+                    <Image
+                      src={event.image_url}
+                      alt={title}
+                      width={900}
+                      height={1200}
+                      className="w-full h-auto"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
                   </div>
                 )}
 
                 <div className="p-6 md:p-8 flex flex-col flex-1">
                   {!event.image_url && (
-                    <div className="mb-4">
-                      <h3
-                        className="font-[family-name:var(--font-display)] text-white text-xl mb-2"
-                        style={{ fontWeight: 300 }}
-                      >
-                        {title}
-                      </h3>
-                      {event.price_cop > 0 && (
-                        <p className="font-[family-name:var(--font-body)] text-gold text-lg">
-                          ${event.price_cop.toLocaleString("es-CO")} COP
-                        </p>
-                      )}
-                      {event.start_time && (
-                        <p className="font-[family-name:var(--font-body)] text-[11px] text-white/40 mt-1">
-                          {new Date(event.event_date + "T12:00:00").toLocaleDateString(
-                            lang === "es" ? "es-CO" : "en-US",
-                            { weekday: "long", month: "long", day: "numeric" },
-                          )}{" "}
-                          · {event.start_time.slice(0, 5)}
-                          {event.end_time ? ` - ${event.end_time.slice(0, 5)}` : ""}
-                        </p>
-                      )}
-                    </div>
+                    <h3
+                      className="font-[family-name:var(--font-display)] text-white text-xl mb-2"
+                      style={{ fontWeight: 300 }}
+                    >
+                      {title}
+                    </h3>
+                  )}
+                  {!event.image_url && event.price_cop > 0 && (
+                    <p className="font-[family-name:var(--font-body)] text-gold text-lg mb-1">
+                      ${event.price_cop.toLocaleString("es-CO")} COP
+                    </p>
+                  )}
+                  {!event.image_url && event.start_time && (
+                    <p className="font-[family-name:var(--font-body)] text-[11px] text-white/40 mb-4">
+                      {new Date(event.event_date + "T12:00:00").toLocaleDateString(
+                        lang === "es" ? "es-CO" : "en-US",
+                        { weekday: "long", month: "long", day: "numeric" },
+                      )}{" "}
+                      · {event.start_time.slice(0, 5)}
+                      {event.end_time ? ` - ${event.end_time.slice(0, 5)}` : ""}
+                    </p>
                   )}
 
                   <div className="mt-auto">

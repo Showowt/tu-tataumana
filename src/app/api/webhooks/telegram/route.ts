@@ -1322,12 +1322,18 @@ async function handleActivePacks(
   }
 
   const lines = items.map((p) => {
-    const remaining = p.total_classes - (p.classes_used || 0);
+    const isUnlimited = p.total_classes === -1;
+    const remaining = isUnlimited ? Infinity : p.total_classes - (p.classes_used || 0);
     const name = p.student?.full_name || "Sin alumno";
     const expires = p.expires_at ? spanishDate(p.expires_at.split("T")[0]) : "Sin vencimiento";
-    const bar = "\u2588".repeat(Math.min(p.classes_used || 0, p.total_classes)) +
-      "\u2591".repeat(Math.max(remaining, 0));
-    return `  <b>${name}</b> - ${p.pack_type}\n  ${bar} ${p.classes_used || 0}/${p.total_classes} usadas (${remaining} restantes)\n  Vence: ${expires}`;
+    const bar = isUnlimited
+      ? "\u221E"
+      : "\u2588".repeat(Math.min(p.classes_used || 0, p.total_classes)) +
+        "\u2591".repeat(Math.max(remaining, 0));
+    const usageLabel = isUnlimited
+      ? `${p.classes_used || 0} usadas (ilimitado)`
+      : `${p.classes_used || 0}/${p.total_classes} usadas (${remaining} restantes)`;
+    return `  <b>${name}</b> - ${p.pack_type}\n  ${bar} ${usageLabel}\n  Vence: ${expires}`;
   });
 
   return `<b>Packs Activos (${items.length})</b>\n\n${lines.join("\n\n")}`;
@@ -1959,7 +1965,7 @@ export async function POST(request: NextRequest) {
 
       if (isPromo) {
         // /promo command with photo — add to homepage
-        const promoCaption = caption.slice("/promo".length).replace(/^[\s,]+add[\s,]*/i, "").trim();
+        const promoCaption = caption.slice("/promo".length).replace(/^[\s,]*add[\s,]*/i, "").trim();
         const response = await handlePromoAdd(supabase, imageBuffer, promoCaption || undefined);
         await sendTelegram(response);
       } else {
