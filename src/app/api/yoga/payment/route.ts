@@ -12,6 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
 import {
   createPaymentLink,
   generateBookingReference,
@@ -40,35 +41,50 @@ const GROUP_CLASS_PRICE_COP = 80000;
 /**
  * Look up the canonical COP price for a service.
  * Checks: private services → events DB → default group class price.
+ *
+ * Input may include time suffix like "Sound Healing @ 5:30 PM"
+ * or dash separator like "Mayo Mes Mamá — 4 Clases". Both are stripped.
  */
 async function getServicePriceCop(serviceName: string): Promise<number> {
-  // 1. Check hardcoded private service prices
+  // Strip time suffix and dash separators the BookingModal appends
+  const baseName = serviceName
+    .split(" @ ")[0]
+    .split(" — ")[0]
+    .trim();
+
+  // 1. Check hardcoded private service prices (exact match on base name)
+  if (PRIVATE_SERVICE_PRICES[baseName]) {
+    return PRIVATE_SERVICE_PRICES[baseName];
+  }
+  // Also check the raw name in case it's an exact match
   if (PRIVATE_SERVICE_PRICES[serviceName]) {
     return PRIVATE_SERVICE_PRICES[serviceName];
   }
 
   // 2. Check tu_events for matching event/promo prices
-  try {
-    const { createClient } = await import("@supabase/supabase-js");
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (url && key) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (url && key) {
+    try {
       const supabase = createClient(url, key);
       const { data } = await supabase
         .from("tu_events")
         .select("price_cop")
         .eq("is_active", true)
-        .or(`title.ilike.%${serviceName.split(" — ")[0]}%,title_es.ilike.%${serviceName.split(" — ")[0]}%,booking_service.eq.${serviceName}`)
+        .or(
+          `title.ilike.%${baseName}%,title_es.ilike.%${baseName}%,booking_service.ilike.%${baseName}%`,
+        )
         .gt("price_cop", 0)
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (data?.price_cop) {
+        console.log(`[Payment] Event price found for "${baseName}": $${data.price_cop} COP`);
         return data.price_cop;
       }
+    } catch (err) {
+      console.error("[Payment] Event price lookup failed for:", baseName, err);
     }
-  } catch {
-    // Fall through to default
   }
 
   return GROUP_CLASS_PRICE_COP;

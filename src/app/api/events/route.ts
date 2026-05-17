@@ -16,7 +16,12 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createClient(url, key);
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
   const homepage = request.nextUrl.searchParams.get("homepage");
 
   let query = supabase
