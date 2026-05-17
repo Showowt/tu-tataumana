@@ -349,7 +349,10 @@ Extrae estos campos del flyer/imagen y responde SOLO con JSON valido, sin markdo
   "end_time": "HH:MM (24h) o null",
   "price_cop": "numero o 0",
   "capacity": "numero o 15",
-  "teacher": "nombre del profesor o Tata"
+  "teacher": "nombre del profesor o Tata",
+  "cta_text": "call-to-action button text in English (e.g. RESERVE YOUR SPOT, RESERVE PROMO)",
+  "cta_text_es": "call-to-action en español (e.g. RESERVA TU CUPO, RESERVAR PROMO)",
+  "booking_service": "service name for booking system (e.g. Sound Healing May 22, Mayo Mes Mamá — 4 Clases)"
 }
 
 Si no puedes determinar algun campo, usa valores razonables por defecto. El estudio se llama TU. Tataumana.`;
@@ -411,6 +414,190 @@ Si no puedes determinar algun campo, usa valores razonables por defecto. El estu
     console.error("[Claude Vision] error:", err);
     return null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Supabase Storage — upload event flyer
+// ---------------------------------------------------------------------------
+
+async function uploadEventFlyer(
+  supabase: SupabaseClient,
+  imageBuffer: Buffer,
+  eventId: string,
+): Promise<string | null> {
+  const filePath = `flyers/${eventId}.jpg`;
+
+  const { error } = await supabase.storage
+    .from("event-flyers")
+    .upload(filePath, imageBuffer, {
+      contentType: "image/jpeg",
+      upsert: true,
+    });
+
+  if (error) {
+    console.error("[Storage] upload error:", error.message);
+    return null;
+  }
+
+  const { data } = supabase.storage
+    .from("event-flyers")
+    .getPublicUrl(filePath);
+
+  return data.publicUrl;
+}
+
+// ---------------------------------------------------------------------------
+// Promo handlers (homepage event management via Telegram)
+// ---------------------------------------------------------------------------
+
+async function handlePromoAdd(
+  supabase: SupabaseClient,
+  imageBuffer: Buffer,
+  caption?: string,
+): Promise<string> {
+  const imageBase64 = imageBuffer.toString("base64");
+
+  // Use Claude Vision to extract event details from the flyer
+  const extracted = await extractEventFromImage(imageBase64, caption);
+  if (!extracted) {
+    return "No pude extraer la info del flyer. Intenta con /promo add Titulo | fecha YYYY-MM-DD | precio | texto del boton";
+  }
+
+  const eventData = {
+    title: extracted.title || "Evento TU.",
+    title_es: extracted.title_es || extracted.title || "Evento TU.",
+    description: extracted.description || null,
+    description_es: extracted.description_es || extracted.description || null,
+    event_date: extracted.date || getColombiaDateStr(7),
+    start_time: extracted.time || "18:00",
+    end_time: extracted.end_time || null,
+    teacher: extracted.teacher || "Tata",
+    capacity: parseInt(extracted.capacity || "15", 10),
+    enrolled: 0,
+    price_cop:
+      parseInt(String(extracted.price_cop || "0").replace(/[^0-9]/g, ""), 10) ||
+      0,
+    price_usd: 0,
+    location: "TU. Studio",
+    is_active: true,
+    status: "upcoming" as const,
+    show_on_homepage: true,
+    cta_text: extracted.cta_text || "RESERVE YOUR SPOT",
+    cta_text_es: extracted.cta_text_es || "RESERVA TU CUPO",
+    booking_service: extracted.booking_service || extracted.title_es || extracted.title || null,
+    accent_color: "gold",
+    display_order: 0,
+  };
+
+  const { data, error } = await supabase
+    .from("tu_events")
+    .insert(eventData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[Telegram/promo] create error:", error.message);
+    return `Error al crear la promo: ${error.message}`;
+  }
+
+  // Upload the flyer image to Supabase Storage
+  const imageUrl = await uploadEventFlyer(supabase, imageBuffer, data.id);
+  if (imageUrl) {
+    await supabase
+      .from("tu_events")
+      .update({ image_url: imageUrl })
+      .eq("id", data.id);
+  }
+
+  const priceStr =
+    eventData.price_cop > 0
+      ? `$${eventData.price_cop.toLocaleString("es-CO")} COP`
+      : "Gratis";
+
+  return (
+    `<b>PROMO AGREGADA A LA HOMEPAGE</b>\n\n` +
+    `<b>${data.title_es}</b>\n` +
+    `${spanishDate(data.event_date)} a las ${data.start_time}\n` +
+    `${priceStr}\n` +
+    `Boton: "${eventData.cta_text_es}"\n` +
+    (imageUrl ? `Flyer: subido\n` : `Flyer: no se pudo subir\n`) +
+    `\nYa esta visible en tataumana.com`
+  );
+}
+
+async function handlePromoList(supabase: SupabaseClient): Promise<string> {
+  const today = new Date().toISOString().split("T")[0];
+
+  const { data, error } = await supabase
+    .from("tu_events")
+    .select("id, title, title_es, event_date, start_time, price_cop, show_on_homepage, is_active, image_url")
+    .eq("is_active", true)
+    .gte("event_date", today)
+    .order("display_order", { ascending: true })
+    .order("event_date", { ascending: true })
+    .limit(10);
+
+  if (error) {
+    return `Error: ${error.message}`;
+  }
+
+  if (!data || data.length === 0) {
+    return "<b>Promos</b>\n\nNo hay eventos activos. Envia una foto con /promo para agregar uno.";
+  }
+
+  const lines = data.map((e, i) => {
+    const onHomepage = e.show_on_homepage ? "EN HOMEPAGE" : "oculto";
+    const hasImage = e.image_url ? "con flyer" : "sin flyer";
+    const price = e.price_cop > 0 ? `$${e.price_cop.toLocaleString("es-CO")}` : "Gratis";
+    return `${i + 1}. <b>${e.title_es}</b>\n   ${spanishDate(e.event_date)} · ${price} · ${hasImage}\n   [${onHomepage}] ID: ${e.id.slice(0, 8)}`;
+  });
+
+  return `<b>Promos Activas (${data.length})</b>\n\n${lines.join("\n\n")}\n\nPara quitar: /promo remove [titulo o ID]`;
+}
+
+async function handlePromoRemove(
+  supabase: SupabaseClient,
+  target: string,
+): Promise<string> {
+  if (!target) {
+    return "Cual promo quieres quitar? Escribe: /promo remove [titulo o ID]";
+  }
+
+  // Search by title or ID prefix
+  const { data: events } = await supabase
+    .from("tu_events")
+    .select("id, title, title_es, event_date, show_on_homepage")
+    .eq("is_active", true)
+    .order("event_date", { ascending: true });
+
+  const targetLower = target.toLowerCase();
+  const match = (events || []).find(
+    (e) =>
+      e.id.toLowerCase().startsWith(targetLower) ||
+      e.title.toLowerCase().includes(targetLower) ||
+      e.title_es.toLowerCase().includes(targetLower),
+  );
+
+  if (!match) {
+    return `No encontre promo "${target}". Usa /promo list para ver las activas.`;
+  }
+
+  // Remove from homepage (keep the event but hide it)
+  const { error } = await supabase
+    .from("tu_events")
+    .update({ show_on_homepage: false })
+    .eq("id", match.id);
+
+  if (error) {
+    return `Error: ${error.message}`;
+  }
+
+  return (
+    `<b>Promo quitada de la homepage</b>\n\n` +
+    `${match.title_es}\n` +
+    `${spanishDate(match.event_date)}\n\n` +
+    `El evento sigue activo en el sistema pero ya no aparece en la pagina.`
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1481,6 +1668,10 @@ function handleHelp(): string {
     `desactivar descuento WELCOME10 — Desactivar\n\n` +
     `<b>Alumnos:</b>\n` +
     `<b>/alumno</b> Maria Garcia maria@email.com +573001234567 — Crear cuenta\n\n` +
+    `<b>Promos Homepage:</b>\n` +
+    `Enviar foto con caption <b>/promo</b> — Agregar promo con flyer\n` +
+    `<b>/promo</b> list — Ver promos activas en homepage\n` +
+    `<b>/promo</b> remove [titulo] — Quitar promo de homepage\n\n` +
     `<b>/ayuda</b> — Este mensaje\n\n` +
     `Tambien puedes escribir en lenguaje natural!`
   );
@@ -1746,9 +1937,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // Handle photo messages (flyer -> event creation)
+    // Handle photo messages
     if (message.photo && message.photo.length > 0) {
-      await sendTelegram("Analizando imagen... Un momento.");
+      const caption = (message.caption || "").trim();
+      const isPromo = caption.toLowerCase().startsWith("/promo");
+
+      await sendTelegram(
+        isPromo
+          ? "Creando promo para la homepage... Un momento."
+          : "Analizando imagen... Un momento.",
+      );
 
       // Get the highest resolution photo
       const largestPhoto = message.photo[message.photo.length - 1];
@@ -1759,13 +1957,21 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
-      const imageBase64 = imageBuffer.toString("base64");
-      const response = await handleCreateEventFromPhoto(
-        supabase,
-        imageBase64,
-        message.caption
-      );
-      await sendTelegram(response);
+      if (isPromo) {
+        // /promo command with photo — add to homepage
+        const promoCaption = caption.slice("/promo".length).replace(/^[\s,]+add[\s,]*/i, "").trim();
+        const response = await handlePromoAdd(supabase, imageBuffer, promoCaption || undefined);
+        await sendTelegram(response);
+      } else {
+        // Regular photo — generic event creation
+        const imageBase64 = imageBuffer.toString("base64");
+        const response = await handleCreateEventFromPhoto(
+          supabase,
+          imageBase64,
+          caption,
+        );
+        await sendTelegram(response);
+      }
       return NextResponse.json({ ok: true });
     }
 
@@ -1887,6 +2093,16 @@ export async function POST(request: NextRequest) {
       }
     } else if (firstWord === "/clases" || firstWord === "/semana") {
       directResponse = await handleWeekClassRoster(supabase);
+    } else if (firstWord === "/promo" || firstWord === "/promos") {
+      const rest = rawText.slice(firstWord.length).trim().toLowerCase();
+      if (rest.startsWith("list") || rest.startsWith("ver") || rest === "" || firstWord === "/promos") {
+        directResponse = await handlePromoList(supabase);
+      } else if (rest.startsWith("remove") || rest.startsWith("quitar") || rest.startsWith("borrar")) {
+        const target = rest.replace(/^(remove|quitar|borrar)\s*/, "").trim();
+        directResponse = await handlePromoRemove(supabase, target);
+      } else {
+        directResponse = "Para agregar una promo, envia una <b>foto del flyer</b> con el caption <b>/promo</b>\n\nOtros comandos:\n/promo list — Ver promos activas\n/promo remove [titulo] — Quitar de homepage";
+      }
     }
 
     if (directResponse) {
