@@ -51,6 +51,7 @@ interface ParsedIntent {
     | "list_discounts"
     | "deactivate_discount"
     | "create_student_account"
+    | "change_teacher"
     | "unknown";
   params: Record<string, string>;
 }
@@ -255,6 +256,7 @@ Acciones posibles:
 - "list_discounts": ver codigos de descuento activos
 - "deactivate_discount": desactivar un codigo. Params: { "code": "..." }
 - "create_student_account": crear cuenta para un alumno. Params: { "name": "nombre completo", "email": "email@example.com", "phone": "telefono (opcional)" }
+- "change_teacher": cambiar el teacher/profesor de una clase. Params: { "date": "YYYY-MM-DD", "time": "HH:MM" (24h), "teacher": "nombre del nuevo teacher" }
 - "unknown": no se entiende. Params: {}
 
 Reglas:
@@ -282,7 +284,8 @@ Reglas:
 - Si dice "descuento" y quiere CREAR uno -> create_discount
 - Si dice "descuentos activos" o "ver descuentos" -> list_discounts
 - Si dice "desactivar" y menciona un codigo -> deactivate_discount
-- Si dice "crear cuenta" o "nueva cuenta" o "registrar alumno" o "crear alumno" o "crear perfil" -> create_student_account`;
+- Si dice "crear cuenta" o "nueva cuenta" o "registrar alumno" o "crear alumno" o "crear perfil" -> create_student_account
+- Si dice "cambiar teacher" o "cambiar profesor" o "sub" o "reemplazo" o "sustituir" y menciona un nombre -> change_teacher`;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -1645,6 +1648,84 @@ async function handleHealthCheck(): Promise<string> {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Teacher swap handler
+// ---------------------------------------------------------------------------
+
+async function handleChangeTeacher(
+  supabase: SupabaseClient,
+  params: Record<string, string>,
+): Promise<string> {
+  const { date, time, teacher } = params;
+
+  if (!date || !time || !teacher) {
+    return (
+      "Necesito la fecha, hora y nombre del nuevo teacher.\n\n" +
+      "Ejemplo:\n" +
+      "/teacher 9:30 manana Karla\n" +
+      "/teacher 7:15 lunes Alejandro\n\n" +
+      "Teachers disponibles: Tata, Alejandro, Karla, Violeta, Alvaro, Betty & Violeta"
+    );
+  }
+
+  const targetTime = time.padStart(5, "0");
+
+  // Find the session
+  const { data: sessions, error: findError } = await supabase
+    .from("tu_class_sessions")
+    .select(`
+      id, session_date, start_time, teacher, status,
+      definition:tu_class_definitions (name, name_es)
+    `)
+    .eq("session_date", date)
+    .eq("status", "scheduled");
+
+  if (findError) {
+    console.error("[Telegram] change_teacher find error:", findError.message);
+    return "Error al buscar la sesion. Intenta de nuevo.";
+  }
+
+  const typedSessions = (sessions || []) as unknown as SessionWithDef[];
+
+  // Match by time
+  const match = typedSessions.find((s) => {
+    const converted = convertTo24h(s.start_time);
+    return converted === targetTime || s.start_time.replace(/\s*(AM|PM)/i, "") === targetTime;
+  });
+
+  if (!match) {
+    if (typedSessions.length === 0) {
+      return `No hay clases programadas el ${spanishDate(date)}.`;
+    }
+    const available = typedSessions
+      .map((s) => `${s.start_time} - ${(s.definition as unknown as { name_es: string } | null)?.name_es || "Clase"} (${s.teacher})`)
+      .join("\n");
+    return `No encontre una clase a las ${time} el ${spanishDate(date)}.\n\nClases ese dia:\n${available}`;
+  }
+
+  const className = (match.definition as unknown as { name_es: string } | null)?.name_es || "Clase";
+  const oldTeacher = match.teacher;
+
+  // Update teacher
+  const { error: updateError } = await supabase
+    .from("tu_class_sessions")
+    .update({ teacher: teacher.trim() })
+    .eq("id", match.id);
+
+  if (updateError) {
+    console.error("[Telegram] change_teacher error:", updateError.message);
+    return "Error al cambiar el teacher. Intenta de nuevo.";
+  }
+
+  return (
+    `<b>Teacher cambiado</b>\n\n` +
+    `${className}\n` +
+    `${match.start_time} - ${spanishDate(date)}\n\n` +
+    `${oldTeacher} → <b>${teacher.trim()}</b>\n\n` +
+    `El horario en la pagina web se actualiza automaticamente.`
+  );
+}
+
 function handleHelp(): string {
   return (
     `<b>TU. Bot — Comandos</b>\n\n` +
@@ -1657,7 +1738,8 @@ function handleHelp(): string {
     `<b>/cancelar</b> clase 9:30 manana — Cancelar sesion\n` +
     `<b>/llena</b> 7:15 hoy — Marcar como llena\n` +
     `<b>/cerrar</b> viernes — Cerrar un dia\n` +
-    `<b>/abrir</b> viernes — Reabrir dia cerrado\n\n` +
+    `<b>/abrir</b> viernes — Reabrir dia cerrado\n` +
+    `<b>/teacher</b> 9:30 manana Karla — Cambiar teacher de una clase\n\n` +
     `<b>/evento</b> Sound Healing mayo 25 5:30pm $80,000 15 cupos\n` +
     `<b>/cancelar_evento</b> Sound Healing\n` +
     `Enviar foto de flyer — Crear evento desde imagen\n\n` +
@@ -2029,6 +2111,8 @@ export async function POST(request: NextRequest) {
       text = "evento " + rawText.slice("/evento".length).trim();
     } else if (firstWord === "/buscar") {
       text = "buscar " + rawText.slice("/buscar".length).trim();
+    } else if (firstWord === "/teacher" || firstWord === "/profesor") {
+      text = "cambiar teacher " + rawText.slice(firstWord.length).trim();
     }
 
     // Direct command parsing for discount + student commands (bypass Claude for reliability)
@@ -2099,6 +2183,55 @@ export async function POST(request: NextRequest) {
       }
     } else if (firstWord === "/clases" || firstWord === "/semana") {
       directResponse = await handleWeekClassRoster(supabase);
+    } else if (firstWord === "/teacher" || firstWord === "/profesor") {
+      // Direct parse: /teacher TIME DATE TEACHER_NAME
+      // e.g., /teacher 9:30 manana Karla
+      // or: /teacher 9:30 2026-05-19 Karla
+      const parts = rawText.split(/\s+/).slice(1);
+      if (parts.length >= 3) {
+        const timeStr = parts[0];
+        const dateHint = parts[1].toLowerCase();
+        const teacherName = parts.slice(2).join(" ");
+
+        // Resolve date
+        let dateStr: string;
+        const todayDate = getColombiaDate();
+        if (dateHint === "hoy") {
+          dateStr = getColombiaDateStr();
+        } else if (dateHint === "manana" || dateHint === "mañana") {
+          dateStr = getColombiaDateStr(1);
+        } else if (DAY_NAMES_ES.map((d) => d.toLowerCase()).includes(dateHint)) {
+          // Resolve next occurrence of that day
+          const targetDay = DAY_NAMES_ES.map((d) => d.toLowerCase()).indexOf(dateHint);
+          const currentDay = todayDate.getDay();
+          const daysAhead = targetDay > currentDay ? targetDay - currentDay : 7 - (currentDay - targetDay);
+          dateStr = getColombiaDateStr(daysAhead === 0 ? 7 : daysAhead);
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateHint)) {
+          dateStr = dateHint;
+        } else {
+          // Try Claude for ambiguous dates
+          dateStr = getColombiaDateStr();
+        }
+
+        const time24 = convertTo24h(timeStr);
+        directResponse = await handleChangeTeacher(supabase, {
+          date: dateStr,
+          time: time24,
+          teacher: teacherName,
+        });
+      } else if (parts.length === 0) {
+        directResponse =
+          "Necesito hora, dia y nombre del teacher.\n\n" +
+          "Ejemplo:\n" +
+          "<b>/teacher</b> 9:30 manana Karla\n" +
+          "<b>/teacher</b> 7:15 lunes Alejandro\n" +
+          "<b>/teacher</b> 19:15 viernes Violeta\n\n" +
+          "Teachers: Tata, Alejandro, Karla, Violeta, Alvaro, Betty & Violeta";
+      } else {
+        directResponse =
+          "Formato: /teacher [hora] [dia] [nombre]\n\n" +
+          "Ejemplo: /teacher 9:30 manana Karla";
+      }
     } else if (firstWord === "/promo" || firstWord === "/promos") {
       const rest = rawText.slice(firstWord.length).trim().toLowerCase();
       if (rest.startsWith("list") || rest.startsWith("ver") || rest === "" || firstWord === "/promos") {
@@ -2208,6 +2341,10 @@ export async function POST(request: NextRequest) {
 
       case "create_student_account":
         response = await handleCreateStudentAccount(supabase, intent.params);
+        break;
+
+      case "change_teacher":
+        response = await handleChangeTeacher(supabase, intent.params);
         break;
 
       case "unknown":

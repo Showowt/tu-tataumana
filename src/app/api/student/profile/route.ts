@@ -44,7 +44,8 @@ const UpdateProfileSchema = z.object({
   full_name: z.string().min(2).max(100).optional(),
   phone: z
     .string()
-    .regex(/^\+?[1-9]\d{6,14}$/)
+    .transform((v) => v.replace(/[\s\-\.\(\)]/g, ""))
+    .pipe(z.string().regex(/^\+?[1-9]\d{6,14}$/))
     .optional()
     .nullable(),
   preferred_lang: z.enum(["en", "es"]).optional(),
