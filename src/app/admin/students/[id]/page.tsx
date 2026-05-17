@@ -829,22 +829,20 @@ export default function AdminStudentDetailPage() {
                             : `${p.classes_used}/${p.total_classes}`}
                         </p>
                         {p.status === "active" && !isUnlimited && (
-                          <div className="flex gap-1 mt-2 justify-end">
+                          <div className="flex gap-2 mt-3 justify-end">
                             <button
                               onClick={() => handleAdjustCredits(p.id, -1)}
                               disabled={p.classes_used <= 0}
-                              title="Restaurar 1 credito"
-                              className="w-7 h-7 flex items-center justify-center border border-green-300 text-green-600 text-sm hover:bg-green-50 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                              className="px-3 py-1.5 flex items-center gap-1 border border-green-400 text-green-700 text-[10px] tracking-wider uppercase hover:bg-green-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                             >
-                              +
+                              + Credito
                             </button>
                             <button
                               onClick={() => handleAdjustCredits(p.id, 1)}
                               disabled={p.classes_remaining <= 0}
-                              title="Descontar 1 credito"
-                              className="w-7 h-7 flex items-center justify-center border border-red-300 text-red-500 text-sm hover:bg-red-50 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                              className="px-3 py-1.5 flex items-center gap-1 border border-red-400 text-red-600 text-[10px] tracking-wider uppercase hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                             >
-                              -
+                              - Credito
                             </button>
                           </div>
                         )}
