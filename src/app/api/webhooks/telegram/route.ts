@@ -472,8 +472,24 @@ async function handlePromoAdd(
     title_es: extracted.title_es || extracted.title || "Evento TU.",
     description: extracted.description || null,
     description_es: extracted.description_es || extracted.description || null,
-    event_date: extracted.date || getColombiaDateStr(7),
-    start_time: extracted.time || "18:00",
+    event_date: (() => {
+      // If AI returned a date in the past, push it forward
+      const rawDate = extracted.date || getColombiaDateStr(7);
+      const today = getColombiaDateStr();
+      if (rawDate < today) {
+        // For month-long promos (date is 1st of month), use end of month
+        if (rawDate.endsWith("-01")) {
+          const d = new Date(rawDate + "T12:00:00");
+          d.setMonth(d.getMonth() + 1);
+          d.setDate(0); // last day of original month
+          return d.toISOString().split("T")[0];
+        }
+        // Otherwise use 30 days from now
+        return getColombiaDateStr(30);
+      }
+      return rawDate;
+    })(),
+    start_time: extracted.time || "09:00",
     end_time: extracted.end_time || null,
     capacity: parseInt(extracted.capacity || "15", 10),
     enrolled: 0,
@@ -488,7 +504,7 @@ async function handlePromoAdd(
     cta_text: extracted.cta_text || "RESERVE YOUR SPOT",
     cta_text_es: extracted.cta_text_es || "RESERVA TU CUPO",
     booking_service: extracted.booking_service || extracted.title_es || extracted.title || null,
-    accent_color: "gold",
+    accent_color: extracted.is_pack_promo === "true" ? "rose" : "gold",
     display_order: 0,
     link_url: extracted.is_pack_promo === "true" ? "/portal/packs" : null,
   };

@@ -27,6 +27,35 @@ interface EventsSectionProps {
   openBooking: (service?: string) => void;
 }
 
+/**
+ * Renders event flyer image. Uses Next.js Image for local files (/public),
+ * plain <img> for remote URLs (Supabase Storage) to avoid optimization failures.
+ */
+function EventImage({ src, alt }: { src: string; alt: string }) {
+  if (src.startsWith("/")) {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        width={900}
+        height={1200}
+        className="w-full h-auto"
+        sizes="(max-width: 768px) 100vw, 50vw"
+      />
+    );
+  }
+  // Remote images — plain img tag, no optimization proxy
+  // eslint-disable-next-line @next/next/no-img-element
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="w-full h-auto"
+      loading="lazy"
+    />
+  );
+}
+
 export default function EventsSection({ lang, openBooking }: EventsSectionProps) {
   const [events, setEvents] = useState<HomepageEvent[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -38,7 +67,10 @@ export default function EventsSection({ lang, openBooking }: EventsSectionProps)
         setEvents(json.data || []);
         setLoaded(true);
       })
-      .catch(() => setLoaded(true));
+      .catch((err) => {
+        console.error("[EventsSection]", err);
+        setLoaded(true);
+      });
   }, []);
 
   if (!loaded || events.length === 0) return null;
@@ -90,14 +122,7 @@ export default function EventsSection({ lang, openBooking }: EventsSectionProps)
               >
                 {event.image_url && (
                   <div className="relative">
-                    <Image
-                      src={event.image_url}
-                      alt={title}
-                      width={900}
-                      height={1200}
-                      className="w-full h-auto"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                    />
+                    <EventImage src={event.image_url} alt={title} />
                   </div>
                 )}
 
