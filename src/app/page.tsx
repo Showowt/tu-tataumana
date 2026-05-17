@@ -24,21 +24,10 @@ import TestimonialsSection from "@/components/sections/TestimonialsSection";
 import InstagramSection from "@/components/sections/InstagramSection";
 import FooterSection from "@/components/sections/FooterSection";
 
-const EventsSectionLazy = dynamic(
+const EventsSectionSafe = dynamic(
   () => import("@/components/sections/EventsSection"),
   { ssr: false, loading: () => null },
 );
-
-// Error boundary wrapper — if EventsSection crashes, the rest of the page continues
-function EventsSectionSafe(props: { lang: "en" | "es"; openBooking: (service?: string) => void }) {
-  const [hasError, setHasError] = useState(false);
-  if (hasError) return null;
-  return (
-    <div onError={() => setHasError(true)}>
-      <EventsSectionLazy {...props} />
-    </div>
-  );
-}
 
 const ChatBot = dynamic(() => import("@/components/ChatBot"), { ssr: false });
 const WhatsAppButton = dynamic(() => import("@/components/WhatsAppButton"), {
