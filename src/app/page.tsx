@@ -24,10 +24,21 @@ import TestimonialsSection from "@/components/sections/TestimonialsSection";
 import InstagramSection from "@/components/sections/InstagramSection";
 import FooterSection from "@/components/sections/FooterSection";
 
-const EventsSection = dynamic(
+const EventsSectionLazy = dynamic(
   () => import("@/components/sections/EventsSection"),
-  { ssr: false },
+  { ssr: false, loading: () => null },
 );
+
+// Error boundary wrapper — if EventsSection crashes, the rest of the page continues
+function EventsSectionSafe(props: { lang: "en" | "es"; openBooking: (service?: string) => void }) {
+  const [hasError, setHasError] = useState(false);
+  if (hasError) return null;
+  return (
+    <div onError={() => setHasError(true)}>
+      <EventsSectionLazy {...props} />
+    </div>
+  );
+}
 
 const ChatBot = dynamic(() => import("@/components/ChatBot"), { ssr: false });
 const WhatsAppButton = dynamic(() => import("@/components/WhatsAppButton"), {
@@ -42,6 +53,9 @@ function useScrollReveal() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+
+    // Enable CSS animations only when JS is ready
+    el.classList.add("js-scroll-reveal");
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -189,7 +203,8 @@ export default function Home() {
 
       <PhilosophySection lang={lang} L={L} />
 
-      <EventsSection lang={lang} openBooking={openBooking} />
+      {/* EventsSection loaded safely — errors won't crash the page */}
+      <EventsSectionSafe lang={lang} openBooking={openBooking} />
 
       <FeaturedPressSection lang={lang} L={L} />
 
