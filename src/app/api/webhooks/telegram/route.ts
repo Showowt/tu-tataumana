@@ -1906,6 +1906,116 @@ async function handleBookForStudentTelegram(
 }
 
 // ---------------------------------------------------------------------------
+// Class schedule & rename handlers
+// ---------------------------------------------------------------------------
+
+async function handleFullSchedule(supabase: SupabaseClient): Promise<string> {
+  const { data, error } = await supabase
+    .from("tu_class_definitions")
+    .select("name_es, style, day_of_week, start_time, teacher")
+    .eq("is_active", true)
+    .order("day_of_week", { ascending: true })
+    .order("start_time", { ascending: true });
+
+  if (error) return `Error: ${error.message}`;
+  if (!data || data.length === 0) return "No hay clases configuradas.";
+
+  const days = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"];
+  const dayEmojis = ["☀️", "🌿", "🔥", "💧", "🌙", "⚡", "🧘"];
+
+  const byDay: Record<number, typeof data> = {};
+  for (const c of data) {
+    if (!byDay[c.day_of_week]) byDay[c.day_of_week] = [];
+    byDay[c.day_of_week].push(c);
+  }
+
+  const lines: string[] = ["✨ <b>HORARIO COMPLETO DE CLASES</b>\n"];
+
+  for (let d = 0; d < 7; d++) {
+    if (!byDay[d] || byDay[d].length === 0) continue;
+    lines.push(`\n${dayEmojis[d]} <b>${days[d]}</b>`);
+    for (const c of byDay[d]) {
+      const time = c.start_time.slice(0, 5);
+      lines.push(`   ${time}  <b>${c.name_es}</b>  ·  ${c.teacher}`);
+    }
+  }
+
+  lines.push(`\n<b>${data.length} clases</b> por semana`);
+  lines.push("\nPara cambiar un nombre:");
+  lines.push("<code>/renombrar 9:30 martes Nuevo Nombre</code>");
+  lines.push("Para cambiar teacher:");
+  lines.push("<code>/teacher 9:30 manana Karla</code>");
+
+  return lines.join("\n");
+}
+
+async function handleRenameClass(
+  supabase: SupabaseClient,
+  time: string,
+  dayHint: string,
+  newName: string,
+): Promise<string> {
+  if (!time || !dayHint || !newName) {
+    return "Necesito hora, dia y nuevo nombre.\n\nEjemplo:\n<code>/renombrar 9:30 martes Yoga Restaurativo</code>";
+  }
+
+  const daysMap: Record<string, number> = {
+    domingo: 0, lunes: 1, martes: 2, miercoles: 3, miércoles: 3,
+    jueves: 4, viernes: 5, sabado: 6, sábado: 6,
+  };
+
+  const dayNum = daysMap[dayHint.toLowerCase()];
+  if (dayNum === undefined) {
+    return `No reconozco el dia "${dayHint}". Usa: lunes, martes, miercoles, jueves, viernes, sabado, domingo`;
+  }
+
+  const targetTime = convertTo24h(time).padStart(5, "0");
+
+  // Find the class definition
+  const { data: classes } = await supabase
+    .from("tu_class_definitions")
+    .select("id, name_es, start_time, teacher, day_of_week")
+    .eq("day_of_week", dayNum)
+    .eq("is_active", true);
+
+  const match = (classes || []).find((c) => {
+    const ct = c.start_time.slice(0, 5);
+    return ct === targetTime;
+  });
+
+  if (!match) {
+    const available = (classes || [])
+      .map((c) => `  ${c.start_time.slice(0, 5)} — ${c.name_es}`)
+      .join("\n");
+    return `No encontre clase a las ${time} el ${DAY_NAMES_ES[dayNum]}.\n\nClases ese dia:\n${available || "Ninguna"}`;
+  }
+
+  const oldName = match.name_es;
+
+  // Update class definition name
+  const { error } = await supabase
+    .from("tu_class_definitions")
+    .update({ name_es: newName.trim(), name: newName.trim() })
+    .eq("id", match.id);
+
+  if (error) return `Error: ${error.message}`;
+
+  // Also update any future sessions that reference this definition
+  await supabase
+    .from("tu_class_sessions")
+    .select("id")
+    .eq("definition_id", match.id)
+    .gte("session_date", getColombiaDateStr());
+
+  return (
+    `<b>Clase renombrada</b>\n\n` +
+    `${DAY_NAMES_ES[dayNum]} ${targetTime}\n\n` +
+    `${oldName} → <b>${newName.trim()}</b>\n\n` +
+    `El horario en la pagina web se actualiza automaticamente.`
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Teacher swap handler
 // ---------------------------------------------------------------------------
 
@@ -1996,7 +2106,9 @@ function handleHelp(): string {
     `<b>/llena</b> 7:15 hoy — Marcar como llena\n` +
     `<b>/cerrar</b> viernes — Cerrar un dia\n` +
     `<b>/abrir</b> viernes — Reabrir dia cerrado\n` +
-    `<b>/teacher</b> 9:30 manana Karla — Cambiar teacher de una clase\n\n` +
+    `<b>/teacher</b> 9:30 manana Karla — Cambiar teacher de una clase\n` +
+    `<b>/horario</b> — Ver todas las clases de la semana completa\n` +
+    `<b>/renombrar</b> 9:30 martes Yoga Restaurativo — Cambiar nombre de clase\n\n` +
     `<b>/evento</b> Sound Healing mayo 25 5:30pm $80,000 15 cupos\n` +
     `<b>/cancelar_evento</b> Sound Healing\n` +
     `Enviar foto de flyer — Crear evento desde imagen\n\n` +
@@ -2443,6 +2555,19 @@ export async function POST(request: NextRequest) {
       }
     } else if (firstWord === "/clases" || firstWord === "/semana") {
       directResponse = await handleWeekClassRoster(supabase);
+    } else if (firstWord === "/horario") {
+      directResponse = await handleFullSchedule(supabase);
+    } else if (firstWord === "/renombrar" || firstWord === "/rename") {
+      // /renombrar 9:30 martes Nuevo Nombre
+      const parts = rawText.split(/\s+/).slice(1);
+      if (parts.length >= 3) {
+        const time = parts[0];
+        const day = parts[1];
+        const name = parts.slice(2).join(" ");
+        directResponse = await handleRenameClass(supabase, time, day, name);
+      } else {
+        directResponse = "Formato: /renombrar [hora] [dia] [nuevo nombre]\n\nEjemplo:\n<code>/renombrar 9:30 martes Yoga Restaurativo</code>\n<code>/renombrar 19:15 viernes Yin Yoga</code>\n\nEscribe <b>/horario</b> para ver todas las clases.";
+      }
     } else if (firstWord === "/link" || firstWord === "/enlace") {
       const targetName = rawText.slice(firstWord.length).trim();
       directResponse = await handleGenerateStudentLink(supabase, targetName);
