@@ -151,7 +151,7 @@ export async function PATCH(request: NextRequest) {
 
   const supabase = admin.supabase;
   const body = await request.json();
-  const { id, add_credits, extend_days, ...updates } = body;
+  const { id, add_credits, remove_credits, set_classes_used, extend_days, ...updates } = body;
 
   if (!id) {
     return NextResponse.json({ error: "Pack id is required" }, { status: 400 });
@@ -159,6 +159,26 @@ export async function PATCH(request: NextRequest) {
 
   // Never update generated column
   delete updates.classes_remaining;
+
+  // Handle direct credit setting (set classes_used to exact value)
+  if (typeof set_classes_used === "number" && set_classes_used >= 0) {
+    updates.classes_used = set_classes_used;
+
+    // Check if this exhausts the pack
+    const { data: current } = await supabase
+      .from("tu_packs")
+      .select("total_classes")
+      .eq("id", id)
+      .single();
+
+    if (current && current.total_classes !== -1) {
+      if (set_classes_used >= current.total_classes) {
+        if (!updates.status) updates.status = "exhausted";
+      } else if (!updates.status) {
+        updates.status = "active";
+      }
+    }
+  }
 
   // Handle adding credits
   if (add_credits && typeof add_credits === "number") {
@@ -170,9 +190,26 @@ export async function PATCH(request: NextRequest) {
 
     if (current && current.total_classes !== -1) {
       updates.total_classes = current.total_classes + add_credits;
-      // Reactivate if was exhausted
       if (!updates.status) {
         updates.status = "active";
+      }
+    }
+  }
+
+  // Handle removing credits (increase classes_used)
+  if (remove_credits && typeof remove_credits === "number") {
+    const { data: current } = await supabase
+      .from("tu_packs")
+      .select("classes_used, total_classes")
+      .eq("id", id)
+      .single();
+
+    if (current) {
+      const newUsed = (current.classes_used || 0) + remove_credits;
+      updates.classes_used = newUsed;
+
+      if (current.total_classes !== -1 && newUsed >= current.total_classes) {
+        if (!updates.status) updates.status = "exhausted";
       }
     }
   }
@@ -189,7 +226,6 @@ export async function PATCH(request: NextRequest) {
       const currentExpiry = new Date(current.expires_at);
       currentExpiry.setDate(currentExpiry.getDate() + extend_days);
       updates.expires_at = currentExpiry.toISOString();
-      // Reactivate if was expired
       if (!updates.status) {
         updates.status = "active";
       }

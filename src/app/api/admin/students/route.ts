@@ -175,15 +175,17 @@ export async function POST(request: NextRequest) {
 const PatchStudentSchema = z.object({
   id: z.string().min(1),
   full_name: z.string().min(2).max(100).optional(),
+  email: z.string().email().optional(),
   phone: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   emergency_contact: z.string().nullable().optional(),
   preferred_lang: z.enum(["en", "es"]).optional(),
+  is_blocked: z.boolean().optional(),
 });
 
 /**
  * PATCH /api/admin/students
- * Update a student. Only allows safe fields.
+ * Update a student. Supports email change + account blocking.
  */
 export async function PATCH(request: NextRequest) {
   const admin = await verifyAdmin(request);
@@ -202,7 +204,62 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  const { id, ...updates } = parsed.data;
+  const { id, email, is_blocked, ...updates } = parsed.data;
+
+  // Get current student to find auth_id
+  const { data: currentStudent } = await supabase
+    .from("tu_students")
+    .select("auth_id, email")
+    .eq("id", id)
+    .single();
+
+  if (!currentStudent) {
+    return NextResponse.json({ error: "Student not found" }, { status: 404 });
+  }
+
+  // If email changed, update auth.users too
+  if (email && email !== currentStudent.email) {
+    (updates as Record<string, unknown>).email = email;
+
+    if (currentStudent.auth_id) {
+      const serviceUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (serviceKey) {
+        const adminClient = createClient(serviceUrl, serviceKey);
+        const { error: authErr } = await adminClient.auth.admin.updateUserById(
+          currentStudent.auth_id,
+          { email },
+        );
+        if (authErr) {
+          console.error("[admin/students PATCH] auth email update:", authErr.message);
+          return NextResponse.json(
+            { error: "Failed to update email in auth: " + authErr.message },
+            { status: 500 },
+          );
+        }
+      }
+    }
+  }
+
+  // If blocking/unblocking, update auth ban
+  if (is_blocked !== undefined) {
+    (updates as Record<string, unknown>).is_blocked = is_blocked;
+
+    if (currentStudent.auth_id) {
+      const serviceUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (serviceKey) {
+        const adminClient = createClient(serviceUrl, serviceKey);
+        const { error: banErr } = await adminClient.auth.admin.updateUserById(
+          currentStudent.auth_id,
+          { ban_duration: is_blocked ? "876000h" : "none" },
+        );
+        if (banErr) {
+          console.error("[admin/students PATCH] ban error:", banErr.message);
+        }
+      }
+    }
+  }
 
   const { data, error } = await supabase
     .from("tu_students")

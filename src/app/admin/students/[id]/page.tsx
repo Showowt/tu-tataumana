@@ -19,6 +19,7 @@ interface StudentDetail {
   role: string;
   notes: string | null;
   emergency_contact: string | null;
+  is_blocked: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -49,7 +50,21 @@ interface TransactionRecord {
   created_at: string;
 }
 
-type TabKey = "info" | "packs" | "add-pack";
+interface SessionData {
+  id: string;
+  session_date: string;
+  start_time: string;
+  teacher: string;
+  capacity: number;
+  enrolled: number;
+  status: string;
+  definition: {
+    name: string;
+    name_es: string;
+  } | null;
+}
+
+type TabKey = "info" | "packs" | "add-pack" | "book";
 
 const PAYMENT_METHODS = [
   { value: "cash", label: "Efectivo" },
@@ -94,9 +109,15 @@ export default function AdminStudentDetailPage() {
   const [loginLink, setLoginLink] = useState("");
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Book on behalf
+  const [sessions, setSessions] = useState<SessionData[]>([]);
+  const [bookingSessionId, setBookingSessionId] = useState("");
+  const [bookingInProgress, setBookingInProgress] = useState(false);
 
   /* ---------- Data fetching ---------- */
 
@@ -239,6 +260,7 @@ export default function AdminStudentDetailPage() {
   function startEditing() {
     if (!student) return;
     setEditName(student.full_name);
+    setEditEmail(student.email);
     setEditPhone(student.phone || "");
     setEditNotes(student.notes || "");
     setEditing(true);
@@ -255,6 +277,7 @@ export default function AdminStudentDetailPage() {
         body: JSON.stringify({
           id,
           full_name: editName.trim(),
+          email: editEmail.trim().toLowerCase(),
           phone: editPhone.trim() || null,
           notes: editNotes.trim() || null,
         }),
@@ -290,6 +313,135 @@ export default function AdminStudentDetailPage() {
     const phone = student?.phone?.replace(/[\s\-\+]/g, "") || "";
     const waUrl = phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`;
     window.open(waUrl, "_blank");
+  }
+
+  /* ---------- Block/Unblock ---------- */
+
+  async function handleToggleBlock() {
+    if (!student || !id) return;
+    const newBlocked = !student.is_blocked;
+    const label = newBlocked ? "bloquear" : "desbloquear";
+    if (!confirm(`Segura que quieres ${label} a ${student.full_name}?`)) return;
+
+    try {
+      const res = await fetch("/api/admin/students", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, is_blocked: newBlocked }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        showToast(d.error || "Error");
+      } else {
+        showToast(newBlocked ? "Cuenta bloqueada" : "Cuenta desbloqueada");
+        await loadStudent();
+      }
+    } catch {
+      showToast("Error de conexion");
+    }
+  }
+
+  /* ---------- Credit Adjustment ---------- */
+
+  async function handleAdjustCredits(packId: string, delta: number) {
+    const action = delta > 0 ? "remove_credits" : "set_classes_used";
+    try {
+      const body: Record<string, unknown> = { id: packId };
+      if (delta > 0) {
+        body.remove_credits = delta;
+      } else {
+        // Adding credits back: reduce classes_used
+        const pack = packs.find((p) => p.id === packId);
+        if (pack) {
+          const newUsed = Math.max((pack.classes_used || 0) + delta, 0);
+          body.set_classes_used = newUsed;
+        }
+      }
+
+      const res = await fetch("/api/admin/pack", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        showToast(d.error || "Error ajustando creditos");
+      } else {
+        showToast(delta > 0 ? "Credito usado" : "Credito restaurado");
+        await loadStudent();
+      }
+    } catch {
+      showToast("Error de conexion");
+    }
+  }
+
+  /* ---------- Book on behalf ---------- */
+
+  async function loadSessions() {
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Bogota",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 7);
+    const to = endDate.toISOString().split("T")[0];
+
+    const res = await fetch(`/api/schedule?from=${today}&to=${to}`);
+    if (res.ok) {
+      const data = await res.json();
+      setSessions(data.sessions || []);
+    }
+  }
+
+  useEffect(() => {
+    if (tab === "book") loadSessions();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
+  async function handleBookForStudent(sessionId: string) {
+    if (!student || !id) return;
+    setBookingSessionId(sessionId);
+    setBookingInProgress(true);
+
+    // Find best active pack
+    const activePacks = packs.filter(
+      (p) =>
+        p.status === "active" &&
+        (p.total_classes === -1 || p.classes_remaining > 0),
+    );
+
+    if (activePacks.length === 0) {
+      showToast("Sin creditos disponibles. Crea un pack primero.");
+      setBookingInProgress(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/book-class", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          student_id: id,
+          session_id: sessionId,
+          pack_id: activePacks[0].id,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        showToast(data.error || "Error al reservar");
+      } else {
+        showToast(`Reservado para ${student.full_name}`);
+        await Promise.all([loadStudent(), loadSessions()]);
+      }
+    } catch {
+      showToast("Error de conexion");
+    }
+    setBookingInProgress(false);
+    setBookingSessionId("");
   }
 
   /* ---------- Formatters ---------- */
@@ -361,6 +513,7 @@ export default function AdminStudentDetailPage() {
     { key: "info", label: "Info" },
     { key: "packs", label: "Packs" },
     { key: "add-pack", label: "+ Pack" },
+    { key: "book", label: "Reservar" },
   ];
 
   return (
@@ -430,6 +583,14 @@ export default function AdminStudentDetailPage() {
                 className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
               />
               <input
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                required
+                placeholder="Email"
+                className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
+              />
+              <input
                 type="tel"
                 value={editPhone}
                 onChange={(e) => setEditPhone(e.target.value)}
@@ -474,12 +635,29 @@ export default function AdminStudentDetailPage() {
               {student.notes && (
                 <InfoRow label="Notas" value={student.notes} />
               )}
-              <button
-                onClick={startEditing}
-                className="w-full mt-2 py-2 border border-[#2C2C2C]/10 text-[10px] tracking-[0.15em] uppercase text-[#2C2C2C]/40 hover:text-[#2C2C2C] hover:border-[#2C2C2C]/30 transition-colors"
-              >
-                Editar Datos
-              </button>
+              {student.is_blocked && (
+                <div className="bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-600 text-center">
+                  CUENTA BLOQUEADA — el alumno no puede iniciar sesion
+                </div>
+              )}
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={startEditing}
+                  className="flex-1 py-2 border border-[#2C2C2C]/10 text-[10px] tracking-[0.15em] uppercase text-[#2C2C2C]/40 hover:text-[#2C2C2C] hover:border-[#2C2C2C]/30 transition-colors"
+                >
+                  Editar Datos
+                </button>
+                <button
+                  onClick={handleToggleBlock}
+                  className={`px-4 py-2 text-[10px] tracking-[0.15em] uppercase transition-colors ${
+                    student.is_blocked
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : "bg-red-50 text-red-500 border border-red-200 hover:bg-red-100"
+                  }`}
+                >
+                  {student.is_blocked ? "Desbloquear" : "Bloquear"}
+                </button>
+              </div>
             </div>
           )}
 
@@ -651,12 +829,108 @@ export default function AdminStudentDetailPage() {
                             ? "ilimitado"
                             : `${p.classes_used}/${p.total_classes}`}
                         </p>
+                        {p.status === "active" && !isUnlimited && (
+                          <div className="flex gap-1 mt-2 justify-end">
+                            <button
+                              onClick={() => handleAdjustCredits(p.id, -1)}
+                              disabled={p.classes_used <= 0}
+                              title="Restaurar 1 credito"
+                              className="w-7 h-7 flex items-center justify-center border border-green-300 text-green-600 text-sm hover:bg-green-50 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                            >
+                              +
+                            </button>
+                            <button
+                              onClick={() => handleAdjustCredits(p.id, 1)}
+                              disabled={p.classes_remaining <= 0}
+                              title="Descontar 1 credito"
+                              className="w-7 h-7 flex items-center justify-center border border-red-300 text-red-500 text-sm hover:bg-red-50 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                            >
+                              -
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 );
               })}
             </>
+          )}
+        </div>
+      )}
+
+      {tab === "book" && (
+        <div className="space-y-3">
+          <p className="text-[10px] tracking-[0.2em] text-[#C9A96E] uppercase">
+            Reservar Clase para {student.full_name}
+          </p>
+
+          {/* Credits summary */}
+          {(() => {
+            const activePacks = packs.filter(
+              (p) => p.status === "active" && (p.total_classes === -1 || p.classes_remaining > 0),
+            );
+            if (activePacks.length === 0) {
+              return (
+                <div className="bg-red-50 border border-red-200 p-4 text-center">
+                  <p className="text-xs text-red-600 mb-2">
+                    Sin creditos disponibles
+                  </p>
+                  <button
+                    onClick={() => setTab("add-pack")}
+                    className="text-[10px] tracking-[0.15em] uppercase px-4 py-2 bg-[#2C2C2C] text-white hover:bg-[#B87777] transition-colors"
+                  >
+                    + Crear Pack
+                  </button>
+                </div>
+              );
+            }
+            const totalCredits = activePacks.reduce(
+              (s, p) => s + (p.total_classes === -1 ? 999 : p.classes_remaining),
+              0,
+            );
+            return (
+              <div className="bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700">
+                {totalCredits >= 999 ? "Creditos ilimitados" : `${totalCredits} creditos disponibles`}
+                {" "}({activePacks[0].pack_type.replace(/_/g, " ")})
+              </div>
+            );
+          })()}
+
+          {/* Sessions list */}
+          {sessions.length === 0 ? (
+            <div className="bg-white border border-[#2C2C2C]/5 p-6 text-center">
+              <p className="text-xs text-[#2C2C2C]/40">No hay clases programadas esta semana</p>
+            </div>
+          ) : (
+            sessions.map((s) => {
+              const def = s.definition;
+              const spotsLeft = s.capacity - s.enrolled;
+              const isFull = spotsLeft <= 0;
+              const isBookingThis = bookingSessionId === s.id;
+
+              return (
+                <div key={s.id} className="bg-white border border-[#2C2C2C]/5 p-3 flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-[#2C2C2C]">
+                      <b>{s.start_time.slice(0, 5)}</b>{" "}
+                      {def?.name_es || def?.name || "Clase"}
+                    </p>
+                    <p className="text-[9px] text-[#2C2C2C]/30">
+                      {new Date(s.session_date + "T12:00:00").toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short" })}
+                      {" · "}{s.teacher} · {spotsLeft} cupos
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleBookForStudent(s.id)}
+                    disabled={isFull || bookingInProgress}
+                    className="text-[10px] tracking-[0.15em] uppercase px-4 py-1.5 bg-[#2C2C2C] text-white hover:bg-[#B87777] transition-colors disabled:opacity-20 disabled:cursor-not-allowed shrink-0"
+                  >
+                    {isBookingThis ? "..." : isFull ? "Llena" : "Reservar"}
+                  </button>
+                </div>
+              );
+            })
           )}
         </div>
       )}
