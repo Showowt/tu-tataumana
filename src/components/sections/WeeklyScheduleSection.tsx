@@ -370,6 +370,7 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
         <div className="fade-in mt-12 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 stagger-reveal">
           {[
             { label: "WALK-IN CLASS", cop: "$80,000", usd: "$19", sub: lang === "en" ? "Single class" : "Clase individual" },
+            { label: "MAYO MES MAMÁ", cop: "$160,000", usd: "$38", sub: lang === "en" ? "4 classes" : "4 clases", highlight: true },
             { label: "PROMO 2x1", cop: "$80,000", usd: "$19", sub: lang === "en" ? "Bring a friend" : "Trae un amigo" },
             { label: "MARTES INDUSTRIA", cop: "$45,000", usd: "$11", sub: lang === "en" ? "Tuesdays only" : "Solo martes" },
             { label: "VIERNES OPEN FLOW", cop: "$45,000", usd: "$11", sub: lang === "en" ? "Fridays only" : "Solo viernes" },
@@ -378,9 +379,15 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
             <button
               key={promo.label}
               onClick={() => openBooking(promo.label)}
-              className="btn-tactile schedule-promo-card rounded-2xl border border-gold/10 bg-white/[0.03] p-4 sm:p-5 text-center hover:border-gold/30 hover:bg-white/[0.06] transition-all duration-500 cursor-pointer"
+              className={`btn-tactile schedule-promo-card rounded-2xl border p-4 sm:p-5 text-center transition-all duration-500 cursor-pointer ${
+                "highlight" in promo && promo.highlight
+                  ? "border-rose-soft/30 bg-rose-soft/10 hover:border-rose-soft/50 hover:bg-rose-soft/15"
+                  : "border-gold/10 bg-white/[0.03] hover:border-gold/30 hover:bg-white/[0.06]"
+              }`}
             >
-              <p className="font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] mb-2 text-gold/70">
+              <p className={`font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] mb-2 ${
+                "highlight" in promo && promo.highlight ? "text-rose-soft" : "text-gold/70"
+              }`}>
                 {promo.label}
               </p>
               <p className="font-[family-name:var(--font-display)] text-xl sm:text-2xl text-white">
@@ -389,7 +396,9 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
               <p className="font-[family-name:var(--font-body)] text-[10px] sm:text-xs text-white/30 mt-1">
                 COP &middot; {promo.usd} USD &middot; {promo.sub}
               </p>
-              <p className="font-[family-name:var(--font-body)] text-[9px] tracking-[0.15em] text-gold/50 mt-3 hover:text-gold transition-colors">
+              <p className={`font-[family-name:var(--font-body)] text-[9px] tracking-[0.15em] mt-3 transition-colors ${
+                "highlight" in promo && promo.highlight ? "text-rose-soft/70 hover:text-rose-soft" : "text-gold/50 hover:text-gold"
+              }`}>
                 {lang === "en" ? "BOOK NOW" : "RESERVAR"}
               </p>
             </button>
