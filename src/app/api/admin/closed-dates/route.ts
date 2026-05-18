@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin, getAdminClient } from "@/lib/admin-auth";
+import { getColombiaToday } from "@/lib/timezone";
 
 /**
  * GET /api/admin/closed-dates
@@ -12,7 +13,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("tu_closed_dates")
       .select("date, reason")
-      .gte("date", new Date().toISOString().split("T")[0])
+      .gte("date", getColombiaToday())
       .order("date", { ascending: true });
 
     if (error) {

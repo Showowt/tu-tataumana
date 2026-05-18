@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getClassesForDate, YogaClass } from "@/lib/yoga-classes";
+import { isClassInPast, isBookingWindowClosed } from "@/lib/timezone";
 
 /**
  * Constants for booking rules
@@ -94,21 +95,14 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Checks availability and booking eligibility for a yoga class
+ * Checks availability and booking eligibility for a yoga class.
+ * All time comparisons use Colombia timezone (UTC-5).
  */
 function checkClassAvailability(
   yogaClass: YogaClass,
   classDate: string,
 ): AvailabilityResponse {
-  const now = new Date();
-
-  // Parse class datetime
-  const [hours, minutes] = yogaClass.time.split(":").map(Number);
-  const classDateTime = new Date(classDate);
-  classDateTime.setHours(hours, minutes, 0, 0);
-
   // Calculate spots remaining
-  // Use special capacity for private classes (style contains "Private")
   const isPrivate = yogaClass.style.toLowerCase().includes("private");
   const effectiveCapacity = isPrivate
     ? PRIVATE_CLASS_CAPACITY
@@ -116,14 +110,11 @@ function checkClassAvailability(
   const spotsRemaining = Math.max(0, effectiveCapacity - yogaClass.enrolled);
   const available = spotsRemaining > 0;
 
-  // Check 2-hour advance booking rule
-  const advanceBookingCutoff = new Date(
-    classDateTime.getTime() - ADVANCE_BOOKING_HOURS * 60 * 60 * 1000,
-  );
-  const withinBookingWindow = now < advanceBookingCutoff;
+  // Check if class is in the past (Colombia time)
+  const classInPast = isClassInPast(classDate, yogaClass.time);
 
-  // Check if class is in the past
-  const classInPast = now > classDateTime;
+  // Check 2-hour advance booking rule (Colombia time)
+  const bookingClosed = isBookingWindowClosed(classDate, yogaClass.time, ADVANCE_BOOKING_HOURS);
 
   // Determine if booking is allowed and provide reason if not
   let canBook = true;
@@ -132,7 +123,7 @@ function checkClassAvailability(
   if (classInPast) {
     canBook = false;
     reason = "This class has already started or ended";
-  } else if (!withinBookingWindow) {
+  } else if (bookingClosed) {
     canBook = false;
     reason = `Bookings close ${ADVANCE_BOOKING_HOURS} hours before class starts`;
   } else if (!available) {

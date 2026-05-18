@@ -9,11 +9,8 @@
 import {
   format,
   addDays,
-  parseISO,
-  isBefore,
-  addHours,
-  startOfDay,
 } from "date-fns";
+import { getColombiaToday, getColombiaNow, isBookingWindowClosed } from "./timezone";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -289,14 +286,16 @@ function generateClassesForDate(date: string): YogaClass[] {
 }
 
 /**
- * Generates classes for the next N days (default 30)
+ * Generates classes for the next N days (default 30).
+ * Uses Colombia timezone to determine "today".
  */
 export function generateClasses(days: number = 30): YogaClass[] {
   const classes: YogaClass[] = [];
-  const today = startOfDay(new Date());
+  const { year, month, day } = getColombiaNow();
+  const todayColombia = new Date(year, month - 1, day, 12, 0, 0);
 
   for (let i = 0; i < days; i++) {
-    const date = format(addDays(today, i), "yyyy-MM-dd");
+    const date = format(addDays(todayColombia, i), "yyyy-MM-dd");
     classes.push(...generateClassesForDate(date));
   }
 
@@ -375,12 +374,11 @@ export function isSoldOut(yogaClass: YogaClass): boolean {
 }
 
 /**
- * Checks if booking is closed (2-hour advance rule)
+ * Checks if booking is closed (2-hour advance rule).
+ * Uses Colombia timezone for all comparisons.
  */
 export function isBookingClosed(yogaClass: YogaClass): boolean {
-  const classDateTime = parseISO(`${yogaClass.date}T${yogaClass.time}:00`);
-  const twoHoursFromNow = addHours(new Date(), ADVANCE_BOOKING_HOURS);
-  return isBefore(classDateTime, twoHoursFromNow);
+  return isBookingWindowClosed(yogaClass.date, yogaClass.time, ADVANCE_BOOKING_HOURS);
 }
 
 /**
@@ -450,14 +448,16 @@ export function getLevelLabel(
 }
 
 /**
- * Gets classes grouped by date for the next N days
+ * Gets classes grouped by date for the next N days.
+ * Uses Colombia timezone to determine "today".
  */
 export function getClassesByDate(days: number = 7): Map<string, YogaClass[]> {
   const groupedClasses = new Map<string, YogaClass[]>();
-  const today = startOfDay(new Date());
+  const { year, month, day } = getColombiaNow();
+  const todayColombia = new Date(year, month - 1, day, 12, 0, 0);
 
   for (let i = 0; i < days; i++) {
-    const date = format(addDays(today, i), "yyyy-MM-dd");
+    const date = format(addDays(todayColombia, i), "yyyy-MM-dd");
     groupedClasses.set(date, getClassesForDate(date));
   }
 
@@ -473,10 +473,10 @@ export function getAvailableClasses(days: number = 7): YogaClass[] {
 }
 
 /**
- * Gets today's remaining classes
+ * Gets today's remaining classes (Colombia timezone).
  */
 export function getTodaysClasses(): YogaClass[] {
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = getColombiaToday();
   return getClassesForDate(today).filter((c) => canBookClass(c));
 }
 
@@ -496,8 +496,7 @@ export function formatDuration(minutes: number): string {
 // ============================================================================
 
 function generateBookingId(): string {
-  const date = new Date();
-  const dateStr = date.toISOString().split("T")[0].replace(/-/g, "");
+  const dateStr = getColombiaToday().replace(/-/g, "");
   const randomPart = Math.random().toString(36).substring(2, 7).toUpperCase();
   return `TU-${dateStr}-${randomPart}`;
 }
@@ -700,8 +699,9 @@ export function getPackageInfo(): Array<{
 // ============================================================================
 
 export function seedMockBookings(): void {
-  const today = format(new Date(), "yyyy-MM-dd");
-  const tomorrow = format(addDays(new Date(), 1), "yyyy-MM-dd");
+  const today = getColombiaToday();
+  const { year, month, day } = getColombiaNow();
+  const tomorrow = format(addDays(new Date(year, month - 1, day, 12, 0, 0), 1), "yyyy-MM-dd");
 
   const morningClassId = generateClassId(today, "07:00", "group");
 

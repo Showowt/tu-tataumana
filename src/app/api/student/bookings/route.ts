@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { getColombiaToday } from "@/lib/timezone";
 
 /**
  * GET /api/student/bookings
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
     type BookingRow = Record<string, unknown>;
     let filtered: BookingRow[] = (bookings as BookingRow[]) || [];
     if (upcoming) {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getColombiaToday();
       filtered = filtered.filter((b) => {
         const session = b.session as { session_date: string } | null;
         return session && session.session_date >= today;

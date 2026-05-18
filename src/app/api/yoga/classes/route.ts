@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getClassesForDate, YogaClass } from "@/lib/yoga-classes";
+import { getColombiaToday, getColombiaTimeInMinutes, classTimeToMinutes } from "@/lib/timezone";
 
 /**
  * GET /api/yoga/classes
@@ -134,14 +135,15 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Filters out classes that have already passed based on current time
+ * Filters out classes that have already passed based on Colombia time.
+ * Critical: Vercel runs UTC. After 7 PM Colombia (= next day UTC),
+ * raw new Date() would show wrong day's classes.
  */
 function filterPastClasses(
   classes: YogaClass[],
   dateString: string,
 ): YogaClass[] {
-  const now = new Date();
-  const today = now.toISOString().split("T")[0];
+  const today = getColombiaToday();
 
   // If the date is in the future, return all classes
   if (dateString > today) {
@@ -153,14 +155,11 @@ function filterPastClasses(
     return [];
   }
 
-  // For today, filter out classes that have already started
-  const currentHour = now.getHours();
-  const currentMinutes = now.getMinutes();
-  const currentTimeInMinutes = currentHour * 60 + currentMinutes;
+  // For today, filter out classes that have already started (Colombia time)
+  const currentTimeInMinutes = getColombiaTimeInMinutes();
 
   return classes.filter((yogaClass) => {
-    const [hours, minutes] = yogaClass.time.split(":").map(Number);
-    const classTimeInMinutes = hours * 60 + minutes;
-    return classTimeInMinutes > currentTimeInMinutes;
+    const classMinutes = classTimeToMinutes(yogaClass.time);
+    return classMinutes > currentTimeInMinutes;
   });
 }
