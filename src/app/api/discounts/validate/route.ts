@@ -164,9 +164,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check applicable packs
+    // Check applicable packs (empty array = no restriction)
     if (
       discount.applicable_packs &&
+      discount.applicable_packs.length > 0 &&
       !discount.applicable_packs.includes(pack_type)
     ) {
       return NextResponse.json(

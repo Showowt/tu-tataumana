@@ -220,6 +220,7 @@ async function resolveDiscountCode(
   }
   if (
     discount.applicable_packs &&
+    discount.applicable_packs.length > 0 &&
     !discount.applicable_packs.includes(packType)
   ) {
     throw "Codigo no aplica para este pack";

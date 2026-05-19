@@ -235,17 +235,23 @@ export async function POST(request: NextRequest) {
       expiresAt: paymentLink.expires_at,
     });
   } catch (error) {
-    console.error("[yoga/payment]", error);
-
     const message =
       error instanceof Error ? error.message : "Payment creation failed";
     const isConfigError = message.includes("not configured");
+
+    console.error("[yoga/payment] PAYMENT LINK CREATION FAILED:", {
+      error: message,
+      isConfigError,
+      hasPrivateKey: !!process.env.WOMPI_PRIVATE_KEY,
+      hasPublicKey: !!process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY,
+      timestamp: new Date().toISOString(),
+    });
 
     return NextResponse.json(
       {
         error: isConfigError
           ? "Sistema de pagos no configurado. Card payment not available. Please use Nequi, Bancolombia, or Zelle."
-          : "Error al crear el pago. Failed to create payment. Please try again.",
+          : `Error al crear el pago: ${message.includes("Wompi API error") ? "Wompi no disponible temporalmente" : "Intenta de nuevo"}. Si el problema persiste, contacta a Tata por WhatsApp.`,
         notConfigured: isConfigError,
       },
       { status: isConfigError ? 503 : 500 },
