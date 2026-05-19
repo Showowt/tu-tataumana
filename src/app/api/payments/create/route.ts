@@ -15,6 +15,8 @@ import { createClient } from "@supabase/supabase-js";
 import { getPackDefinition } from "@/lib/constants/packs";
 import { createSquareCheckout } from "@/lib/square";
 import { notifyPaymentReceived, notifyPackPurchase, notifyDiscountUsed } from "@/lib/telegram";
+import { captureApiError } from "@/lib/sentry-helpers";
+import { systemLog } from "@/lib/system-log";
 
 // -------------------------------------------------------------------
 // Types
@@ -442,6 +444,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
         .single();
 
       if (txError) {
+        systemLog({ category: "payment", level: "error", message: "Square payment DB insert failed", route: "payments/create", details: { error: txError.message, reference, pack_type, student_id: student?.id } });
         console.error("[payments/create] Transaction insert failed:", txError.message);
         return NextResponse.json(
           { data: null, error: "db_error", message: "Failed to create payment record" },
@@ -457,6 +460,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
           console.error("[payments/create] Discount consumption failed:", usageErr);
         }
       }
+
+      systemLog({ category: "payment", level: "info", message: "Square checkout created", route: "payments/create", details: { reference, pack_type, student_id: student?.id, amount: effectivePrice, has_discount: !!discountApplication } });
 
       return NextResponse.json({
         data: {
@@ -509,6 +514,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
       .single();
 
     if (txError) {
+      systemLog({ category: "payment", level: "error", message: "Manual payment DB insert failed", route: "payments/create", details: { error: txError.message, reference, pack_type, payment_method, student_id: student?.id } });
       console.error("[payments/create] Transaction insert failed:", txError.message);
       return NextResponse.json(
         { data: null, error: "db_error", message: "Failed to create payment record" },
@@ -572,6 +578,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
     );
     const whatsappUrl = `https://wa.me/${TATA_WHATSAPP}?text=${waMessage}`;
 
+    systemLog({ category: "payment", level: "info", message: "Manual payment created", route: "payments/create", details: { reference, pack_type, payment_method, student_id: student?.id, amount: effectivePrice, has_discount: !!discountApplication } });
+
     return NextResponse.json({
       data: {
         method: payment_method,
@@ -583,6 +591,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
       message: `Transfer to ${account.label} and confirm via WhatsApp`,
     });
   } catch (error) {
+    captureApiError("payments/create", error, { route: "POST /api/payments/create" });
+    systemLog({ category: "payment", level: "error", message: "Payment creation unexpected error", route: "payments/create", details: { error: error instanceof Error ? error.message : String(error) } });
     console.error("[payments/create] Unexpected error:", error);
     return NextResponse.json(
       { data: null, error: "server_error", message: "Internal server error" },

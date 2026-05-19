@@ -18,6 +18,8 @@ import {
   generateBookingReference,
   type WompiCurrency,
 } from "@/lib/wompi";
+import { captureApiError } from "@/lib/sentry-helpers";
+import { systemLog } from "@/lib/system-log";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Canonical service prices (COP) — server-side source of truth
@@ -239,6 +241,8 @@ export async function POST(request: NextRequest) {
       error instanceof Error ? error.message : "Payment creation failed";
     const isConfigError = message.includes("not configured");
 
+    captureApiError("yoga/payment", error, { route: "POST /api/yoga/payment", isConfigError });
+    systemLog({ category: "payment", level: "error", message: "Wompi payment link creation failed", route: "yoga/payment", details: { error: message, isConfigError } });
     console.error("[yoga/payment] PAYMENT LINK CREATION FAILED:", {
       error: message,
       isConfigError,

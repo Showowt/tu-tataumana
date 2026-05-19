@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
@@ -38,7 +39,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https:",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://api.telegram.org",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://api.telegram.org https://*.ingest.sentry.io",
               "frame-src 'self' https://www.google.com",
               "media-src 'self' blob:",
               "object-src 'none'",
@@ -57,4 +58,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG || "machinemind",
+  project: process.env.SENTRY_PROJECT || "tu-tataumana",
+  silent: true,
+  tunnelRoute: "/monitoring",
+  disableLogger: true,
+});

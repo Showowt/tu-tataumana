@@ -17,6 +17,8 @@ import { notifyPaymentReceived, notifyNewMembership } from "@/lib/telegram";
 import { getPackDefinition, calculateExpiration } from "@/lib/constants/packs";
 import { ADMIN_EMAILS } from "@/lib/constants/business-rules";
 import { createClient } from "@supabase/supabase-js";
+import { captureApiError } from "@/lib/sentry-helpers";
+import { systemLog } from "@/lib/system-log";
 
 type WompiEventType =
   | "transaction.updated"
@@ -273,11 +275,13 @@ export async function POST(
             status: transaction.status,
           });
         } catch (e) {
+          systemLog({ category: "payment", level: "error", message: "Wompi Telegram notification failed", route: "webhooks/wompi", details: { error: e instanceof Error ? e.message : String(e), reference: transaction.reference } });
           console.error("[webhook] CRITICAL: Telegram notification FAILED:", e);
         }
 
         // Process based on status
         if (transaction.status === "APPROVED") {
+          systemLog({ category: "payment", level: "info", message: "Wompi payment approved", route: "webhooks/wompi", details: { reference: transaction.reference, amount: transaction.amount_in_cents, currency: transaction.currency, email: transaction.customer_email } });
           await handleApprovedPayment(transaction);
         } else {
           await recordTransaction(transaction);
@@ -299,6 +303,8 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    captureApiError("webhooks/wompi", error, { route: "POST /api/webhooks/wompi" });
+    systemLog({ category: "payment", level: "error", message: "Wompi webhook processing error", route: "webhooks/wompi", details: { error: error instanceof Error ? error.message : String(error) } });
     console.error("[webhook] Processing error:", error);
     // Still return 200 so Wompi doesn't retry
     return NextResponse.json(

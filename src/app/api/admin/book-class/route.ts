@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { z } from "zod";
 import { notifyClassBooking } from "@/lib/telegram";
+import { captureApiError } from "@/lib/sentry-helpers";
+import { systemLog } from "@/lib/system-log";
 
 const BookClassSchema = z.object({
   student_id: z.string().uuid(),
@@ -108,6 +110,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (bookErr) {
+    systemLog({ category: "booking", level: "error", message: "Admin booking insert failed", route: "admin/book-class", details: { error: bookErr.message, student_id, session_id, pack_id } });
     console.error("[admin/book-class]", bookErr.message);
     return NextResponse.json(
       { error: "Error al crear reserva: " + bookErr.message },
@@ -154,6 +157,8 @@ export async function POST(request: NextRequest) {
   } catch (notifyErr) {
     console.error("[admin/book-class] notification failed:", notifyErr);
   }
+
+  systemLog({ category: "booking", level: "info", message: "Admin booking created", route: "admin/book-class", details: { booking_id: booking?.id, student_id, session_id, pack_id, was_full: isFull } });
 
   return NextResponse.json(
     {

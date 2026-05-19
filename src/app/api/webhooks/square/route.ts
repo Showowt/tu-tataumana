@@ -17,6 +17,8 @@ import { notifyPaymentReceived, notifyNewMembership } from "@/lib/telegram";
 import { getPackDefinition, calculateExpiration } from "@/lib/constants/packs";
 import { ADMIN_EMAILS } from "@/lib/constants/business-rules";
 import { createClient } from "@supabase/supabase-js";
+import { captureApiError } from "@/lib/sentry-helpers";
+import { systemLog } from "@/lib/system-log";
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -241,17 +243,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           status: payment.status === "COMPLETED" ? "APPROVED" : payment.status,
         });
       } catch (e) {
+        systemLog({ category: "payment", level: "error", message: "Square Telegram notification failed", route: "webhooks/square", details: { error: e instanceof Error ? e.message : String(e), reference: payment.note || payment.id } });
         console.error("[square-webhook] CRITICAL: Telegram notification FAILED:", e);
       }
     }
 
     // Process based on event type
     if (payload.type === "payment.completed") {
+      systemLog({ category: "payment", level: "info", message: "Square payment completed", route: "webhooks/square", details: { event_id: payload.event_id, payment_id: payment?.id, amount: payment?.amount_money?.amount, currency: payment?.amount_money?.currency, email: payment?.buyer_email_address } });
       await handleCompletedPayment(payload.data.id, payload);
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    captureApiError("webhooks/square", error, { route: "POST /api/webhooks/square" });
+    systemLog({ category: "payment", level: "error", message: "Square webhook processing error", route: "webhooks/square", details: { error: error instanceof Error ? error.message : String(error) } });
     console.error("[square-webhook] Processing error:", error);
     return NextResponse.json(
       { success: false, message: "Processing error" },

@@ -118,6 +118,34 @@ async function run() {
     return { passed: res.ok, detail: `HTTP ${res.status}` };
   });
 
+  // 8. Discount validate API (should not 500)
+  await test("Discount validate API responds", async () => {
+    const res = await fetch(`${BASE_URL}/api/discounts/validate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: "SMOKETEST", pack_type: "WALK_IN" }),
+    });
+    return { passed: res.status !== 500, detail: `HTTP ${res.status}` };
+  });
+
+  // 9. Payment create validates input (should return 400, not 500)
+  await test("Payment create validates input", async () => {
+    const res = await fetch(`${BASE_URL}/api/payments/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pack_type: "", payment_method: "invalid" }),
+    });
+    return { passed: res.status === 400, detail: `HTTP ${res.status}` };
+  });
+
+  // 10. Admin dashboard API (should not 500)
+  await test("Admin dashboard API responds", async () => {
+    const res = await fetch(`${BASE_URL}/api/admin/dashboard`, {
+      headers: AUTH_KEY ? { "x-admin-key": AUTH_KEY } : {},
+    });
+    return { passed: res.status !== 500, detail: `HTTP ${res.status}` };
+  });
+
   // Summary
   const passed = results.filter((r) => r.passed).length;
   const failed = results.filter((r) => !r.passed).length;
@@ -132,6 +160,28 @@ async function run() {
     for (const r of results.filter((r) => !r.passed)) {
       console.log(`    • ${r.name}: ${r.detail}`);
     }
+
+    // Notify Tata via Telegram if production
+    if (BASE_URL.includes("tataumana.com")) {
+      try {
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        const chatId = process.env.TELEGRAM_CHAT_ID;
+        if (botToken && chatId) {
+          const failedNames = results.filter(r => !r.passed).map(r => `  · ${r.name}: ${r.detail}`).join("\n");
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `🚨 <b>SMOKE TEST FAILED</b>\n\n${failed}/${results.length} tests failed:\n${failedNames}\n\n<b>URL:</b> ${BASE_URL}`,
+              parse_mode: "HTML",
+            }),
+          });
+          console.log("  📱 Telegram notification sent");
+        }
+      } catch {}
+    }
+
     process.exit(1);
   } else {
     console.log(`\n  ✅ ALL CLEAR — Production is healthy\n`);

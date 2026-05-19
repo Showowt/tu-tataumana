@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { getPackDefinition } from "@/lib/constants/packs";
+import { captureApiError } from "@/lib/sentry-helpers";
+import { systemLog } from "@/lib/system-log";
 
 const ValidateSchema = z.object({
   code: z.string().min(1).max(50),
@@ -219,6 +221,8 @@ export async function POST(request: NextRequest) {
       savings: originalPrice - discountedPrice,
     });
   } catch (error) {
+    captureApiError("discounts/validate", error, { route: "POST /api/discounts/validate" });
+    systemLog({ category: "discount", level: "error", message: "Discount validation unexpected error", route: "discounts/validate", details: { error: error instanceof Error ? error.message : String(error) } });
     console.error("[discounts/validate]", error);
     return NextResponse.json(
       { error: "Error validando codigo", errorCode: "server_error" },
