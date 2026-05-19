@@ -209,7 +209,7 @@ export default function SchedulePage() {
               </p>
               <a
                 href="/portal/packs"
-                className="inline-block text-xs tracking-[0.15em] uppercase px-5 py-2 bg-[#B87777] text-white hover:bg-[#2C2C2C] transition-colors"
+                className="inline-block text-xs tracking-[0.15em] uppercase px-5 py-2 border border-[#C9A96E] text-[#C9A96E] hover:bg-[#C9A96E] hover:text-white transition-colors"
               >
                 {lang === "es" ? "Comprar Pack" : "Buy a Pack"}
               </a>
@@ -395,7 +395,7 @@ export default function SchedulePage() {
                               <button
                                 onClick={() => handleBook(s.id)}
                                 disabled={isFull || isPast || isBooking}
-                                className="text-[10px] tracking-[0.15em] uppercase px-4 py-1.5 bg-[#2C2C2C] text-white hover:bg-[#B87777] transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
+                                className="text-[10px] tracking-[0.15em] uppercase px-4 py-1.5 bg-[#C9A96E] text-white hover:bg-[#B87777] transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
                               >
                                 {isPast
                                   ? lang === "es"
@@ -427,7 +427,7 @@ export default function SchedulePage() {
           </p>
           <a
             href="/portal/packs"
-            className="inline-block px-6 py-2 bg-[#C9A96E] text-white text-xs tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors"
+            className="inline-block px-6 py-2 border border-[#C9A96E] text-[#C9A96E] text-xs tracking-[0.15em] uppercase hover:bg-[#C9A96E] hover:text-white transition-colors"
           >
             {lang === "es" ? "Ver Packs" : "View Packs"}
           </a>

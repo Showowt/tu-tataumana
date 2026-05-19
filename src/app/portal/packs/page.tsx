@@ -172,7 +172,7 @@ export default function PacksPage() {
           </div>
           <button
             onClick={() => setSelectedPack(pack)}
-            className="text-[10px] tracking-[0.15em] uppercase px-4 py-1.5 bg-[#2C2C2C] text-white hover:bg-[#B87777] transition-colors"
+            className="text-[10px] tracking-[0.15em] uppercase px-4 py-1.5 border border-[#C9A96E] text-[#C9A96E] hover:bg-[#C9A96E] hover:text-white transition-colors"
           >
             {lang === "es" ? "Comprar" : "Buy"}
           </button>

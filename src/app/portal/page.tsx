@@ -163,7 +163,7 @@ export default function PortalDashboard() {
             </p>
             <a
               href="/portal/schedule"
-              className="inline-block px-6 py-2 bg-[#2C2C2C] text-white text-xs tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors"
+              className="inline-block px-6 py-2 bg-[#C9A96E] text-white text-xs tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors"
             >
               {lang === "es" ? "Reservar Clase" : "Book a Class"}
             </a>
@@ -253,7 +253,7 @@ export default function PortalDashboard() {
             </p>
             <a
               href="/portal/packs"
-              className="inline-block px-6 py-2 bg-[#C9A96E] text-white text-xs tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors"
+              className="inline-block px-6 py-2 border border-[#C9A96E] text-[#C9A96E] text-xs tracking-[0.15em] uppercase hover:bg-[#C9A96E] hover:text-white transition-colors"
             >
               {lang === "es" ? "Comprar Pack" : "Buy a Pack"}
             </a>
