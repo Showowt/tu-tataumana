@@ -73,6 +73,11 @@ export default function BookingsPage() {
       body: JSON.stringify({ booking_id: bookingId }),
     });
 
+    if (res.status === 401) {
+      window.location.href = "/login?redirect=/portal/bookings";
+      return;
+    }
+
     const data = await res.json();
     setCancelling(null);
 

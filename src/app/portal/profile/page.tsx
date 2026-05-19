@@ -80,6 +80,12 @@ export default function ProfilePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
+
+      if (res.status === 401) {
+        window.location.href = "/login?redirect=/portal/profile";
+        return;
+      }
+
       const data = await res.json();
 
       if (!res.ok) {
@@ -113,6 +119,11 @@ export default function ProfilePage() {
         preferred_lang: preferredLang,
       }),
     });
+
+    if (res.status === 401) {
+      window.location.href = "/login?redirect=/portal/profile";
+      return;
+    }
 
     setSaving(false);
 

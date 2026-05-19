@@ -141,6 +141,10 @@ export default function SchedulePage() {
     // Refresh schedule and packs
     await loadSchedule();
     const packsRes = await fetch("/api/student/packs?status=active");
+    if (packsRes.status === 401) {
+      window.location.href = "/login?redirect=/portal/schedule";
+      return;
+    }
     if (packsRes.ok) {
       const pk = await packsRes.json();
       setPacks(pk.data || []);
