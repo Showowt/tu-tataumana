@@ -127,9 +127,17 @@ export default function FooterSection({ lang, L, openBooking, showStickyBar }: F
                   JUSTBYOGA BY TUISYOU
                 </p>
               </div>
-              <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/20">
-                Built by MachineMind
-              </p>
+              <div className="flex items-center gap-4">
+                <a href="/terms" className="font-[family-name:var(--font-body)] text-[10px] text-charcoal/20 hover:text-charcoal/40 transition-colors">
+                  {L({ en: "Terms", es: "Terminos" }) as string}
+                </a>
+                <a href="/privacy" className="font-[family-name:var(--font-body)] text-[10px] text-charcoal/20 hover:text-charcoal/40 transition-colors">
+                  {L({ en: "Privacy", es: "Privacidad" }) as string}
+                </a>
+                <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/20">
+                  Built by MachineMind
+                </p>
+              </div>
             </div>
           </div>
         </div>

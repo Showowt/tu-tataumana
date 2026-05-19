@@ -151,10 +151,23 @@ async function handleApprovedPayment(
       .eq("id", txRecord.id);
   }
 
-  // 3. Create pack if pack type is identifiable
+  // 3. Create pack if pack type is identifiable (with duplicate prevention)
   if (packType) {
     const packDef = getPackDefinition(packType);
     if (packDef) {
+      // Prevent duplicate pack creation on webhook replay
+      const { data: existingPack } = await supabase
+        .from("tu_packs")
+        .select("id")
+        .eq("student_id", student.id)
+        .eq("wompi_transaction_id", transaction.id)
+        .single();
+
+      if (existingPack) {
+        console.log("[webhook] Pack already exists for transaction:", transaction.id);
+        return;
+      }
+
       const { error: packErr } = await supabase.from("tu_packs").insert({
         student_id: student.id,
         pack_type: packType,
@@ -235,8 +248,10 @@ export async function POST(
     if (WOMPI_EVENTS_SECRET) {
       const isValidSignature = verifyWompiSignature(payload);
       if (!isValidSignature) {
-        console.error(
-          "[webhook] Invalid signature — still processing to notify Tata",
+        console.error("[webhook] REJECTED: Invalid Wompi signature");
+        return NextResponse.json(
+          { error: "Invalid signature" },
+          { status: 401 },
         );
       }
     }

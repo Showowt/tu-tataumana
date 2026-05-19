@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { sendTelegramMessage } from "@/lib/telegram";
 import { z } from "zod";
 
 const CheckInSchema = z.object({
@@ -98,6 +99,27 @@ export async function POST(request: NextRequest) {
       });
 
       // No-shows don't get pack credit refund — the credit was already deducted at booking time
+
+      // Check chronic no-show status (warn Tata if 3+ no-shows)
+      try {
+        const { count: totalNoShows } = await supabase
+          .from("tu_class_bookings")
+          .select("id", { count: "exact", head: true })
+          .eq("student_id", booking.student_id)
+          .eq("status", "no_show");
+
+        if (totalNoShows && totalNoShows >= 3) {
+          const { data: studentInfo } = await supabase
+            .from("tu_students")
+            .select("full_name, email")
+            .eq("id", booking.student_id)
+            .single();
+
+          await sendTelegramMessage(
+            `⚠️ <b>AUSENCIA RECURRENTE</b>\n\n<b>${studentInfo?.full_name || "Alumno"}</b> (${studentInfo?.email || "?"})\n<b>Ausencias totales:</b> ${totalNoShows}\n\n${totalNoShows >= 5 ? "🔴 Considerar bloquear o contactar al alumno." : "Podria necesitar seguimiento."}`,
+          );
+        }
+      } catch {}
 
       return NextResponse.json({ message: "Marked as no-show" });
     }

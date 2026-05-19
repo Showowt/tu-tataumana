@@ -155,10 +155,23 @@ async function handleCompletedPayment(
       .eq("id", txRecord.id);
   }
 
-  // 3. Create pack
+  // 3. Create pack (with duplicate prevention)
   if (packType) {
     const packDef = getPackDefinition(packType);
     if (packDef) {
+      // Prevent duplicate pack creation on webhook replay
+      const { data: existingPack } = await supabase
+        .from("tu_packs")
+        .select("id")
+        .eq("student_id", student.id)
+        .eq("wompi_transaction_id", pId)
+        .single();
+
+      if (existingPack) {
+        console.log("[square-webhook] Pack already exists for payment:", pId);
+        return;
+      }
+
       const { error: packErr } = await supabase.from("tu_packs").insert({
         student_id: student.id,
         pack_type: packType,
@@ -201,7 +214,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (process.env.SQUARE_WEBHOOK_SIGNATURE_KEY) {
       const isValid = verifySquareWebhook(rawBody, signature, webhookUrl);
       if (!isValid) {
-        console.error("[square-webhook] Invalid signature — still processing to notify Tata");
+        console.error("[square-webhook] REJECTED: Invalid Square signature");
+        return NextResponse.json(
+          { error: "Invalid signature" },
+          { status: 401 },
+        );
       }
     }
 

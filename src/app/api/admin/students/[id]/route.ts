@@ -63,10 +63,48 @@ export async function GET(
     console.error("[admin/students/[id] GET] transactions:", txError.message);
   }
 
+  // Fetch booking stats (attendance + no-shows)
+  const { count: totalBookings } = await supabase
+    .from("tu_class_bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", id);
+
+  const { count: noShowCount } = await supabase
+    .from("tu_class_bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", id)
+    .eq("status", "no_show");
+
+  const { count: attendedCount } = await supabase
+    .from("tu_class_bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", id)
+    .eq("checked_in", true);
+
+  const { count: cancelledCount } = await supabase
+    .from("tu_class_bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", id)
+    .eq("status", "cancelled");
+
+  const stats = {
+    total_bookings: totalBookings || 0,
+    attended: attendedCount || 0,
+    no_shows: noShowCount || 0,
+    cancelled: cancelledCount || 0,
+    no_show_rate: totalBookings && totalBookings > 0
+      ? Math.round(((noShowCount || 0) / totalBookings) * 100)
+      : 0,
+    attendance_rate: totalBookings && totalBookings > 0
+      ? Math.round(((attendedCount || 0) / totalBookings) * 100)
+      : 0,
+  };
+
   return NextResponse.json({
     student,
     packs: packs || [],
     transactions: transactions || [],
+    stats,
   });
 }
 

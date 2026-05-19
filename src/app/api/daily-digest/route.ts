@@ -138,6 +138,45 @@ export async function GET(request: NextRequest) {
 
     await sendTelegram(fullMessage);
 
+    // -----------------------------------------------------------------------
+    // PACK EXPIRY WARNINGS — packs expiring in 3 days or less
+    // -----------------------------------------------------------------------
+    if (supabase) {
+      try {
+        const threeDaysFromNow = new Date();
+        threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+        const expiryDateStr = threeDaysFromNow.toISOString();
+
+        const { data: expiringPacks } = await supabase
+          .from("tu_packs")
+          .select("id, pack_type, expires_at, classes_used, total_classes, student:tu_students(full_name, email, phone)")
+          .eq("status", "active")
+          .lte("expires_at", expiryDateStr)
+          .order("expires_at", { ascending: true })
+          .limit(20);
+
+        if (expiringPacks && expiringPacks.length > 0) {
+          const expiryLines = expiringPacks.map((p) => {
+            const student = p.student as unknown as { full_name: string; email: string; phone: string } | null;
+            const name = student?.full_name || "Unknown";
+            const remaining = p.total_classes === -1
+              ? "Ilimitado"
+              : `${(p.total_classes || 0) - (p.classes_used || 0)} creditos`;
+            const expiresAt = new Date(p.expires_at as string);
+            const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+            const urgency = daysLeft <= 1 ? "HOY/MANANA" : `${daysLeft} dias`;
+            return `  · <b>${name}</b> — ${(p.pack_type as string).replace(/_/g, " ")} (${remaining}) — expira en ${urgency}`;
+          });
+
+          await sendTelegram(
+            `⏰ <b>PACKS POR EXPIRAR (${expiringPacks.length})</b>\n\n${expiryLines.join("\n")}\n\n💡 Oportunidad de renovacion!`,
+          );
+        }
+      } catch (expiryErr) {
+        console.error("[Daily Digest] Pack expiry check failed:", expiryErr);
+      }
+    }
+
     return NextResponse.json({
       message: "Digest sent",
       date: dateStr,

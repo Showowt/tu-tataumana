@@ -183,6 +183,23 @@ export async function POST(request: NextRequest) {
     const packDef = getPackDefinition(packType);
 
     if (packDef) {
+      // Prevent duplicate pack creation
+      const txId = (transaction.wompi_id as string) || transaction_id;
+      const { data: existingPack } = await supabase
+        .from("tu_packs")
+        .select("id")
+        .eq("student_id", studentId)
+        .eq("wompi_transaction_id", txId)
+        .single();
+
+      if (existingPack) {
+        return NextResponse.json({
+          data: { transaction_id, status: "approved", student_id: studentId, pack_type: packType },
+          error: null,
+          message: "Payment verified (pack already existed)",
+        });
+      }
+
       const { error: packErr } = await supabase.from("tu_packs").insert({
         student_id: studentId,
         pack_type: packType,
@@ -193,7 +210,7 @@ export async function POST(request: NextRequest) {
         status: "active",
         expires_at: calculateExpiration(packDef.expirationDays).toISOString(),
         payment_method: (transaction.payment_method as string) || "manual",
-        wompi_transaction_id: (transaction.wompi_id as string) || null,
+        wompi_transaction_id: txId,
         verified_by: admin.id !== "header-admin" ? admin.id : null,
         verified_at: new Date().toISOString(),
       });
