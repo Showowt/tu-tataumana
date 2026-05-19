@@ -68,7 +68,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { code, pack_type } = parsed.data;
+    const { code: rawCode, pack_type } = parsed.data;
+    // Normalize code: strip non-alphanumeric, uppercase
+    const code = rawCode.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+
+    // Log every validation attempt for debugging
+    await systemLog({
+      category: "discount",
+      level: "info",
+      message: `Discount validation attempt: "${rawCode}" → normalized "${code}" for pack ${pack_type}`,
+      route: "discounts/validate",
+      details: { raw_code: rawCode, normalized_code: code, pack_type, user_id: user.id },
+    });
 
     // Look up pack definition
     const packDef = getPackDefinition(pack_type);
@@ -99,14 +110,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Look up discount code (exact match, uppercase)
-    const { data: discount } = await dbClient
+    // Look up discount code — try normalized first, then raw input
+    let { data: discount } = await dbClient
       .from("tu_discount_codes")
       .select("*")
-      .eq("code", code.trim().toUpperCase())
+      .eq("code", code)
       .single();
 
+    // Fallback: try the raw input in case code was stored with special chars
+    if (!discount && rawCode.trim().toUpperCase() !== code) {
+      const { data: fallback } = await dbClient
+        .from("tu_discount_codes")
+        .select("*")
+        .eq("code", rawCode.trim().toUpperCase())
+        .single();
+      discount = fallback;
+    }
+
     if (!discount) {
+      await systemLog({
+        category: "discount",
+        level: "warn",
+        message: `Discount code not found: "${rawCode}" (normalized: "${code}")`,
+        route: "discounts/validate",
+        details: { raw_code: rawCode, normalized_code: code, pack_type },
+      });
       return NextResponse.json(
         { valid: false, error: "Codigo no valido", errorCode: "invalid_code" },
         { status: 200 },

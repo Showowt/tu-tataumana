@@ -193,12 +193,25 @@ async function resolveDiscountCode(
   studentId: string,
   originalPrice: number,
 ): Promise<DiscountApplication> {
-  // Look up code (exact match, uppercase)
-  const { data: discount } = await serviceDb
+  // Normalize code: strip non-alphanumeric, uppercase
+  const normalizedCode = discountCode.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  const rawCodeUpper = discountCode.trim().toUpperCase();
+
+  // Look up code — try normalized first, then raw
+  let { data: discount } = await serviceDb
     .from("tu_discount_codes")
     .select("*")
-    .eq("code", discountCode.trim().toUpperCase())
+    .eq("code", normalizedCode)
     .single();
+
+  if (!discount && rawCodeUpper !== normalizedCode) {
+    const { data: fallback } = await serviceDb
+      .from("tu_discount_codes")
+      .select("*")
+      .eq("code", rawCodeUpper)
+      .single();
+    discount = fallback;
+  }
 
   if (!discount) throw "Codigo de descuento no valido";
   if (!discount.active) throw "Codigo de descuento inactivo";

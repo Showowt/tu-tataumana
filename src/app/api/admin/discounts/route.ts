@@ -86,10 +86,19 @@ export async function POST(request: NextRequest) {
     ? new Date(Date.now() + valid_days * 24 * 60 * 60 * 1000).toISOString()
     : null;
 
+  // Sanitize code: strip non-alphanumeric characters to prevent URL encoding issues
+  const sanitizedCode = code.replace(/[^A-Za-z0-9]/g, "").toUpperCase().trim();
+  if (!sanitizedCode) {
+    return NextResponse.json(
+      { error: "Codigo invalido (solo letras y numeros)" },
+      { status: 400 },
+    );
+  }
+
   const { data, error } = await admin.supabase
     .from("tu_discount_codes")
     .insert({
-      code: code.toUpperCase().trim(),
+      code: sanitizedCode,
       discount_type,
       discount_value,
       max_uses: max_uses ?? null,
