@@ -76,6 +76,13 @@ export default function SchedulePage() {
         fetch("/api/student/profile"),
         fetch("/api/student/packs?status=active"),
       ]);
+
+      // If any API returns 401, session is invalid — force re-login
+      if (profileRes.status === 401 || packsRes.status === 401) {
+        window.location.href = "/login?redirect=/portal/schedule";
+        return;
+      }
+
       if (profileRes.ok) {
         const p = await profileRes.json();
         setProfile(p.data);
@@ -115,6 +122,12 @@ export default function SchedulePage() {
         pack_id: usablePack.id,
       }),
     });
+
+    // Session expired during booking — force re-login
+    if (res.status === 401) {
+      window.location.href = "/login?redirect=/portal/schedule";
+      return;
+    }
 
     const data = await res.json();
 

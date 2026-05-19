@@ -36,6 +36,13 @@ export default function BookingsPage() {
   async function loadBookings() {
     const upcoming = filter === "upcoming" ? "true" : "false";
     const res = await fetch(`/api/student/bookings?upcoming=${upcoming}`);
+
+    // Session expired — force re-login
+    if (res.status === 401) {
+      window.location.href = "/login?redirect=/portal/bookings";
+      return;
+    }
+
     if (res.ok) {
       const data = await res.json();
       setBookings(data.data || []);

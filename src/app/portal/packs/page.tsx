@@ -25,6 +25,13 @@ export default function PacksPage() {
   useEffect(() => {
     async function load() {
       const res = await fetch("/api/student/packs?status=all");
+
+      // Session expired — force re-login
+      if (res.status === 401) {
+        window.location.href = "/login?redirect=/portal/packs";
+        return;
+      }
+
       if (res.ok) {
         const data = await res.json();
         setOwnedPacks(data.data || []);

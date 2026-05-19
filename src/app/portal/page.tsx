@@ -53,6 +53,12 @@ export default function PortalDashboard() {
         fetch("/api/student/packs?status=active"),
       ]);
 
+      // If any API returns 401, session is invalid — force re-login
+      if (profileRes.status === 401 || bookingsRes.status === 401 || packsRes.status === 401) {
+        window.location.href = "/login?redirect=/portal";
+        return;
+      }
+
       if (profileRes.ok) {
         const p = await profileRes.json();
         setProfile(p.data);

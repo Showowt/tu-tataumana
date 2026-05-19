@@ -38,6 +38,13 @@ export default function ProfilePage() {
   useEffect(() => {
     async function load() {
       const res = await fetch("/api/student/profile");
+
+      // Session expired — force re-login
+      if (res.status === 401) {
+        window.location.href = "/login?redirect=/portal/profile";
+        return;
+      }
+
       if (res.ok) {
         const data = await res.json();
         const p = data.data as ProfileData;
