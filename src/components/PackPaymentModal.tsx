@@ -597,14 +597,14 @@ export default function PackPaymentModal({
                   if (e.key === "Enter") validateDiscount();
                 }}
                 placeholder={lang === "es" ? "Ingresa tu codigo" : "Enter code"}
-                className="flex-1 px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/20 focus:outline-none focus:border-[#C9A96E]"
+                className="flex-1 min-w-0 px-3 py-2.5 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/20 focus:outline-none focus:border-[#C9A96E]"
               />
               <button
                 onClick={validateDiscount}
                 disabled={!discountCode.trim() || validatingCode}
-                className="px-4 py-2 bg-[#2C2C2C] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="shrink-0 px-5 py-2.5 bg-[#C9A96E] text-white text-[11px] tracking-[0.15em] uppercase font-medium hover:bg-[#B87777] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                {validatingCode ? "..." : lang === "es" ? "Aplicar" : "Apply"}
+                {validatingCode ? "..." : "OK"}
               </button>
             </div>
           )}

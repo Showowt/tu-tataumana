@@ -179,9 +179,10 @@ function applyDiscountCalc(
 }
 
 /**
- * Validates a discount code and atomically increments its uses_count.
- * Returns null if no discount code provided.
- * Throws a structured error string if the code is invalid.
+ * Validates a discount code WITHOUT consuming it.
+ * Consumption (uses_count increment + usage record) happens only after
+ * the payment/transaction is successfully created, preventing wasted codes
+ * when payment creation fails.
  */
 async function resolveDiscountCode(
   serviceDb: ReturnType<typeof getServiceSupabase>,
@@ -236,23 +237,7 @@ async function resolveDiscountCode(
     if (existingUsage) throw "Ya usaste este codigo de descuento";
   }
 
-  // Atomic increment — only succeeds if uses_count < max_uses (or max_uses is null)
-  const { data: updated, error: updateError } = await serviceDb
-    .from("tu_discount_codes")
-    .update({ uses_count: discount.uses_count + 1 })
-    .eq("id", discount.id)
-    .or(
-      discount.max_uses !== null
-        ? `max_uses.is.null,uses_count.lt.${discount.max_uses}`
-        : "max_uses.is.null,max_uses.gte.0",
-    )
-    .select("id")
-    .single();
-
-  if (updateError || !updated) {
-    throw "Codigo de descuento agotado";
-  }
-
+  // DO NOT increment uses_count here — wait until payment succeeds
   const discountedPrice = applyDiscountCalc(
     originalPrice,
     discount.discount_type as "percentage" | "fixed",
@@ -268,6 +253,40 @@ async function resolveDiscountCode(
     discounted_price: discountedPrice,
     savings: originalPrice - discountedPrice,
   };
+}
+
+/**
+ * Consumes a discount code AFTER payment/transaction succeeds.
+ * Increments uses_count and inserts usage record.
+ */
+async function consumeDiscountCode(
+  serviceDb: ReturnType<typeof getServiceSupabase>,
+  discount: DiscountApplication,
+  studentId: string,
+  transactionId: string,
+): Promise<void> {
+  // Read current uses_count and increment
+  const { data: current } = await serviceDb
+    .from("tu_discount_codes")
+    .select("uses_count")
+    .eq("id", discount.code_id)
+    .single();
+
+  if (current) {
+    await serviceDb
+      .from("tu_discount_codes")
+      .update({ uses_count: (current.uses_count ?? 0) + 1 })
+      .eq("id", discount.code_id);
+  }
+
+  // Insert usage record
+  await serviceDb
+    .from("tu_discount_usage")
+    .insert({
+      discount_code_id: discount.code_id,
+      student_id: studentId,
+      transaction_id: transactionId,
+    });
 }
 
 // -------------------------------------------------------------------
@@ -429,17 +448,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
         );
       }
 
-      // Record discount usage if applicable
+      // Consume discount code AFTER transaction was successfully created
       if (discountApplication && student?.id && txData?.id) {
-        const { error: usageError } = await serviceDb
-          .from("tu_discount_usage")
-          .insert({
-            discount_code_id: discountApplication.code_id,
-            student_id: student.id,
-            transaction_id: txData.id,
-          });
-        if (usageError) {
-          console.error("[payments/create] Discount usage insert failed:", usageError.message);
+        try {
+          await consumeDiscountCode(serviceDb, discountApplication, student.id, txData.id);
+        } catch (usageErr) {
+          console.error("[payments/create] Discount consumption failed:", usageErr);
         }
       }
 
@@ -501,17 +515,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
       );
     }
 
-    // Record discount usage if applicable
+    // Consume discount code AFTER transaction was successfully created
     if (discountApplication && student?.id && manualTxData?.id) {
-      const { error: usageError } = await serviceDb
-        .from("tu_discount_usage")
-        .insert({
-          discount_code_id: discountApplication.code_id,
-          student_id: student.id,
-          transaction_id: manualTxData.id,
-        });
-      if (usageError) {
-        console.error("[payments/create] Discount usage insert failed:", usageError.message);
+      try {
+        await consumeDiscountCode(serviceDb, discountApplication, student.id, manualTxData.id);
+      } catch (usageErr) {
+        console.error("[payments/create] Discount consumption failed:", usageErr);
       }
     }
 
