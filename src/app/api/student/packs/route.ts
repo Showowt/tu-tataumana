@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { systemLog } from "@/lib/system-log";
 
 /**
  * GET /api/student/packs
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
     const { data: packs, error } = await query;
 
     if (error) {
+      systemLog({ category: "error", level: "error", message: "Student packs query failed", route: "student/packs", student_id: student.id, details: { error: error.message, code: error.code, status_filter: statusFilter } });
       console.error("[student/packs]", error.message);
       return NextResponse.json(
         { error: "Failed to fetch packs" },

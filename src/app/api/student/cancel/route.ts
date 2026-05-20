@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { z } from "zod";
 import { notifyNextOnWaitlist } from "@/app/api/student/waitlist/route";
+import { captureApiError } from "@/lib/sentry-helpers";
+import { systemLog } from "@/lib/system-log";
 
 const CancelSchema = z.object({
   booking_id: z.string().uuid("Invalid booking ID"),
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Fallback: look up session_id from the booking
       const { data: booking } = await supabase
-        .from("tu_bookings")
+        .from("tu_class_bookings")
         .select("session_id")
         .eq("id", parsed.data.booking_id)
         .single();
@@ -89,11 +91,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    systemLog({ category: "booking", level: "info", message: "Student cancelled booking", route: "student/cancel", student_id: student.id, details: { booking_id: parsed.data.booking_id, refunded: result.refunded } });
+
     return NextResponse.json({
-      data: { refunded_credit: result.refunded_credit },
+      data: { refunded_credit: result.refunded },
       message: "Booking cancelled successfully",
     });
   } catch (error) {
+    captureApiError("student/cancel", error);
+    systemLog({ category: "booking", level: "error", message: "Cancel booking error", route: "student/cancel", details: { error: error instanceof Error ? error.message : String(error) } });
     console.error("[student/cancel]", error);
     return NextResponse.json(
       { error: "Internal server error" },

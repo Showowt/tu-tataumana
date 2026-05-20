@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { z } from "zod";
 import { notifyClassBooking } from "@/lib/telegram";
+import { captureApiError } from "@/lib/sentry-helpers";
+import { systemLog } from "@/lib/system-log";
 
 const BookSchema = z.object({
   session_id: z.string().uuid("Invalid session ID"),
@@ -57,6 +59,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
+      captureApiError("student/book", error, { student_id: student.id, session_id: parsed.data.session_id });
+      systemLog({ category: "booking", level: "error", message: "Student booking RPC failed", route: "student/book", student_id: student.id, details: { error: error.message, session_id: parsed.data.session_id, pack_id: parsed.data.pack_id } });
       console.error("[student/book]", error.message);
       return NextResponse.json(
         { error: "Booking failed: " + error.message },
@@ -67,6 +71,7 @@ export async function POST(request: NextRequest) {
     const result = data as Record<string, unknown>;
 
     if (result.error) {
+      systemLog({ category: "booking", level: "warn", message: `Student booking rejected: ${result.error}`, route: "student/book", student_id: student.id, details: { reason: result.error, session_id: parsed.data.session_id, pack_id: parsed.data.pack_id } });
       return NextResponse.json(
         { error: result.error as string },
         { status: 400 },
@@ -123,6 +128,8 @@ export async function POST(request: NextRequest) {
       console.error("[student/book] Telegram notification failed:", notifyErr);
     }
 
+    systemLog({ category: "booking", level: "info", message: "Student booked class", route: "student/book", student_id: student.id, details: { booking_id: result.booking_id, session_id: parsed.data.session_id, pack_id: parsed.data.pack_id } });
+
     return NextResponse.json(
       {
         data: {
@@ -135,6 +142,8 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
   } catch (error) {
+    captureApiError("student/book", error);
+    systemLog({ category: "booking", level: "error", message: "Student booking unexpected error", route: "student/book", details: { error: error instanceof Error ? error.message : String(error) } });
     console.error("[student/book]", error);
     return NextResponse.json(
       { error: "Internal server error" },
