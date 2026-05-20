@@ -12,7 +12,7 @@ interface OwnedPack {
   classes_remaining: number;
   status: string;
   expires_at: string;
-  purchased_at: string;
+  created_at: string;
   payment_method: string | null;
 }
 

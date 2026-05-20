@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       .from("tu_packs")
       .select("*")
       .eq("student_id", student.id)
-      .order("purchased_at", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (statusFilter !== "all") {
       query = query.eq("status", statusFilter);
