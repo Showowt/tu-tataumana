@@ -251,15 +251,15 @@ Best for: In-person sessions
 
 PRICING STRUCTURE (2026):
 - Group classes: Walk-in $80,000 COP per class. Packs from $160,000 COP (4 classes) to $1,050,000 COP (unlimited)
-- Discovery Session: $85,000 COP / $23 USD (30 min)
-- Personalized Yoga: $190,000 COP / $51 USD (60 min), Pack 10: $1,500,000 COP / $388 USD
-- Video Connection: $170,000 COP / $46 USD (60 min), $120,000 COP / $33 USD (30 min)
+- Discovery Session: $85,000 COP / $22 USD (30 min)
+- Personalized Yoga: $190,000 COP / $50 USD (60 min), Pack 10: $1,500,000 COP / $396 USD
+- Video Connection: $170,000 COP / $45 USD (60 min), $120,000 COP / $32 USD (30 min)
 - Quantum Surgery: $360,000 COP / $95 USD (60 min)
-- Superior Connection: $730,000 COP / $197 USD (75 min)
-- Energy Cleansing: $485,000 COP / $131 USD (75 min)
-- Sacred Ceremonies: $3,500,000 COP / $945 USD
-- Leadership Integration: $1,220,000 COP / $330 USD per hour
-- TUISYOU Program: $7,750,000 COP / $2,095 USD (3 months)
+- Superior Connection: $730,000 COP / $193 USD (75 min)
+- Energy Cleansing: $485,000 COP / $128 USD (75 min)
+- Sacred Ceremonies: $3,500,000 COP / $924 USD
+- Leadership Integration: $1,220,000 COP / $322 USD per hour
+- TUISYOU Program: $7,750,000 COP / $2,046 USD (3 months)
 
 ═══════════════════════════════════════════════════════════════════════════════
 MY PRIVATE SERVICES — COMPREHENSIVE
@@ -267,20 +267,20 @@ MY PRIVATE SERVICES — COMPREHENSIVE
 
 DISCOVERY SESSION (CONSULTA DE DESCUBRIMIENTO)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Price: $85,000 COP / $23 USD
+Price: $85,000 COP / $22 USD
 Duration: 30 minutes
 An intensive one-on-one session to design the path toward your personal transformation.
 
 PRIVATE YOGA SESSIONS (YOGA PERSONALIZADO)
 ━━━━━━━━━━━━━━━━━━━━━
-Price: $190,000 COP / $51 USD per session
-Pack of 10 sessions: $1,500,000 COP / $388 USD
+Price: $190,000 COP / $50 USD per session
+Pack of 10 sessions: $1,500,000 COP / $396 USD
 Duration: 60 minutes
 Location: Casa Carolina or your hotel/villa
 
 VIDEO CONNECTION (CONEXIÓN A DISTANCIA)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Price: $170,000 COP / $46 USD (60 min) or $120,000 COP / $33 USD (30 min)
+Price: $170,000 COP / $45 USD (60 min) or $120,000 COP / $32 USD (30 min)
 Connect with Tata from anywhere for personalized guidance and support.
 
 Styles I offer:
@@ -425,19 +425,19 @@ What clients often say:
 
 SUPERIOR CONNECTION (CONEXIÓN SUPERIOR)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Price: $730,000 COP / $197 USD
+Price: $730,000 COP / $193 USD
 Duration: 75 minutes
 A profound session connecting you with your higher consciousness — designed uniquely for you.
 
 ENERGY CLEANSING (LIMPIEZAS ENERGÉTICAS)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Price: $485,000 COP / $131 USD
+Price: $485,000 COP / $128 USD
 Duration: 75 minutes
 A powerful session honoring authentic love — for couples, homes, or workspaces. Beyond the traditional.
 
 REIKI & INTEGRATED ENERGY THERAPY (IET)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Price: $485,000 COP / $131 USD
+Price: $485,000 COP / $128 USD
 Duration: 60-75 minutes
 
 REIKI (ray-kee):
@@ -475,7 +475,7 @@ Health Benefits:
 
 SACRED CEREMONIES (CEREMONIAS SIMBÓLICAS)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Price: $3,500,000 COP / $945 USD
+Price: $3,500,000 COP / $924 USD
 Duration: Custom
 
 Ceremony is how humans have marked important moments for millennia. I offer ceremonies that honor traditional practices while remaining accessible to modern seekers.
@@ -574,7 +574,7 @@ Price varies based on complexity. Contact me to discuss.
 
 TUISYOU PERSONALIZED PROGRAM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Price: $7,750,000 COP / $2,095 USD
+Price: $7,750,000 COP / $2,046 USD
 Duration: 3 months
 
 This is my signature experience. A comprehensive journey combining multiple modalities in one transformative session.
@@ -627,10 +627,10 @@ Martes de Industria (Tuesday): $45,000 COP
 Viernes Open Flow (Friday): $45,000 COP
 
 PRIVATE SESSION PACK:
-10-session yoga pack: $1,500,000 COP / $388 USD (save vs single sessions)
+10-session yoga pack: $1,500,000 COP / $396 USD (save vs single sessions)
 
 LEADERSHIP INTEGRATION (INTEGRACIÓN GRUPAL):
-Price: $1,220,000 COP / $330 USD per hour
+Price: $1,220,000 COP / $322 USD per hour
 Strengthen leadership through group sessions with personalized, holistic approach.
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -640,7 +640,7 @@ RETREATS
 TUISYOU PERSONALIZED PROGRAM — My Signature Transformation
 Duration: 3 months
 Location: Cartagena (Casa Carolina + special venues) or virtual
-Price: $7,750,000 COP / $2,095 USD
+Price: $7,750,000 COP / $2,046 USD
 A deeply personalized transformational journey designed exclusively for you.
 
 What's included:

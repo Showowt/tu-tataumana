@@ -129,8 +129,8 @@ export const t = {
 
   // Sticky bar
   sessionsFrom: {
-    en: "Sessions from $23 USD",
-    es: "Sesiones desde $23 USD",
+    en: "Sessions from $22 USD",
+    es: "Sesiones desde $22 USD",
   },
 
   // Payment

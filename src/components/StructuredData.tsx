@@ -87,7 +87,7 @@ export default function StructuredData() {
         closes: "12:00",
       },
     ],
-    priceRange: "$23 - $2095 USD",
+    priceRange: "$22 - $2046 USD",
     currenciesAccepted: "COP, USD",
     paymentAccepted:
       "Cash, Credit Card, Debit Card, Nequi, Bancolombia, Zelle, PayPal",
@@ -134,14 +134,14 @@ export default function StructuredData() {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     mainEntity: [
-      faq("What yoga classes are available in Cartagena?", "TU. by Tata Umana offers daily group yoga classes at Casa Carolina in Cartagena's walled city — including Vinyasa Flow, Hatha, Yin, Kundalini, Power Yoga, and Restorative. Classes start at $80,000 COP ($22 USD). Private sessions also available."),
+      faq("What yoga classes are available in Cartagena?", "TU. by Tata Umana offers daily group yoga classes at Casa Carolina in Cartagena's walled city — including Vinyasa Flow, Hatha, Yin, Kundalini, Power Yoga, and Restorative. Classes start at $80,000 COP ($21 USD). Private sessions also available."),
       faq("What is sound healing and how does it work?", "Sound healing uses instruments like crystal singing bowls, Tibetan bowls, and tuning forks to create vibrations that help your body relax and heal. You lie down fully clothed and receive — the vibrations bypass the thinking mind and speak directly to your cells. Most people enter a deeply relaxed state."),
       faq("Do I need experience to do yoga with Tata Umana?", "No experience needed! Many clients are complete beginners. Private sessions are designed for YOUR body and YOUR level. Tata adapts every practice to where you are. Flexibility is a result of practice, not a requirement."),
       faq("What is Reiki energy healing?", "Reiki is a Japanese energy healing technique where universal life force energy is channeled through the practitioner's hands. Tata is a certified Reiki Master in the Usui lineage with 15+ years of practice. You lie fully clothed and may feel warmth, tingling, or deep relaxation."),
       faq("Where is TU. by Tata Umana located?", "TU. is located at Casa Carolina Boutique Hotel in the Centro Historico (Walled City) of Cartagena de Indias, Colombia. Tata can also travel to your hotel or villa within Cartagena for private sessions."),
       faq("What payment methods are accepted?", "Credit/debit cards via Wompi (Visa, Mastercard, Amex), Nequi (3185083035), Bancolombia transfer (Ahorros 207-859047-00), Zelle/PayPal (+1 917 453 8307), and cash in COP or USD."),
-      faq("Can I book a wellness retreat in Cartagena?", "Yes! The TUISYOU Personalized Program is a 3-month transformation journey ($7,750,000 COP / $2,095 USD). Custom retreats for groups (bachelorette parties, corporate teams, families) are also available. Contact Tata via WhatsApp +57 318 508 3035."),
-      faq("Are virtual yoga and wellness sessions available?", "Yes! Video Connection sessions are available for personalized guidance from anywhere in the world — 60 min ($170,000 COP / $46 USD) or 30 min ($120,000 COP / $33 USD)."),
+      faq("Can I book a wellness retreat in Cartagena?", "Yes! The TUISYOU Personalized Program is a 3-month transformation journey ($7,750,000 COP / $2,046 USD). Custom retreats for groups (bachelorette parties, corporate teams, families) are also available. Contact Tata via WhatsApp +57 318 508 3035."),
+      faq("Are virtual yoga and wellness sessions available?", "Yes! Video Connection sessions are available for personalized guidance from anywhere in the world — 60 min ($170,000 COP / $45 USD) or 30 min ($120,000 COP / $32 USD)."),
     ],
   };
 

@@ -12,19 +12,19 @@ const services = [
   {
     name: "Discovery Session",
     nameEs: "Consulta de Descubrimiento",
-    price: "$85,000 COP / $23 USD",
+    price: "$85,000 COP / $22 USD",
     duration: "30 min",
   },
   {
     name: "Personalized Yoga",
     nameEs: "Yoga Personalizado",
-    price: "$190,000 COP / $51 USD",
+    price: "$190,000 COP / $50 USD",
     duration: "60 min",
   },
   {
     name: "Video Connection",
     nameEs: "Video Conexión",
-    price: "$170,000 COP / $46 USD",
+    price: "$170,000 COP / $45 USD",
     duration: "60 min",
   },
   {
@@ -36,31 +36,31 @@ const services = [
   {
     name: "Superior Connection",
     nameEs: "Conexión Superior",
-    price: "$730,000 COP / $197 USD",
+    price: "$730,000 COP / $193 USD",
     duration: "75 min",
   },
   {
     name: "Energy Cleansing",
     nameEs: "Limpiezas Energéticas",
-    price: "$485,000 COP / $131 USD",
+    price: "$485,000 COP / $128 USD",
     duration: "75 min",
   },
   {
     name: "Sacred Ceremonies",
     nameEs: "Ceremonias Simbólicas",
-    price: "$3,500,000 COP / $945 USD",
+    price: "$3,500,000 COP / $924 USD",
     duration: "Custom",
   },
   {
     name: "Leadership Integration",
     nameEs: "Integración Grupal de Liderazgo",
-    price: "$1,220,000 COP / $330 USD",
+    price: "$1,220,000 COP / $322 USD",
     duration: "Per hour",
   },
   {
     name: "TUISYOU Program",
     nameEs: "Programa TUISYOU Personalizado",
-    price: "$7,750,000 COP / $2,095 USD",
+    price: "$7,750,000 COP / $2,046 USD",
     duration: "3 months",
   },
 ];
@@ -142,7 +142,7 @@ export default function ServicesSection({ lang, L, openBooking }: ServicesSectio
               $1,500,000 <span className="text-base text-charcoal/40">COP</span>
             </p>
             <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40">
-              $388 USD
+              $396 USD
             </p>
           </div>
         </div>
@@ -162,7 +162,7 @@ export default function ServicesSection({ lang, L, openBooking }: ServicesSectio
               $120,000 <span className="text-base text-charcoal/40">COP</span>
             </p>
             <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40">
-              $33 USD
+              $32 USD
             </p>
           </div>
         </div>

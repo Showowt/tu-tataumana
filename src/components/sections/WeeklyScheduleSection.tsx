@@ -369,12 +369,12 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
         {/* Pricing cards */}
         <div className="fade-in mt-12 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 stagger-reveal">
           {[
-            { label: "WALK-IN CLASS", cop: "$80,000", usd: "$19", sub: lang === "en" ? "Single class" : "Clase individual" },
-            { label: "MAYO MES MAMÁ", cop: "$160,000", usd: "$38", sub: lang === "en" ? "4 classes" : "4 clases", highlight: true },
-            { label: "PROMO 2x1", cop: "$80,000", usd: "$19", sub: lang === "en" ? "Bring a friend" : "Trae un amigo" },
-            { label: "MARTES INDUSTRIA", cop: "$45,000", usd: "$11", sub: lang === "en" ? "Tuesdays only" : "Solo martes" },
-            { label: "VIERNES OPEN FLOW", cop: "$45,000", usd: "$11", sub: lang === "en" ? "Fridays only" : "Solo viernes" },
-            { label: "PRIVATE SESSION", cop: "$190,000", usd: "$51", sub: lang === "en" ? "One on One Experience" : "Experiencia Uno a Uno" },
+            { label: "WALK-IN CLASS", cop: "$80,000", usd: "$21", sub: lang === "en" ? "Single class" : "Clase individual" },
+            { label: "MAYO MES MAMÁ", cop: "$160,000", usd: "$42", sub: lang === "en" ? "4 classes" : "4 clases", highlight: true },
+            { label: "PROMO 2x1", cop: "$80,000", usd: "$21", sub: lang === "en" ? "Bring a friend" : "Trae un amigo" },
+            { label: "MARTES INDUSTRIA", cop: "$45,000", usd: "$12", sub: lang === "en" ? "Tuesdays only" : "Solo martes" },
+            { label: "VIERNES OPEN FLOW", cop: "$45,000", usd: "$12", sub: lang === "en" ? "Fridays only" : "Solo viernes" },
+            { label: "PRIVATE SESSION", cop: "$190,000", usd: "$50", sub: lang === "en" ? "One on One Experience" : "Experiencia Uno a Uno" },
           ].map((promo) => (
             <button
               key={promo.label}
@@ -408,10 +408,10 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
         {/* Premium packs row */}
         <div className="fade-in mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {[
-            { label: "JUST FLOW PACK", cop: "$295,000", usd: "$70", sub: lang === "en" ? "6 classes" : "6 clases" },
-            { label: "TU HEALING PACK", cop: "$420,000", usd: "$100", sub: lang === "en" ? "8 classes" : "8 clases" },
-            { label: "TU BALANCE PACK", cop: "$630,000", usd: "$150", sub: lang === "en" ? "12 classes" : "12 clases" },
-            { label: "UNLIMITED MONTHLY", cop: "$1,050,000", usd: "$250", sub: lang === "en" ? "Unlimited" : "Ilimitado" },
+            { label: "JUST FLOW PACK", cop: "$295,000", usd: "$78", sub: lang === "en" ? "6 classes" : "6 clases" },
+            { label: "TU HEALING PACK", cop: "$420,000", usd: "$111", sub: lang === "en" ? "8 classes" : "8 clases" },
+            { label: "TU BALANCE PACK", cop: "$630,000", usd: "$166", sub: lang === "en" ? "12 classes" : "12 clases" },
+            { label: "UNLIMITED MONTHLY", cop: "$1,050,000", usd: "$277", sub: lang === "en" ? "Unlimited" : "Ilimitado" },
           ].map((promo) => (
             <button
               key={promo.label}

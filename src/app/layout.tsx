@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     template: "%s | TU. by Tata Umana",
   },
   description:
-    "Book yoga classes, sound healing, Reiki, energy therapy & sacred ceremonies in Cartagena, Colombia. 30 years of practice. Featured in Vogue & Diners. Private sessions from $23 USD at Casa Carolina. JustbYoga daily classes.",
+    "Book yoga classes, sound healing, Reiki, energy therapy & sacred ceremonies in Cartagena, Colombia. 30 years of practice. Featured in Vogue & Diners. Private sessions from $22 USD at Casa Carolina. JustbYoga daily classes.",
   keywords: [
     // Brand
     "Tata Umana",
@@ -120,7 +120,7 @@ export const metadata: Metadata = {
     title:
       "TU. by Tata Umana | Yoga, Sound Healing & Reiki in Cartagena, Colombia",
     description:
-      "Book transformative wellness experiences in Cartagena — yoga classes, sound healing, Reiki, ceremonies & retreats. 30 years of practice. Vogue-featured. Sessions from $23 USD.",
+      "Book transformative wellness experiences in Cartagena — yoga classes, sound healing, Reiki, ceremonies & retreats. 30 years of practice. Vogue-featured. Sessions from $22 USD.",
     images: [
       {
         url: "https://www.tataumana.com/opengraph-image",
@@ -135,7 +135,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "TU. by Tata Umana | Yoga & Wellness in Cartagena",
     description:
-      "Yoga, sound healing, Reiki & retreats in Cartagena, Colombia. 30 years of practice. Book from $23 USD.",
+      "Yoga, sound healing, Reiki & retreats in Cartagena, Colombia. 30 years of practice. Book from $22 USD.",
     images: ["https://www.tataumana.com/twitter-image"],
     creator: "@tuisyou",
   },

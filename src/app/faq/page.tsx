@@ -91,16 +91,16 @@ const faqs: FAQ[] = [
     category: "pricing",
     q: { en: "How much does a single class cost?", es: "¿Cuánto cuesta una clase individual?" },
     a: {
-      en: "A walk-in class is $80,000 COP (~$19 USD). On Tuesdays (Industry Rate) and Fridays (Open Flow), it's $45,000 COP (~$11 USD).",
-      es: "Una clase individual cuesta $80,000 COP (~$19 USD). Los martes (Tarifa Industria) y viernes (Open Flow), es $45,000 COP (~$11 USD).",
+      en: "A walk-in class is $80,000 COP (~$21 USD). On Tuesdays (Industry Rate) and Fridays (Open Flow), it's $45,000 COP (~$12 USD).",
+      es: "Una clase individual cuesta $80,000 COP (~$21 USD). Los martes (Tarifa Industria) y viernes (Open Flow), es $45,000 COP (~$12 USD).",
     },
   },
   {
     category: "pricing",
     q: { en: "What packs are available?", es: "¿Qué packs están disponibles?" },
     a: {
-      en: "Just Flow Pack (6 classes, $295,000 COP / $70 USD, 45 days), TU Healing Pack (8 classes, $420,000 COP / $100 USD, 60 days), TU Balance Pack (12 classes, $630,000 COP / $150 USD, 90 days), and Unlimited Monthly ($1,050,000 COP / $250 USD).",
-      es: "Just Flow Pack (6 clases, $295,000 COP / $70 USD, 45 días), TU Healing Pack (8 clases, $420,000 COP / $100 USD, 60 días), TU Balance Pack (12 clases, $630,000 COP / $150 USD, 90 días), e Ilimitado Mensual ($1,050,000 COP / $250 USD).",
+      en: "Just Flow Pack (6 classes, $295,000 COP / $78 USD, 45 days), TU Healing Pack (8 classes, $420,000 COP / $111 USD, 60 days), TU Balance Pack (12 classes, $630,000 COP / $166 USD, 90 days), and Unlimited Monthly ($1,050,000 COP / $277 USD).",
+      es: "Just Flow Pack (6 clases, $295,000 COP / $78 USD, 45 días), TU Healing Pack (8 clases, $420,000 COP / $111 USD, 60 días), TU Balance Pack (12 clases, $630,000 COP / $166 USD, 90 días), e Ilimitado Mensual ($1,050,000 COP / $277 USD).",
     },
   },
   {
@@ -142,16 +142,16 @@ const faqs: FAQ[] = [
     category: "private",
     q: { en: "What private services does Tata offer?", es: "¿Qué servicios privados ofrece Tata?" },
     a: {
-      en: "Discovery consultations ($23 USD), personalized yoga ($51 USD/hr), virtual sessions ($46 USD/hr), energy work including quantum surgery and cleansing ceremonies, and a 3-month transformation program ($2,095 USD).",
-      es: "Consultas de descubrimiento ($23 USD), yoga personalizado ($51 USD/hr), sesiones virtuales ($46 USD/hr), trabajo energético incluyendo cirugía cuántica y ceremonias de limpieza, y un programa de transformación de 3 meses ($2,095 USD).",
+      en: "Discovery consultations ($22 USD), personalized yoga ($50 USD/hr), virtual sessions ($45 USD/hr), energy work including quantum surgery and cleansing ceremonies, and a 3-month transformation program ($2,046 USD).",
+      es: "Consultas de descubrimiento ($22 USD), yoga personalizado ($50 USD/hr), sesiones virtuales ($45 USD/hr), trabajo energético incluyendo cirugía cuántica y ceremonias de limpieza, y un programa de transformación de 3 meses ($2,046 USD).",
     },
   },
   {
     category: "private",
     q: { en: "Can I book a private session if I'm not in Cartagena?", es: "¿Puedo reservar una sesión privada si no estoy en Cartagena?" },
     a: {
-      en: "Yes! Tata offers virtual video sessions ($46 USD/hr) for yoga, meditation, energy work, and the transformation program. WhatsApp +57 318 508 3035 to schedule.",
-      es: "¡Sí! Tata ofrece sesiones virtuales por video ($46 USD/hr) para yoga, meditación, trabajo energético y el programa de transformación. WhatsApp +57 318 508 3035 para agendar.",
+      en: "Yes! Tata offers virtual video sessions ($45 USD/hr) for yoga, meditation, energy work, and the transformation program. WhatsApp +57 318 508 3035 to schedule.",
+      es: "¡Sí! Tata ofrece sesiones virtuales por video ($45 USD/hr) para yoga, meditación, trabajo energético y el programa de transformación. WhatsApp +57 318 508 3035 para agendar.",
     },
   },
 ];

@@ -55,13 +55,13 @@ export const UNLIMITED_DISPLAY = 999;
 export const DROP_IN_PRICE_COP = 80000;
 
 /** Standard walk-in class price in USD */
-export const DROP_IN_PRICE_USD = 19;
+export const DROP_IN_PRICE_USD = 21;
 
 /** Industry rate (Tuesday & Friday) price in COP */
 export const INDUSTRY_RATE_COP = 45000;
 
 /** Industry rate (Tuesday & Friday) price in USD */
-export const INDUSTRY_RATE_USD = 11;
+export const INDUSTRY_RATE_USD = 12;
 
 // ============================================
 // SCHEDULE
