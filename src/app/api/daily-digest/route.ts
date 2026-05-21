@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { SCHEDULE, DAY_NAMES, CAPACITY, getColombiaDate, formatDateShort } from "@/lib/schedule";
+import { DAY_NAMES } from "@/lib/schedule";
+import { TIMEZONE } from "@/lib/constants/business-rules";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -29,15 +30,21 @@ async function sendTelegram(text: string): Promise<boolean> {
   return res.ok;
 }
 
+function formatTime12h(time24: string): string {
+  const [h, m] = time24.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 /**
  * GET /api/daily-digest
  * Sends Tata a summary of tomorrow's schedule with enrollment counts.
+ * NOW reads from tu_class_sessions + tu_class_bookings (real data).
  * Called by Vercel cron at 9 PM Colombia time daily.
  * Also callable with ?date=YYYY-MM-DD for any date.
  */
 export async function GET(request: NextRequest) {
   try {
-    // Auth check — only allow cron or requests with the correct secret
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
@@ -47,55 +54,58 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date");
 
-    // Default to tomorrow
-    const targetDate = dateParam
-      ? new Date(dateParam + "T12:00:00")
-      : getColombiaDate(1);
+    // Default to tomorrow in Colombia timezone
+    let dateStr: string;
+    if (dateParam) {
+      dateStr = dateParam;
+    } else {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      dateStr = new Intl.DateTimeFormat("en-CA", {
+        timeZone: TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit",
+      }).format(tomorrow);
+    }
 
-    const dateStr = formatDateShort(targetDate);
+    const targetDate = new Date(dateStr + "T12:00:00");
     const dayOfWeek = targetDate.getDay();
     const dayName = DAY_NAMES[dayOfWeek];
-    const classes = SCHEDULE[dayOfWeek] || [];
 
-    if (classes.length === 0) {
+    const supabase = getSupabase();
+    if (!supabase) {
+      return NextResponse.json({ error: "Database not configured" }, { status: 500 });
+    }
+
+    // Get REAL sessions from tu_class_sessions for the target date
+    const { data: sessions } = await supabase
+      .from("tu_class_sessions")
+      .select("id, start_time, teacher, capacity, enrolled, status, definition:tu_class_definitions(name, name_es)")
+      .eq("session_date", dateStr)
+      .eq("status", "scheduled")
+      .order("start_time", { ascending: true });
+
+    if (!sessions || sessions.length === 0) {
       await sendTelegram(
-        `<b>TOMORROW: ${dayName}, ${dateStr}</b>\n\nNo classes scheduled. Rest day.`
+        `📋 <b>MANANA: ${dayName}, ${dateStr}</b>\n\nNo hay clases programadas.`,
       );
       return NextResponse.json({ message: "Digest sent (no classes)" });
     }
 
-    // Get enrollment data from DB
-    const supabase = getSupabase();
-    let slotData: Record<string, number> = {};
+    // Get REAL bookings from tu_class_bookings with student names
+    const sessionIds = sessions.map((s) => s.id);
+    const { data: bookings } = await supabase
+      .from("tu_class_bookings")
+      .select("session_id, student:tu_students(full_name)")
+      .in("session_id", sessionIds)
+      .eq("status", "confirmed");
 
-    if (supabase) {
-      const { data: slots } = await supabase
-        .from("tu_class_slots")
-        .select("class_time, enrolled")
-        .eq("class_date", dateStr);
-
-      if (slots) {
-        for (const slot of slots) {
-          slotData[slot.class_time] = slot.enrolled;
-        }
-      }
-    }
-
-    // Also get booked names for each class
-    let bookingsByTime: Record<string, string[]> = {};
-    if (supabase) {
-      const { data: bookings } = await supabase
-        .from("tu_bookings")
-        .select("name, class_time, service")
-        .eq("preferred_date", dateStr)
-        .neq("status", "cancelled");
-
-      if (bookings) {
-        for (const b of bookings) {
-          const timeKey = b.class_time || "unknown";
-          if (!bookingsByTime[timeKey]) bookingsByTime[timeKey] = [];
-          bookingsByTime[timeKey].push(b.name);
-        }
+    // Group bookings by session
+    const bookingsBySession: Record<string, string[]> = {};
+    if (bookings) {
+      for (const b of bookings) {
+        const sid = b.session_id as string;
+        const student = b.student as unknown as { full_name: string } | null;
+        if (!bookingsBySession[sid]) bookingsBySession[sid] = [];
+        if (student?.full_name) bookingsBySession[sid].push(student.full_name);
       }
     }
 
@@ -103,26 +113,30 @@ export async function GET(request: NextRequest) {
     let totalStudents = 0;
     const classLines: string[] = [];
 
-    for (const cls of classes) {
-      const enrolled = slotData[cls.time] || 0;
-      const spotsLeft = CAPACITY - enrolled;
+    for (const session of sessions) {
+      const def = (Array.isArray(session.definition) ? session.definition[0] : session.definition) as { name: string; name_es: string } | null;
+      const className = def?.name_es || def?.name || "Clase";
+      const enrolled = session.enrolled || 0;
+      const capacity = session.capacity || 10;
+      const spotsLeft = capacity - enrolled;
       totalStudents += enrolled;
 
       const bar = enrolled > 0
-        ? "█".repeat(enrolled) + "░".repeat(spotsLeft)
-        : "░".repeat(CAPACITY);
+        ? "█".repeat(Math.min(enrolled, capacity)) + "░".repeat(Math.max(spotsLeft, 0))
+        : "░".repeat(capacity);
 
-      let line = `\n<b>${cls.time} — ${cls.name}</b>\n`;
-      line += `${bar}  ${enrolled}/${CAPACITY}`;
+      let line = `\n<b>${formatTime12h(session.start_time)} — ${className}</b>`;
+      line += ` (${session.teacher})`;
+      line += `\n${bar}  ${enrolled}/${capacity}`;
 
-      if (enrolled === CAPACITY) {
-        line += "  FULL";
+      if (enrolled >= capacity) {
+        line += "  LLENO";
       } else if (spotsLeft <= 3) {
-        line += `  ${spotsLeft} left`;
+        line += `  ${spotsLeft} cupos`;
       }
 
-      // List names
-      const names = bookingsByTime[cls.time];
+      // List student names
+      const names = bookingsBySession[session.id];
       if (names && names.length > 0) {
         line += `\n${names.map((n) => `  · ${n}`).join("\n")}`;
       }
@@ -130,11 +144,11 @@ export async function GET(request: NextRequest) {
       classLines.push(line);
     }
 
-    const header = `<b>TOMORROW: ${dayName}, ${dateStr}</b>\n<b>${classes.length} classes · ${totalStudents} students booked</b>`;
+    const header = `📋 <b>MANANA: ${dayName}, ${dateStr}</b>\n<b>${sessions.length} clases · ${totalStudents} alumnos reservados</b>`;
     const fullMessage = header + "\n" + classLines.join("\n") + "\n\n" +
       (totalStudents === 0
-        ? "No bookings yet — share the schedule!"
-        : `Have a beautiful day tomorrow, Tata!`);
+        ? "Sin reservas aun — comparte el horario!"
+        : `Lindo dia manana, Tata!`);
 
     await sendTelegram(fullMessage);
 
@@ -182,7 +196,7 @@ export async function GET(request: NextRequest) {
       date: dateStr,
       day: dayName,
       total_students: totalStudents,
-      classes: classes.length,
+      classes: sessions.length,
     });
   } catch (err) {
     console.error("[Daily Digest]", err);
