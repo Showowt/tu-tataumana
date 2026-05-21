@@ -9,6 +9,8 @@ const BookClassSchema = z.object({
   student_id: z.string().uuid(),
   session_id: z.string().uuid(),
   pack_id: z.string().uuid().optional().nullable(),
+  // For 2x1 promos: deduct credit from a DIFFERENT student's pack
+  credit_from_student_id: z.string().uuid().optional().nullable(),
 });
 
 /**
@@ -34,7 +36,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { student_id, session_id, pack_id } = parsed.data;
+  const { student_id, session_id, pack_id, credit_from_student_id } = parsed.data;
 
   // 1. Verify session exists and isn't cancelled
   const { data: session, error: sessErr } = await supabase
