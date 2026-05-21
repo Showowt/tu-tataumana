@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
   // Check if already booked
   const { data: booked } = await auth.db
-    .from("tu_bookings")
+    .from("tu_class_bookings")
     .select("id")
     .eq("student_id", auth.id)
     .eq("session_id", session_id)
@@ -121,8 +121,8 @@ export async function POST(request: NextRequest) {
 
   // Get class info for notification
   const { data: slot } = await auth.db
-    .from("tu_class_slots")
-    .select("class_date, class_time, class_name")
+    .from("tu_class_sessions")
+    .select("session_date, start_time, definition:tu_class_definitions(name)")
     .eq("id", session_id)
     .single();
 
@@ -135,8 +135,10 @@ export async function POST(request: NextRequest) {
 
   // Notify admin
   try {
+    const slotDef = slot?.definition as { name: string } | { name: string }[] | null;
+    const className = Array.isArray(slotDef) ? slotDef[0]?.name : slotDef?.name;
     await sendTelegramMessage(
-      `📋 <b>LISTA DE ESPERA</b>\n\n<b>${auth.full_name}</b> se unió a la lista de espera\n<b>Clase:</b> ${slot?.class_name || "Unknown"}\n<b>Fecha:</b> ${slot?.class_date || "?"} · ${slot?.class_time || "?"}\n<b>Posición:</b> #${count || 1}`
+      `📋 <b>LISTA DE ESPERA</b>\n\n<b>${auth.full_name}</b> se unió a la lista de espera\n<b>Clase:</b> ${className || "Clase"}\n<b>Fecha:</b> ${slot?.session_date || "?"} · ${slot?.start_time || "?"}\n<b>Posición:</b> #${count || 1}`
     );
   } catch {}
 
@@ -213,17 +215,19 @@ export async function notifyNextOnWaitlist(sessionId: string) {
 
   // Get class details
   const { data: slot } = await supabase
-    .from("tu_class_slots")
-    .select("class_date, class_time, class_name")
+    .from("tu_class_sessions")
+    .select("session_date, start_time, definition:tu_class_definitions(name)")
     .eq("id", sessionId)
     .single();
 
+  const slotDef = slot?.definition as { name: string } | { name: string }[] | null;
+  const className = Array.isArray(slotDef) ? slotDef[0]?.name : slotDef?.name;
   const studentInfo = next.tu_students as unknown as { full_name: string; email: string; phone: string } | null;
 
   // Notify via Telegram
   try {
     await sendTelegramMessage(
-      `🔔 <b>CUPO DISPONIBLE — LISTA DE ESPERA</b>\n\n<b>${studentInfo?.full_name || "Student"}</b> fue notificado de un cupo disponible:\n<b>Clase:</b> ${slot?.class_name || "?"}\n<b>Fecha:</b> ${slot?.class_date || "?"} · ${slot?.class_time || "?"}\n\n${studentInfo?.phone ? `<a href="https://wa.me/${studentInfo.phone.replace(/[^0-9]/g, "")}">Enviar WhatsApp</a>` : `Email: ${studentInfo?.email || "?"}`}`
+      `🔔 <b>CUPO DISPONIBLE — LISTA DE ESPERA</b>\n\n<b>${studentInfo?.full_name || "Student"}</b> fue notificado de un cupo disponible:\n<b>Clase:</b> ${className || "Clase"}\n<b>Fecha:</b> ${slot?.session_date || "?"} · ${slot?.start_time || "?"}\n\n${studentInfo?.phone ? `<a href="https://wa.me/${studentInfo.phone.replace(/[^0-9]/g, "")}">Enviar WhatsApp</a>` : `Email: ${studentInfo?.email || "?"}`}`
     );
   } catch {}
 }

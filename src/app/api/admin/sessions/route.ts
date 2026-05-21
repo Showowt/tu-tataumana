@@ -148,9 +148,28 @@ export async function POST(request: NextRequest) {
     }
 
     case "complete": {
-      const { session_id: sid } = body;
+      const { session_id: sid, force } = body;
       if (!sid) {
         return NextResponse.json({ error: "session_id required" }, { status: 400 });
+      }
+
+      // Guard: prevent completing future sessions by accident
+      if (!force) {
+        const { data: sess } = await supabase
+          .from("tu_class_sessions")
+          .select("session_date, start_time")
+          .eq("id", sid)
+          .single();
+
+        if (sess) {
+          const sessionDT = new Date(`${sess.session_date}T${sess.start_time}-05:00`);
+          if (sessionDT > new Date()) {
+            return NextResponse.json(
+              { error: "No se puede completar una clase que aun no ha ocurrido. Usa force: true para forzar." },
+              { status: 400 },
+            );
+          }
+        }
       }
 
       const { error } = await supabase

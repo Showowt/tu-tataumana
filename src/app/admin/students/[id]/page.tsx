@@ -64,7 +64,7 @@ interface SessionData {
   } | null;
 }
 
-type TabKey = "info" | "packs" | "add-pack" | "book";
+type TabKey = "info" | "packs" | "add-pack" | "book" | "book-guest";
 
 const PAYMENT_METHODS = [
   { value: "cash", label: "Efectivo" },
@@ -118,6 +118,12 @@ export default function AdminStudentDetailPage() {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [bookingSessionId, setBookingSessionId] = useState("");
   const [bookingInProgress, setBookingInProgress] = useState(false);
+
+  // Guest booking (2x1)
+  const [guestSearch, setGuestSearch] = useState("");
+  const [guestResults, setGuestResults] = useState<{ id: string; full_name: string; email: string }[]>([]);
+  const [selectedGuest, setSelectedGuest] = useState<{ id: string; full_name: string } | null>(null);
+  const [guestBookingInProgress, setGuestBookingInProgress] = useState(false);
 
   /* ---------- Data fetching ---------- */
 
@@ -396,7 +402,7 @@ export default function AdminStudentDetailPage() {
   }
 
   useEffect(() => {
-    if (tab === "book") loadSessions();
+    if (tab === "book" || tab === "book-guest") loadSessions();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
@@ -440,6 +446,61 @@ export default function AdminStudentDetailPage() {
       showToast("Error de conexion");
     }
     setBookingInProgress(false);
+    setBookingSessionId("");
+  }
+
+  /* ---------- Guest booking (2x1) ---------- */
+
+  async function searchGuests(query: string) {
+    if (query.length < 2) { setGuestResults([]); return; }
+    try {
+      const res = await fetch(`/api/admin/students?search=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        // Exclude current student from results
+        setGuestResults((data.data || []).filter((s: { id: string }) => s.id !== id));
+      }
+    } catch {}
+  }
+
+  async function handleBookGuest(sessionId: string) {
+    if (!selectedGuest || !id) return;
+    setBookingSessionId(sessionId);
+    setGuestBookingInProgress(true);
+
+    // Use THIS student's pack to pay for the guest
+    const activePacks = packs.filter(
+      (p) => p.status === "active" && (p.total_classes === -1 || p.classes_remaining > 0),
+    );
+
+    if (activePacks.length === 0) {
+      showToast("Este alumno no tiene creditos disponibles");
+      setGuestBookingInProgress(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/book-class", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          student_id: selectedGuest.id,
+          session_id: sessionId,
+          pack_id: activePacks[0].id,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        showToast(data.error || "Error al reservar invitado");
+      } else {
+        showToast(`Reservado para ${selectedGuest.full_name} (credito de ${student?.full_name})`);
+        await Promise.all([loadStudent(), loadSessions()]);
+      }
+    } catch {
+      showToast("Error de conexion");
+    }
+    setGuestBookingInProgress(false);
     setBookingSessionId("");
   }
 
@@ -513,6 +574,7 @@ export default function AdminStudentDetailPage() {
     { key: "packs", label: "Packs" },
     { key: "add-pack", label: "+ Pack" },
     { key: "book", label: "Reservar" },
+    { key: "book-guest", label: "2x1 Invitado" },
   ];
 
   return (
@@ -928,6 +990,131 @@ export default function AdminStudentDetailPage() {
                 </div>
               );
             })
+          )}
+        </div>
+      )}
+
+      {tab === "book-guest" && (
+        <div className="space-y-3">
+          <p className="text-[10px] tracking-[0.2em] text-[#C9A96E] uppercase">
+            Reservar Invitado con creditos de {student.full_name}
+          </p>
+
+          {/* Credits from this student */}
+          {(() => {
+            const activePacks = packs.filter(
+              (p) => p.status === "active" && (p.total_classes === -1 || p.classes_remaining > 0),
+            );
+            const totalCredits = activePacks.reduce(
+              (s, p) => s + (p.total_classes === -1 ? 999 : p.classes_remaining), 0,
+            );
+            if (activePacks.length === 0) {
+              return (
+                <div className="bg-red-50 border border-red-200 p-4 text-center">
+                  <p className="text-xs text-red-600 mb-2">Sin creditos disponibles para usar</p>
+                  <button onClick={() => setTab("add-pack")} className="text-[10px] tracking-[0.15em] uppercase px-4 py-2 bg-[#2C2C2C] text-white hover:bg-[#B87777] transition-colors">
+                    + Crear Pack
+                  </button>
+                </div>
+              );
+            }
+            return (
+              <div className="bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700">
+                {totalCredits >= 999 ? "Creditos ilimitados" : `${totalCredits} creditos`} de {student.full_name} disponibles
+              </div>
+            );
+          })()}
+
+          {/* Guest search */}
+          <div>
+            <label className="text-[9px] tracking-[0.1em] text-[#2C2C2C]/40 uppercase block mb-1">
+              Buscar Invitado (nombre o email)
+            </label>
+            <input
+              type="text"
+              value={guestSearch}
+              onChange={(e) => {
+                setGuestSearch(e.target.value);
+                searchGuests(e.target.value);
+              }}
+              placeholder="Nombre o email del invitado..."
+              className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/20 focus:outline-none focus:border-[#C9A96E]"
+            />
+            {guestResults.length > 0 && !selectedGuest && (
+              <div className="border border-[#2C2C2C]/10 bg-white mt-1 max-h-40 overflow-y-auto">
+                {guestResults.map((g) => (
+                  <button
+                    key={g.id}
+                    onClick={() => {
+                      setSelectedGuest({ id: g.id, full_name: g.full_name });
+                      setGuestSearch(g.full_name);
+                      setGuestResults([]);
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-[#FAF8F5] border-b border-[#2C2C2C]/5 last:border-0"
+                  >
+                    <p className="text-sm text-[#2C2C2C]">{g.full_name}</p>
+                    <p className="text-[10px] text-[#2C2C2C]/30">{g.email}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {selectedGuest && (
+            <div className="bg-[#C9A96E]/10 border border-[#C9A96E]/20 px-3 py-2 flex items-center justify-between">
+              <p className="text-xs text-[#2C2C2C]">
+                Invitado: <b>{selectedGuest.full_name}</b>
+              </p>
+              <button
+                onClick={() => { setSelectedGuest(null); setGuestSearch(""); }}
+                className="text-[9px] text-red-400 hover:text-red-600"
+              >
+                Cambiar
+              </button>
+            </div>
+          )}
+
+          {/* Session list for guest booking */}
+          {selectedGuest && (
+            <>
+              <p className="text-[9px] text-[#2C2C2C]/30 uppercase tracking-wider mt-4">
+                Selecciona la clase para {selectedGuest.full_name}
+              </p>
+              {sessions.length === 0 ? (
+                <div className="bg-white border border-[#2C2C2C]/5 p-6 text-center">
+                  <p className="text-xs text-[#2C2C2C]/40">No hay clases esta semana</p>
+                </div>
+              ) : (
+                sessions.map((s) => {
+                  const def = s.definition;
+                  const spotsLeft = s.capacity - s.enrolled;
+                  const isFull = spotsLeft <= 0;
+                  const isBookingThis = bookingSessionId === s.id;
+
+                  return (
+                    <div key={s.id} className="bg-white border border-[#2C2C2C]/5 p-3 flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-[#2C2C2C]">
+                          <b>{s.start_time.slice(0, 5)}</b>{" "}
+                          {def?.name_es || def?.name || "Clase"}
+                        </p>
+                        <p className="text-[9px] text-[#2C2C2C]/30">
+                          {new Date(s.session_date + "T12:00:00").toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short" })}
+                          {" · "}{s.teacher} · {spotsLeft} cupos
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleBookGuest(s.id)}
+                        disabled={isFull || guestBookingInProgress}
+                        className="text-[10px] tracking-[0.15em] uppercase px-4 py-1.5 bg-[#C9A96E] text-white hover:bg-[#B87777] transition-colors disabled:opacity-20 disabled:cursor-not-allowed shrink-0"
+                      >
+                        {isBookingThis ? "..." : isFull ? "Llena" : "Reservar"}
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </>
           )}
         </div>
       )}
