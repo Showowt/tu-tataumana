@@ -124,8 +124,8 @@ const faqs: FAQ[] = [
     category: "payment",
     q: { en: "How does payment confirmation work?", es: "¿Cómo funciona la confirmación de pago?" },
     a: {
-      en: "Card payments are confirmed automatically. For Nequi, Bancolombia, Zelle, or PayPal, send your receipt via WhatsApp to +57 318 508 3035. Your pack will be activated within 24 hours.",
-      es: "Los pagos con tarjeta se confirman automáticamente. Para Nequi, Bancolombia, Zelle o PayPal, envía tu comprobante por WhatsApp al +57 318 508 3035. Tu pack se activará en 24 horas.",
+      en: "Card payments are confirmed automatically. For Nequi, Bancolombia, Zelle, or PayPal, send your receipt via WhatsApp to +57 316 633 3663. Your pack will be activated within 24 hours.",
+      es: "Los pagos con tarjeta se confirman automáticamente. Para Nequi, Bancolombia, Zelle o PayPal, envía tu comprobante por WhatsApp al +57 316 633 3663. Tu pack se activará en 24 horas.",
     },
   },
   // Location
@@ -150,8 +150,8 @@ const faqs: FAQ[] = [
     category: "private",
     q: { en: "Can I book a private session if I'm not in Cartagena?", es: "¿Puedo reservar una sesión privada si no estoy en Cartagena?" },
     a: {
-      en: "Yes! Tata offers virtual video sessions ($45 USD/hr) for yoga, meditation, energy work, and the transformation program. WhatsApp +57 318 508 3035 to schedule.",
-      es: "¡Sí! Tata ofrece sesiones virtuales por video ($45 USD/hr) para yoga, meditación, trabajo energético y el programa de transformación. WhatsApp +57 318 508 3035 para agendar.",
+      en: "Yes! Tata offers virtual video sessions ($45 USD/hr) for yoga, meditation, energy work, and the transformation program. WhatsApp +57 316 633 3663 to schedule.",
+      es: "¡Sí! Tata ofrece sesiones virtuales por video ($45 USD/hr) para yoga, meditación, trabajo energético y el programa de transformación. WhatsApp +57 316 633 3663 para agendar.",
     },
   },
 ];
@@ -304,7 +304,7 @@ export default function FAQPage() {
               : "Me encantaría ayudarte personalmente. Escríbeme cuando quieras."}
           </p>
           <a
-            href="https://wa.me/573185083035"
+            href="https://wa.me/573166333663"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-3 px-6 py-3 bg-[#2C2C2C] text-white text-xs tracking-[0.2em] rounded-full hover:bg-[#B87777] transition-colors"

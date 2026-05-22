@@ -309,10 +309,10 @@ export default function PackPaymentModal({
                 className="text-base text-[#2C2C2C]"
                 style={{ fontFamily: "Outfit, sans-serif" }}
               >
-                3185083035
+                3166333663
               </p>
               <button
-                onClick={() => copyToClipboard("3185083035")}
+                onClick={() => copyToClipboard("3166333663")}
                 className="text-[9px] tracking-[0.1em] uppercase px-2 py-1 border border-[#2C2C2C]/10 text-[#2C2C2C]/60 hover:border-[#B87777] hover:text-[#B87777] transition-colors"
                 style={{ fontFamily: "Outfit, sans-serif" }}
               >

@@ -117,7 +117,7 @@ function PaymentSuccessContent() {
     ? PACK_LABELS[statusData.pack_type]
     : null;
 
-  const whatsappUrl = `https://wa.me/573185083035?text=${encodeURIComponent(
+  const whatsappUrl = `https://wa.me/573166333663?text=${encodeURIComponent(
     `Hola, tengo un problema con mi pago. Referencia: ${ref}`,
   )}`;
 

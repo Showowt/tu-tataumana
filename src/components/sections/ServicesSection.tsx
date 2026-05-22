@@ -97,7 +97,7 @@ export default function ServicesSection({ lang, L, openBooking }: ServicesSectio
             <div
               key={service.name}
               className={`fade-in fade-in-delay-${Math.min(i + 1, 5)} service-card group relative p-6 sm:p-8 ${i % 3 === 1 ? 'rounded-none' : 'rounded-2xl'} border border-charcoal/5 bg-white cursor-pointer`}
-              onClick={() => window.open(`https://wa.me/573185083035?text=${encodeURIComponent(`Hola Tata! Me interesa ${lang === "en" ? service.name : service.nameEs}. ¿Tienes disponibilidad? / I'm interested in ${service.name}. Do you have availability?`)}`, "_blank")}
+              onClick={() => window.open(`https://wa.me/573166333663?text=${encodeURIComponent(`Hola Tata! Me interesa ${lang === "en" ? service.name : service.nameEs}. ¿Tienes disponibilidad? / I'm interested in ${service.name}. Do you have availability?`)}`, "_blank")}
             >
               <div className="flex items-start justify-between gap-2 mb-1">
                 <h3 className="font-[family-name:var(--font-display)] text-xl sm:text-2xl text-charcoal group-hover:text-rose transition-colors duration-300">

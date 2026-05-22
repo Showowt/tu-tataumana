@@ -64,7 +64,7 @@ export default function PaymentMethodsSection({ lang, L, openBooking }: PaymentM
                 {L(t.paymentNequiDesc) as string}
               </p>
             </div>
-            <p className="font-mono text-sm text-charcoal/70 shrink-0">3185083035</p>
+            <p className="font-mono text-sm text-charcoal/70 shrink-0">3166333663</p>
           </div>
 
           {/* Bancolombia */}
@@ -104,8 +104,8 @@ export default function PaymentMethodsSection({ lang, L, openBooking }: PaymentM
         <div className="fade-in fade-in-delay-5 mt-6 text-center">
           <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/40">
             {L(t.paymentReceipt) as string}:{" "}
-            <a href="https://wa.me/573185083035" target="_blank" rel="noopener noreferrer" className="text-rose hover:text-rose-soft underline underline-offset-2 transition-colors">
-              +57 318 508 3035
+            <a href="https://wa.me/573166333663" target="_blank" rel="noopener noreferrer" className="text-rose hover:text-rose-soft underline underline-offset-2 transition-colors">
+              +57 316 633 3663
             </a>
           </p>
         </div>

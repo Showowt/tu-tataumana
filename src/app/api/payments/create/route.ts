@@ -82,7 +82,7 @@ type CreatePaymentResponse = SquareSuccessResponse | ManualSuccessResponse | Err
 const MANUAL_ACCOUNTS: Record<"nequi" | "bancolombia" | "zelle", { label: string; info: string }> = {
   nequi: {
     label: "Nequi",
-    info: "3185083035",
+    info: "3166333663",
   },
   bancolombia: {
     label: "Bancolombia Cuenta Ahorros",
@@ -96,7 +96,7 @@ const MANUAL_ACCOUNTS: Record<"nequi" | "bancolombia" | "zelle", { label: string
 
 const VALID_PAYMENT_METHODS: PaymentMethod[] = ["square", "nequi", "bancolombia", "zelle"];
 
-const TATA_WHATSAPP = "573185083035";
+const TATA_WHATSAPP = "573166333663";
 
 // -------------------------------------------------------------------
 // Helpers

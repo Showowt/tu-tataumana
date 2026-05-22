@@ -170,7 +170,7 @@ export const metadata: Metadata = {
     "geo.placename": "Cartagena de Indias",
     "geo.position": "10.4236;-75.5506",
     ICBM: "10.4236, -75.5506",
-    "contact:phone_number": "+573185083035",
+    "contact:phone_number": "+573166333663",
     "contact:email": "tata@tuisyou.com",
     "business:contact_data:street_address": "Centro Historico, Walled City",
     "business:contact_data:locality": "Cartagena de Indias",

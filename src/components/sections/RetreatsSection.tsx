@@ -80,7 +80,7 @@ export default function RetreatsSection({ lang, L }: RetreatsSectionProps) {
                     {retreat.price}
                   </span>
                   <button
-                    onClick={() => window.open(`https://wa.me/573185083035?text=${encodeURIComponent(`Hola Tata! Me interesa ${retreat.title}. ¿Puedes darme más información? / I'm interested in ${retreat.title}. Can you give me more info?`)}`, "_blank")}
+                    onClick={() => window.open(`https://wa.me/573166333663?text=${encodeURIComponent(`Hola Tata! Me interesa ${retreat.title}. ¿Puedes darme más información? / I'm interested in ${retreat.title}. Can you give me more info?`)}`, "_blank")}
                     className="btn-tactile font-[family-name:var(--font-body)] text-sm tracking-[0.15em] text-rose hover:text-charcoal transition-colors py-2"
                   >
                     {L(t.inquire) as string}

@@ -907,7 +907,7 @@ export default function BookingModal({
                       Nequi
                     </p>
                     <p className="font-[family-name:var(--font-body)] text-[11px] text-charcoal/40">
-                      Send to <span className="font-mono">3185083035</span>
+                      Send to <span className="font-mono">3166333663</span>
                     </p>
                   </div>
                   <svg className="w-4 h-4 text-charcoal/20 group-hover:text-[#E6007E] transition-colors shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -1057,7 +1057,7 @@ export default function BookingModal({
                   <p className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.2em] text-gold/70 font-medium mb-3">NEXT STEP</p>
                   <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 mb-3">Open your Nequi app and send payment to:</p>
                   <div className="bg-white rounded-xl p-4 text-center">
-                    <p className="font-mono text-xl text-charcoal font-medium">3185083035</p>
+                    <p className="font-mono text-xl text-charcoal font-medium">3166333663</p>
                     <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 mt-1">Include your name: {name}</p>
                   </div>
                 </div>
@@ -1111,7 +1111,7 @@ export default function BookingModal({
                     : "Send your payment receipt and confirm your booking:"}
                 </p>
                 <a
-                  href={`https://wa.me/573185083035?text=${encodeURIComponent(
+                  href={`https://wa.me/573166333663?text=${encodeURIComponent(
                     selectedPayment === "wompi"
                       ? `Hola Tata! Acabo de reservar y pagar con tarjeta para ${bookingService}${date ? ` el ${formatDateDisplay(date)}` : ""}${selectedTime ? ` a las ${selectedTime}` : ""}. Mi nombre es ${name}. Quedo atenta a la confirmación!\n\nHi Tata! I just booked and paid by card for ${bookingService}${date ? ` on ${formatDateDisplay(date)}` : ""}${selectedTime ? ` at ${selectedTime}` : ""}. My name is ${name}. Looking forward to confirmation!`
                       : `Hola Tata! Reservé ${bookingService}${date ? ` el ${formatDateDisplay(date)}` : ""}${selectedTime ? ` a las ${selectedTime}` : ""}. Mi nombre es ${name}. ${!selectedPayment ? "Pagaré en efectivo al llegar." : "Ya envié el pago, adjunto comprobante."}\n\nHi Tata! I booked ${bookingService}${date ? ` on ${formatDateDisplay(date)}` : ""}${selectedTime ? ` at ${selectedTime}` : ""}. My name is ${name}. ${!selectedPayment ? "I'll pay cash on arrival." : "Payment sent, receipt attached."}`

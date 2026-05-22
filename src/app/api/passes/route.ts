@@ -1,7 +1,7 @@
 /**
  * Class Pass API — TU. by Tata Umana
  *
- * GET /api/passes?phone=573185083035  → Check pass balance for a phone number
+ * GET /api/passes?phone=573166333663  → Check pass balance for a phone number
  * POST /api/passes                    → Create a new pass (admin or after payment)
  * PATCH /api/passes                   → Use a class from a pass (called by bookings API)
  */

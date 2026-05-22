@@ -10,7 +10,7 @@ export default function StructuredData() {
     description:
       "Transformative wellness experiences in Cartagena, Colombia. Yoga classes, sound healing, Reiki, Ayurveda, energy work, sacred ceremonies, and personalized retreats with 30-year practitioner Tata Umana. Featured in Vogue, Forbes, and Caribbean Journal.",
     url: baseUrl,
-    telephone: "+573185083035",
+    telephone: "+573166333663",
     email: "tata@tuisyou.com",
     image: `${baseUrl}/opengraph-image`,
     logo: `${baseUrl}/tu-logo.png`,
@@ -139,8 +139,8 @@ export default function StructuredData() {
       faq("Do I need experience to do yoga with Tata Umana?", "No experience needed! Many clients are complete beginners. Private sessions are designed for YOUR body and YOUR level. Tata adapts every practice to where you are. Flexibility is a result of practice, not a requirement."),
       faq("What is Reiki energy healing?", "Reiki is a Japanese energy healing technique where universal life force energy is channeled through the practitioner's hands. Tata is a certified Reiki Master in the Usui lineage with 15+ years of practice. You lie fully clothed and may feel warmth, tingling, or deep relaxation."),
       faq("Where is TU. by Tata Umana located?", "TU. is located at Casa Carolina Boutique Hotel in the Centro Historico (Walled City) of Cartagena de Indias, Colombia. Tata can also travel to your hotel or villa within Cartagena for private sessions."),
-      faq("What payment methods are accepted?", "Credit/debit cards via Wompi (Visa, Mastercard, Amex), Nequi (3185083035), Bancolombia transfer (Ahorros 207-859047-00), Zelle/PayPal (+1 917 453 8307), and cash in COP or USD."),
-      faq("Can I book a wellness retreat in Cartagena?", "Yes! The TUISYOU Personalized Program is a 3-month transformation journey ($7,750,000 COP / $2,046 USD). Custom retreats for groups (bachelorette parties, corporate teams, families) are also available. Contact Tata via WhatsApp +57 318 508 3035."),
+      faq("What payment methods are accepted?", "Credit/debit cards via Wompi (Visa, Mastercard, Amex), Nequi (3166333663), Bancolombia transfer (Ahorros 207-859047-00), Zelle/PayPal (+1 917 453 8307), and cash in COP or USD."),
+      faq("Can I book a wellness retreat in Cartagena?", "Yes! The TUISYOU Personalized Program is a 3-month transformation journey ($7,750,000 COP / $2,046 USD). Custom retreats for groups (bachelorette parties, corporate teams, families) are also available. Contact Tata via WhatsApp +57 316 633 3663."),
       faq("Are virtual yoga and wellness sessions available?", "Yes! Video Connection sessions are available for personalized guidance from anywhere in the world — 60 min ($170,000 COP / $45 USD) or 30 min ($120,000 COP / $32 USD)."),
     ],
   };

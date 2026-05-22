@@ -508,7 +508,7 @@ const PAYMENT_METHODS = [
     name: "Nequi",
     nameEs: "Nequi",
     icon: "📱",
-    number: "3185083035",
+    number: "3166333663",
     description: "Send to this Nequi number",
     descriptionEs: "Envía a este número Nequi",
     type: "copy" as const,

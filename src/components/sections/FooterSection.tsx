@@ -58,7 +58,7 @@ export default function FooterSection({ lang, L, openBooking, showStickyBar }: F
                   @justbyogabytuisyou
                 </a>
                 <a
-                  href="https://wa.me/573185083035"
+                  href="https://wa.me/573166333663"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block font-[family-name:var(--font-body)] text-sm text-charcoal/50 hover:text-rose transition-colors py-1"

@@ -155,8 +155,8 @@ export default function PrivacyPage() {
             <p>
               {L(
                 lang,
-                "For privacy-related inquiries, contact us at tataumana@gmail.com or via WhatsApp at +57 318 508 3035.",
-                "Para consultas relacionadas con privacidad, contactanos en tataumana@gmail.com o via WhatsApp al +57 318 508 3035.",
+                "For privacy-related inquiries, contact us at tataumana@gmail.com or via WhatsApp at +57 316 633 3663.",
+                "Para consultas relacionadas con privacidad, contactanos en tataumana@gmail.com o via WhatsApp al +57 316 633 3663.",
               )}
             </p>
             <p className="mt-2 text-xs text-[#2C2C2C]/40">

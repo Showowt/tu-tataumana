@@ -133,8 +133,8 @@ export default function TermsPage() {
             <p>
               {L(
                 lang,
-                "For questions about these terms, contact us at tataumana@gmail.com or via WhatsApp at +57 318 508 3035.",
-                "Para preguntas sobre estos terminos, contactanos en tataumana@gmail.com o via WhatsApp al +57 318 508 3035.",
+                "For questions about these terms, contact us at tataumana@gmail.com or via WhatsApp at +57 316 633 3663.",
+                "Para preguntas sobre estos terminos, contactanos en tataumana@gmail.com o via WhatsApp al +57 316 633 3663.",
               )}
             </p>
           </section>
