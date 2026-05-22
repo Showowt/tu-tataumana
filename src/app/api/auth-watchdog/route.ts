@@ -16,10 +16,14 @@ import { createClient } from "@supabase/supabase-js";
 import { sendTelegramMessage } from "@/lib/telegram";
 
 export async function GET(request: NextRequest) {
-  // Auth check
-  const authHeader = request.headers.get("authorization");
+  // Auth check — mandatory
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    console.error("[auth-watchdog] CRON_SECRET not configured");
+    return NextResponse.json({ error: "Not configured" }, { status: 503 });
+  }
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

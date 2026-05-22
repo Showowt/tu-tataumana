@@ -71,9 +71,11 @@ export async function POST(request: NextRequest) {
 
   // 4. Deduct pack credit if pack provided
   if (pack_id) {
+    // Verify pack ownership: must belong to the student being booked (or credit_from_student_id)
+    const packOwnerId = credit_from_student_id || student_id;
     const { data: pack } = await supabase
       .from("tu_packs")
-      .select("id, total_classes, classes_used, status")
+      .select("id, total_classes, classes_used, status, student_id")
       .eq("id", pack_id)
       .single();
 
@@ -81,20 +83,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Pack no activo" }, { status: 400 });
     }
 
-    // Deduct credit (unless unlimited)
+    if (pack.student_id !== packOwnerId) {
+      return NextResponse.json({ error: "Pack no pertenece al alumno indicado" }, { status: 403 });
+    }
+
+    // Deduct credit (unless unlimited) with optimistic lock
     if (pack.total_classes !== -1) {
       const remaining = pack.total_classes - (pack.classes_used || 0);
       if (remaining <= 0) {
         return NextResponse.json({ error: "Pack sin creditos disponibles" }, { status: 400 });
       }
 
-      await supabase
+      const newUsed = (pack.classes_used || 0) + 1;
+      const { data: updatedPack, error: packErr } = await supabase
         .from("tu_packs")
         .update({
-          classes_used: (pack.classes_used || 0) + 1,
-          status: (pack.classes_used || 0) + 1 >= pack.total_classes ? "exhausted" : "active",
+          classes_used: newUsed,
+          status: newUsed >= pack.total_classes ? "exhausted" : "active",
         })
-        .eq("id", pack_id);
+        .eq("id", pack_id)
+        .eq("classes_used", pack.classes_used || 0)
+        .select("id")
+        .single();
+
+      if (packErr || !updatedPack) {
+        return NextResponse.json({ error: "Conflicto al deducir credito — intenta de nuevo" }, { status: 409 });
+      }
     }
   }
 
@@ -120,11 +134,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 6. Increment enrolled count on session
+  // 6. Increment enrolled count on session (optimistic lock)
   await supabase
     .from("tu_class_sessions")
     .update({ enrolled: (session.enrolled || 0) + 1 })
-    .eq("id", session_id);
+    .eq("id", session_id)
+    .eq("enrolled", session.enrolled || 0);
 
   // 7. Fire-and-forget notification
   try {

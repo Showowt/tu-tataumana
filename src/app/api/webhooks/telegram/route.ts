@@ -2373,6 +2373,16 @@ async function handleWeekClassRoster(supabase: SupabaseClient): Promise<string> 
 
 export async function POST(request: NextRequest) {
   try {
+    // Security: verify Telegram webhook secret token
+    const telegramSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+    if (telegramSecret) {
+      const incomingSecret = request.headers.get("x-telegram-bot-api-secret-token");
+      if (incomingSecret !== telegramSecret) {
+        console.warn("[Telegram] Invalid webhook secret token");
+        return NextResponse.json({ ok: true });
+      }
+    }
+
     const update: TelegramUpdate = await request.json();
     const message = update.message;
 
@@ -2383,7 +2393,7 @@ export async function POST(request: NextRequest) {
 
     // Security: verify chat_id matches TELEGRAM_CHAT_ID
     const allowedChatId = getAllowedChatId();
-    if (allowedChatId && String(message.chat.id) !== allowedChatId) {
+    if (!allowedChatId || String(message.chat.id) !== allowedChatId) {
       console.warn(
         `[Telegram] Unauthorized chat_id: ${message.chat.id} (expected ${allowedChatId})`
       );

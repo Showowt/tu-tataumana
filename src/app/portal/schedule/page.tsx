@@ -62,11 +62,17 @@ export default function SchedulePage() {
   }, [weekOffset]);
 
   const loadSchedule = useCallback(async () => {
-    const { from, to } = getWeekDates();
-    const res = await fetch(`/api/schedule?from=${from}&to=${to}`);
-    if (res.ok) {
+    try {
+      const { from, to } = getWeekDates();
+      const res = await fetch(`/api/schedule?from=${from}&to=${to}`);
+      if (!res.ok) {
+        console.error("[portal/schedule] API error:", res.status);
+        return;
+      }
       const data = await res.json();
       setSessions(data.sessions || []);
+    } catch (err) {
+      console.error("[portal/schedule] Failed to load schedule:", err);
     }
   }, [getWeekDates]);
 

@@ -1,16 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { notifyNewBooking } from "@/lib/telegram";
 import { CAPACITY } from "@/lib/schedule";
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { getAdminClient } from "@/lib/admin-auth";
 
 export async function POST(request: Request) {
   try {
@@ -33,7 +24,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = getSupabase();
+    let supabase;
+    try {
+      supabase = getAdminClient();
+    } catch {
+      supabase = null;
+    }
 
     if (!supabase) {
       console.warn("[API/bookings] Supabase not configured, skipping DB write");
@@ -194,33 +190,4 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
-  try {
-    const supabase = getSupabase();
-    if (!supabase) {
-      return NextResponse.json({ data: [], message: "DB not configured" });
-    }
-
-    const { data, error } = await supabase
-      .from("tu_bookings")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    if (error) {
-      console.error("[API/bookings]", error);
-      return NextResponse.json(
-        { error: "Failed to fetch bookings" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ data });
-  } catch (err) {
-    console.error("[API/bookings]", err);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
+// GET removed — use /api/admin/dashboard or portal endpoints instead

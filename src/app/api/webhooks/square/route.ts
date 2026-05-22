@@ -22,9 +22,8 @@ import { systemLog } from "@/lib/system-log";
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY required for webhooks");
   return createClient(url, key);
 }
 
@@ -212,16 +211,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const signature = request.headers.get("x-square-hmacsha256-signature") || "";
     const webhookUrl = request.url;
 
-    // Verify signature if key is configured
-    if (process.env.SQUARE_WEBHOOK_SIGNATURE_KEY) {
-      const isValid = verifySquareWebhook(rawBody, signature, webhookUrl);
-      if (!isValid) {
-        console.error("[square-webhook] REJECTED: Invalid Square signature");
-        return NextResponse.json(
-          { error: "Invalid signature" },
-          { status: 401 },
-        );
-      }
+    // Verify signature — MANDATORY
+    if (!process.env.SQUARE_WEBHOOK_SIGNATURE_KEY) {
+      console.error("[square-webhook] SQUARE_WEBHOOK_SIGNATURE_KEY not configured — rejecting all events");
+      return NextResponse.json(
+        { error: "Webhook not configured" },
+        { status: 503 },
+      );
+    }
+    const isValid = verifySquareWebhook(rawBody, signature, webhookUrl);
+    if (!isValid) {
+      console.error("[square-webhook] REJECTED: Invalid Square signature");
+      return NextResponse.json(
+        { error: "Invalid signature" },
+        { status: 401 },
+      );
     }
 
     const payload: SquareWebhookEvent = JSON.parse(rawBody);

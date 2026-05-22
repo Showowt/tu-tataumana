@@ -72,13 +72,14 @@ export async function POST(request: NextRequest) {
     // Normalize code: strip non-alphanumeric, uppercase
     const code = rawCode.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
 
-    // Log every validation attempt for debugging
+    // Log every validation attempt for debugging (redact full code for security)
+    const redactedCode = code.length > 4 ? code.slice(0, -4) + "****" : "****";
     await systemLog({
       category: "discount",
       level: "info",
-      message: `Discount validation attempt: "${rawCode}" → normalized "${code}" for pack ${pack_type}`,
+      message: `Discount validation attempt: "${redactedCode}" for pack ${pack_type}`,
       route: "discounts/validate",
-      details: { raw_code: rawCode, normalized_code: code, pack_type, user_id: user.id },
+      details: { code_prefix: redactedCode, pack_type, user_id: user.id },
     });
 
     // Look up pack definition

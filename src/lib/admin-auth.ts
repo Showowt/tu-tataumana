@@ -13,30 +13,14 @@ interface AdminResult {
 }
 
 /**
- * Verifies admin access via two methods:
- * 1. Supabase Auth session with admin email
- * 2. Legacy x-admin-key header (for mobile/Tata quick access)
+ * Verifies admin access via Supabase Auth session.
+ * Only users with admin emails can access admin routes.
  *
- * Returns the admin record + session-aware supabase client, or null.
+ * Returns the admin record + service-role supabase client, or null.
  */
 export async function verifyAdmin(
-  request?: NextRequest,
+  _request?: NextRequest,
 ): Promise<AdminResult | null> {
-  // Method 1: Legacy header auth — uses service role or anon client
-  if (request) {
-    const adminKey = request.headers.get("x-admin-key");
-    const expected = process.env.TU_ADMIN_KEY || "";
-    if (adminKey && adminKey === expected) {
-      return {
-        id: "header-admin",
-        email: "admin@tataumana.com",
-        role: "admin",
-        supabase: getServiceOrAnonClient(),
-      };
-    }
-  }
-
-  // Method 2: Supabase session auth — returns session-aware client
   try {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -68,15 +52,11 @@ export async function verifyAdmin(
       return null;
     }
 
-    // Use service role client if available (bypasses RLS), otherwise session client
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const queryClient = serviceKey ? getServiceOrAnonClient() : supabase;
-
     return {
       id: user.id,
       email: user.email!,
       role: "admin",
-      supabase: queryClient,
+      supabase: getServiceClient(),
     };
   } catch {
     return null;
@@ -85,16 +65,17 @@ export async function verifyAdmin(
 
 /**
  * Gets a service-role Supabase client for admin operations.
- * Falls back to anon key if service role isn't set.
+ * Throws if SUPABASE_SERVICE_ROLE_KEY is not configured.
  */
-export function getAdminClient() {
-  return getServiceOrAnonClient();
+export function getAdminClient(): SupabaseClient {
+  return getServiceClient();
 }
 
-function getServiceOrAnonClient(): SupabaseClient {
+function getServiceClient(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required for admin operations");
+  }
   return adminCreateClient(url, key);
 }

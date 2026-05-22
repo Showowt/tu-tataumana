@@ -115,13 +115,20 @@ export async function POST(request: NextRequest) {
         .eq("session_id", session_id)
         .eq("status", "confirmed");
 
+      let refundErrors = 0;
       for (const booking of bookings || []) {
-        await supabase
+        const { error: cancelErr } = await supabase
           .from("tu_class_bookings")
           .update({ status: "cancelled", cancelled_at: new Date().toISOString(), cancel_reason: "Session cancelled" })
           .eq("id", booking.id);
 
-        // Refund pack credit
+        if (cancelErr) {
+          console.error("[admin/sessions cancel] Booking cancel failed:", booking.id, cancelErr.message);
+          refundErrors++;
+          continue;
+        }
+
+        // Refund pack credit with optimistic lock
         if (booking.pack_id) {
           const { data: pack } = await supabase
             .from("tu_packs")
@@ -130,15 +137,25 @@ export async function POST(request: NextRequest) {
             .single();
 
           if (pack) {
-            await supabase
+            const { error: refundErr } = await supabase
               .from("tu_packs")
               .update({
                 classes_used: Math.max((pack.classes_used || 0) - 1, 0),
                 status: pack.status === "exhausted" ? "active" : pack.status,
               })
-              .eq("id", booking.pack_id);
+              .eq("id", booking.pack_id)
+              .eq("classes_used", pack.classes_used);
+
+            if (refundErr) {
+              console.error("[admin/sessions cancel] Pack refund failed:", booking.pack_id, refundErr.message);
+              refundErrors++;
+            }
           }
         }
+      }
+
+      if (refundErrors > 0) {
+        console.error(`[admin/sessions cancel] ${refundErrors} refund errors for session ${session_id}`);
       }
 
       return NextResponse.json({
@@ -222,7 +239,7 @@ export async function POST(request: NextRequest) {
     }
 
     case "generate": {
-      const weeks = body.weeks || 4;
+      const weeks = Math.min(Math.max(body.weeks || 4, 1), 12);
       const { data: definitions } = await supabase
         .from("tu_class_definitions")
         .select("*")

@@ -1,32 +1,15 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdmin } from "@/lib/admin-auth";
 import { CAPACITY } from "@/lib/schedule";
 
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
-
-function verifyAdmin(request: NextRequest): boolean {
-  const adminKey = request.headers.get("x-admin-key");
-  const expected = process.env.TU_ADMIN_KEY || "";
-  return adminKey === expected;
-}
-
-// POST /api/admin/book — Admin books a student into a class
+// POST /api/admin/book — Admin books a student into a class (legacy tu_bookings)
 export async function POST(request: NextRequest) {
-  if (!verifyAdmin(request)) {
+  const admin = await verifyAdmin(request);
+  if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getSupabase();
-  if (!supabase) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 500 });
-  }
+  const supabase = admin.supabase;
 
   try {
     const body = await request.json();
@@ -39,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If using a pass, verify it has remaining credits and deduct
+    // If using a pass, verify it has remaining credits and deduct with optimistic lock
     if (payment_type === "package" && pass_id) {
       const { data: pass } = await supabase
         .from("tu_passes")
@@ -54,18 +37,21 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Deduct one credit (classes_remaining is generated, only update classes_used)
-      const { error: passErr } = await supabase
+      // Deduct one credit with optimistic lock
+      const { data: updated, error: passErr } = await supabase
         .from("tu_passes")
         .update({
           classes_used: pass.classes_used + 1,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", pass_id);
+        .eq("id", pass_id)
+        .eq("classes_used", pass.classes_used)
+        .select("id")
+        .single();
 
-      if (passErr) {
+      if (passErr || !updated) {
         console.error("[Admin/book] Pass deduction error:", passErr);
-        return NextResponse.json({ error: "Failed to deduct pass credit" }, { status: 500 });
+        return NextResponse.json({ error: "Failed to deduct pass credit (concurrent update)" }, { status: 409 });
       }
     }
 
@@ -90,7 +76,8 @@ export async function POST(request: NextRequest) {
       await supabase
         .from("tu_class_slots")
         .update({ enrolled: existingSlot.enrolled + 1, updated_at: new Date().toISOString() })
-        .eq("id", existingSlot.id);
+        .eq("id", existingSlot.id)
+        .eq("enrolled", existingSlot.enrolled);
     } else {
       await supabase.from("tu_class_slots").insert({
         class_date,

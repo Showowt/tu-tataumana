@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 /**
  * POST /api/admin/send-instructions
  * One-time endpoint to send login instructions to Telegram.
- * Protected by admin key.
+ * Protected by admin session auth.
  */
 export async function POST(request: NextRequest) {
-  const adminKey = request.headers.get("x-admin-key");
-  const expected = process.env.TU_ADMIN_KEY || "";
-  if (adminKey !== expected) {
+  const admin = await verifyAdmin(request);
+  if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -28,11 +28,9 @@ Hola Tata! Tu panel de administracion esta listo.
 
 <b>Como iniciar sesion:</b>
 1. Ve a <b>tataumana.com/login</b>
-2. Email: <b>tataumana@gmail.com</b>
-3. Contrasena: <b>TataYoga2026!</b>
-4. Click "Iniciar Sesion"
-
-(Tambien puedes usar "Enlace Magico" — te llega un link al email)
+2. Usa tu email de admin
+3. Click "Enlace Magico" — te llega un link al email
+4. O usa tu contrasena si la tienes configurada
 
 <b>Que puedes hacer en el Admin:</b>
 

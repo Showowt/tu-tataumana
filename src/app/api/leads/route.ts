@@ -1,18 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { notifyHotLead } from "@/lib/telegram";
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { verifyAdmin, getAdminClient } from "@/lib/admin-auth";
 
 /**
- * POST /api/leads — Capture a lead from any source
+ * POST /api/leads — Capture a lead from any source (public — lead capture)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -37,9 +28,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = getSupabase();
-
-    if (!supabase) {
+    let supabase;
+    try {
+      supabase = getAdminClient();
+    } catch {
       console.warn("[API/leads] Supabase not configured");
       // Still send Telegram for hot leads
       if (warmth === "hot" || booking_step === "abandoned") {
@@ -108,19 +100,20 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/leads — Fetch all leads for admin dashboard
+ * GET /api/leads — Fetch all leads for admin dashboard (ADMIN ONLY)
  */
 export async function GET(request: NextRequest) {
-  try {
-    const supabase = getSupabase();
-    if (!supabase) {
-      return NextResponse.json({ data: [], message: "DB not configured" });
-    }
+  const admin = await verifyAdmin(request);
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
+  try {
+    const supabase = admin.supabase;
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const warmth = searchParams.get("warmth");
-    const limit = parseInt(searchParams.get("limit") || "100");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 500);
 
     let query = supabase
       .from("tu_leads")
@@ -152,9 +145,14 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * PATCH /api/leads — Update lead status (for Tata's follow-up)
+ * PATCH /api/leads — Update lead status (ADMIN ONLY)
  */
 export async function PATCH(request: NextRequest) {
+  const admin = await verifyAdmin(request);
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { id, status, tata_notes, warmth } = body;
@@ -163,11 +161,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Lead ID required" }, { status: 400 });
     }
 
-    const supabase = getSupabase();
-    if (!supabase) {
-      return NextResponse.json({ error: "DB not configured" }, { status: 503 });
-    }
-
+    const supabase = admin.supabase;
     const updates: Record<string, unknown> = {};
     if (status) updates.status = status;
     if (tata_notes !== undefined) updates.tata_notes = tata_notes;

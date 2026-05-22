@@ -12,17 +12,19 @@ import { sendTelegramMessage } from "@/lib/telegram";
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY required for cron jobs");
   return createClient(url, key);
 }
 
 export async function GET(request: NextRequest) {
-  // Auth: only allow Vercel cron or requests with correct secret
-  const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    console.error("[cron/expire-packs] CRON_SECRET not configured");
+    return NextResponse.json({ error: "Not configured" }, { status: 503 });
+  }
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -42,6 +44,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 2. Mark exhausted packs (classes_used >= total_classes, excluding unlimited)
+  // Fetch IDs then bulk update to avoid N+1 and timeout mid-loop
   let exhaustedCount = 0;
   {
     const { data: activePacks } = await supabase
@@ -51,16 +54,19 @@ export async function GET(request: NextRequest) {
       .neq("total_classes", -1);
 
     if (activePacks) {
-      const toExhaust = activePacks.filter(
-        (p) => p.classes_used >= p.total_classes,
-      );
-      for (const pack of toExhaust) {
-        await supabase
+      const toExhaustIds = activePacks
+        .filter((p) => p.classes_used >= p.total_classes)
+        .map((p) => p.id);
+
+      if (toExhaustIds.length > 0) {
+        const { data: exhausted } = await supabase
           .from("tu_packs")
           .update({ status: "exhausted" })
-          .eq("id", pack.id);
+          .in("id", toExhaustIds)
+          .select("id");
+
+        exhaustedCount = exhausted?.length || 0;
       }
-      exhaustedCount = toExhaust.length;
     }
   };
 

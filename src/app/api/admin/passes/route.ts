@@ -1,32 +1,36 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdmin } from "@/lib/admin-auth";
+import { z } from "zod";
 
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+const CreatePassSchema = z.object({
+  name: z.string().optional().nullable(),
+  phone: z.string().min(1),
+  email: z.string().email().optional().nullable(),
+  pass_type: z.string().min(1),
+  total_classes: z.number().int().min(1),
+  payment_method: z.string().optional().default("cash"),
+  notes: z.string().optional().nullable(),
+  expires_at: z.string().optional().nullable(),
+});
 
-function verifyAdmin(request: NextRequest): boolean {
-  const adminKey = request.headers.get("x-admin-key");
-  const expected = process.env.TU_ADMIN_KEY || "";
-  return adminKey === expected;
-}
+const UpdatePassSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(["active", "expired", "exhausted", "cancelled"]).optional(),
+  notes: z.string().optional().nullable(),
+  total_classes: z.number().int().min(1).optional(),
+  payment_confirmed: z.boolean().optional(),
+  expires_at: z.string().optional().nullable(),
+  add_credits: z.number().int().min(1).optional(),
+});
 
 // GET /api/admin/passes — List all passes (optionally filter by phone or status)
 export async function GET(request: NextRequest) {
-  if (!verifyAdmin(request)) {
+  const admin = await verifyAdmin(request);
+  if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getSupabase();
-  if (!supabase) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 500 });
-  }
-
+  const supabase = admin.supabase;
   const { searchParams } = new URL(request.url);
   const phone = searchParams.get("phone");
   const status = searchParams.get("status");
@@ -55,25 +59,24 @@ export async function GET(request: NextRequest) {
 
 // POST /api/admin/passes — Create a new pass
 export async function POST(request: NextRequest) {
-  if (!verifyAdmin(request)) {
+  const admin = await verifyAdmin(request);
+  if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getSupabase();
-  if (!supabase) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 500 });
-  }
+  const supabase = admin.supabase;
 
   try {
     const body = await request.json();
-    const { name, phone, email, pass_type, total_classes, payment_method, notes, expires_at } = body;
-
-    if (!phone || !pass_type || !total_classes) {
+    const parsed = CreatePassSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "phone, pass_type, and total_classes are required" },
-        { status: 400 }
+        { error: "Validation failed", details: parsed.error.issues },
+        { status: 400 },
       );
     }
+
+    const { name, phone, email, pass_type, total_classes, payment_method, notes, expires_at } = parsed.data;
 
     const { data, error } = await supabase
       .from("tu_passes")
@@ -107,28 +110,28 @@ export async function POST(request: NextRequest) {
 
 // PATCH /api/admin/passes — Update a pass (adjust credits, change status)
 export async function PATCH(request: NextRequest) {
-  if (!verifyAdmin(request)) {
+  const admin = await verifyAdmin(request);
+  if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getSupabase();
-  if (!supabase) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 500 });
-  }
+  const supabase = admin.supabase;
 
   try {
     const body = await request.json();
-    const { id, ...updates } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: "Pass id is required" }, { status: 400 });
+    const parsed = UpdatePassSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.issues },
+        { status: 400 },
+      );
     }
 
-    // classes_remaining is a generated column — never set it directly
-    delete updates.classes_remaining;
+    const { id, add_credits, ...allowedUpdates } = parsed.data;
+    const updates: Record<string, unknown> = { ...allowedUpdates };
 
     // If adding credits, increase total_classes (classes_remaining auto-recalculates)
-    if (updates.add_credits) {
+    if (add_credits) {
       const { data: current } = await supabase
         .from("tu_passes")
         .select("total_classes")
@@ -136,9 +139,8 @@ export async function PATCH(request: NextRequest) {
         .single();
 
       if (current) {
-        updates.total_classes = current.total_classes + updates.add_credits;
+        updates.total_classes = current.total_classes + add_credits;
       }
-      delete updates.add_credits;
     }
 
     updates.updated_at = new Date().toISOString();

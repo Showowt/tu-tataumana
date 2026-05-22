@@ -30,9 +30,13 @@ async function runTest(name: string, url: string, options?: RequestInit): Promis
 }
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    console.error("[cron/smoke-test] CRON_SECRET not configured");
+    return NextResponse.json({ error: "Not configured" }, { status: 503 });
+  }
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -273,7 +273,7 @@ async function resolveDiscountCode(
 
 /**
  * Consumes a discount code AFTER payment/transaction succeeds.
- * Increments uses_count and inserts usage record.
+ * Uses read + optimistic-lock update to prevent TOCTOU race conditions.
  */
 async function consumeDiscountCode(
   serviceDb: ReturnType<typeof getServiceSupabase>,
@@ -281,18 +281,32 @@ async function consumeDiscountCode(
   studentId: string,
   transactionId: string,
 ): Promise<void> {
-  // Read current uses_count and increment
-  const { data: current } = await serviceDb
+  // Read current state
+  const { data: codeRow } = await serviceDb
     .from("tu_discount_codes")
-    .select("uses_count")
+    .select("uses_count, max_uses")
     .eq("id", discount.code_id)
     .single();
 
-  if (current) {
-    await serviceDb
-      .from("tu_discount_codes")
-      .update({ uses_count: (current.uses_count ?? 0) + 1 })
-      .eq("id", discount.code_id);
+  if (!codeRow) return;
+
+  const currentCount = codeRow.uses_count ?? 0;
+
+  // Bail if already at max
+  if (codeRow.max_uses !== null && currentCount >= codeRow.max_uses) {
+    console.error("[payments/create] Discount code already at max uses:", discount.code_id);
+    return;
+  }
+
+  // Atomic increment with optimistic lock: only update if uses_count hasn't changed
+  const { error: incErr } = await serviceDb
+    .from("tu_discount_codes")
+    .update({ uses_count: currentCount + 1 })
+    .eq("id", discount.code_id)
+    .eq("uses_count", currentCount);
+
+  if (incErr) {
+    console.error("[payments/create] Discount increment failed (concurrent use):", incErr.message);
   }
 
   // Insert usage record

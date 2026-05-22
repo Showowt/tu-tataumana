@@ -27,9 +27,8 @@ type WompiEventType =
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY required for webhooks");
   return createClient(url, key);
 }
 
@@ -246,16 +245,21 @@ export async function POST(
       timestamp: payload.timestamp,
     });
 
-    // Verify webhook signature if secret is configured
-    if (WOMPI_EVENTS_SECRET) {
-      const isValidSignature = verifyWompiSignature(payload);
-      if (!isValidSignature) {
-        console.error("[webhook] REJECTED: Invalid Wompi signature");
-        return NextResponse.json(
-          { error: "Invalid signature" },
-          { status: 401 },
-        );
-      }
+    // Verify webhook signature — MANDATORY
+    if (!WOMPI_EVENTS_SECRET) {
+      console.error("[webhook] WOMPI_EVENTS_SECRET not configured — rejecting all events");
+      return NextResponse.json(
+        { error: "Webhook not configured" },
+        { status: 503 },
+      );
+    }
+    const isValidSignature = verifyWompiSignature(payload);
+    if (!isValidSignature) {
+      console.error("[webhook] REJECTED: Invalid Wompi signature");
+      return NextResponse.json(
+        { error: "Invalid signature" },
+        { status: 401 },
+      );
     }
 
     const eventType = payload.event as WompiEventType;
