@@ -12,7 +12,7 @@ interface TeamMember {
   full_name: string;
   role: "owner" | "admin" | "manager";
   is_active: boolean;
-  telegram_chat_id: string | null;
+  has_telegram: boolean;
   created_at: string;
 }
 
@@ -324,7 +324,7 @@ export default function AdminTeamPage() {
                         >
                           {badge.label}
                         </span>
-                        {member.telegram_chat_id && (
+                        {member.has_telegram && (
                           <span className="text-[8px] tracking-wider text-green-600 bg-green-50 px-2 py-0.5 uppercase">
                             Telegram
                           </span>

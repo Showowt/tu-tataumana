@@ -74,25 +74,25 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Admin API routes: reject with 401 if not admin
-  if (request.nextUrl.pathname.startsWith("/api/admin")) {
-    const isAdmin = user?.email
-      ? await checkAdminAccess(user.email)
-      : false;
+  // Admin routes (pages + API): single DB check for both
+  const isAdminRoute =
+    request.nextUrl.pathname.startsWith("/admin") ||
+    request.nextUrl.pathname.startsWith("/api/admin");
 
-    if (!isAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  }
-
-  // Admin pages: reject if not admin (show login instead of blank page)
-  if (request.nextUrl.pathname.startsWith("/admin") && user?.email) {
+  if (isAdminRoute && user?.email) {
     const isAdmin = await checkAdminAccess(user.email);
     if (!isAdmin) {
+      if (request.nextUrl.pathname.startsWith("/api/admin")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      // Non-admin user trying to access admin pages — redirect to portal
       const url = request.nextUrl.clone();
       url.pathname = "/portal";
       return NextResponse.redirect(url);
     }
+  } else if (isAdminRoute && request.nextUrl.pathname.startsWith("/api/admin")) {
+    // No user at all on admin API
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Redirect authenticated users away from login page

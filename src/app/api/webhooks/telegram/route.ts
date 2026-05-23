@@ -2406,8 +2406,7 @@ export async function POST(request: NextRequest) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: allowedChatId,
-            text: `🔔 Nuevo usuario intentó usar el bot:\n\nChat ID: ${message.chat.id}\nNombre: ${message.from.first_name}\nMensaje: ${message.text || "(foto/media)"}\n\nPara agregarlo, añade este ID a TELEGRAM_EXTRA_CHAT_IDS en Vercel.`,
-            parse_mode: "HTML",
+            text: `Nuevo usuario intento usar el bot:\n\nChat ID: ${message.chat.id}\nNombre: ${String(message.from.first_name).replace(/[<>&]/g, "")}\nMensaje: ${String(message.text || "(foto/media)").replace(/[<>&]/g, "").slice(0, 100)}\n\nPara agregarlo, anade este ID a TELEGRAM_EXTRA_CHAT_IDS en Vercel.`,
           }),
         }).catch(() => {});
       }
