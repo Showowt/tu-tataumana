@@ -10,40 +10,50 @@
 
 export async function sendTelegramMessage(text: string): Promise<boolean> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+  const primaryChatId = process.env.TELEGRAM_CHAT_ID;
 
-  if (!botToken || !chatId) {
+  if (!botToken || !primaryChatId) {
     console.error("[Telegram] TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set");
     return false;
   }
 
-  try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${botToken}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text,
-          parse_mode: "HTML",
-          disable_web_page_preview: true,
-        }),
+  // Send to primary + any extra notification recipients
+  const extraIds = (process.env.TELEGRAM_EXTRA_CHAT_IDS || "").split(",").map(s => s.trim()).filter(Boolean);
+  const allChatIds = [primaryChatId, ...extraIds];
+
+  let anySuccess = false;
+
+  for (const chatId of allChatIds) {
+    try {
+      const response = await fetch(
+        `https://api.telegram.org/bot${botToken}/sendMessage`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text,
+            parse_mode: "HTML",
+            disable_web_page_preview: true,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.text();
+        console.error(`[Telegram] Failed to send to ${chatId}:`, response.status, err);
+      } else {
+        anySuccess = true;
       }
-    );
-
-    if (!response.ok) {
-      const err = await response.text();
-      console.error("[Telegram] Failed to send message:", response.status, err);
-      return false;
+    } catch (error) {
+      console.error(`[Telegram] Error sending to ${chatId}:`, error);
     }
-
-    console.log("[Telegram] Notification sent successfully");
-    return true;
-  } catch (error) {
-    console.error("[Telegram] Error sending message:", error);
-    return false;
   }
+
+  if (anySuccess) {
+    console.log(`[Telegram] Notification sent to ${allChatIds.length} recipient(s)`);
+  }
+  return anySuccess;
 }
 
 export async function sendTelegramReply(

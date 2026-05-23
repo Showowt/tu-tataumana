@@ -2391,11 +2391,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // Security: verify chat_id matches TELEGRAM_CHAT_ID
+    // Security: verify chat_id matches allowed list
     const allowedChatId = getAllowedChatId();
-    if (!allowedChatId || String(message.chat.id) !== allowedChatId) {
+    const extraChatIds = (process.env.TELEGRAM_EXTRA_CHAT_IDS || "").split(",").map(s => s.trim()).filter(Boolean);
+    const allAllowed = [allowedChatId, ...extraChatIds].filter(Boolean);
+    const incomingChatId = String(message.chat.id);
+
+    if (allAllowed.length === 0 || !allAllowed.includes(incomingChatId)) {
+      // Notify admin of new user trying to use the bot (so we can capture their chat_id)
+      const botToken = getBotToken();
+      if (botToken && allowedChatId) {
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: allowedChatId,
+            text: `🔔 Nuevo usuario intentó usar el bot:\n\nChat ID: ${message.chat.id}\nNombre: ${message.from.first_name}\nMensaje: ${message.text || "(foto/media)"}\n\nPara agregarlo, añade este ID a TELEGRAM_EXTRA_CHAT_IDS en Vercel.`,
+            parse_mode: "HTML",
+          }),
+        }).catch(() => {});
+      }
       console.warn(
-        `[Telegram] Unauthorized chat_id: ${message.chat.id} (expected ${allowedChatId})`
+        `[Telegram] Unauthorized chat_id: ${message.chat.id} (expected ${allAllowed.join(",")})`
       );
       return NextResponse.json({ ok: true });
     }
