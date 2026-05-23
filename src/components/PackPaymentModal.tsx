@@ -18,7 +18,7 @@ interface PackPaymentModalProps {
   lang?: "es" | "en";
 }
 
-type PaymentMethod = "square" | "nequi" | "bancolombia" | "zelle";
+type PaymentMethod = "wompi" | "nequi" | "bancolombia" | "zelle";
 
 function formatCOP(amount: number): string {
   return new Intl.NumberFormat("es-CO", {
@@ -85,7 +85,7 @@ const PAYMENT_METHODS: {
   icon: () => React.ReactElement;
 }[] = [
   {
-    value: "square",
+    value: "wompi",
     label: {
       es: "Tarjeta de Credito/Debito",
       en: "Credit/Debit Card",
@@ -201,7 +201,7 @@ export default function PackPaymentModal({
     setDiscountError(null);
   }
 
-  async function handleSquarePayment() {
+  async function handleWompiPayment() {
     setLoading(true);
     setError(null);
 
@@ -211,7 +211,7 @@ export default function PackPaymentModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           pack_type: pack.type,
-          payment_method: "square",
+          payment_method: "wompi",
           discount_code: discountResult ? discountCode.trim() : undefined,
         }),
       });
@@ -222,7 +222,7 @@ export default function PackPaymentModal({
         throw new Error(json.message || "Error al crear el pago");
       }
 
-      // Square returns a checkout URL — redirect directly
+      // Wompi returns a checkout URL — redirect directly
       window.location.href = json.data.checkout_url;
     } catch (err) {
       const message =
@@ -270,11 +270,11 @@ export default function PackPaymentModal({
   function renderMethodDetails() {
     if (!selected) return null;
 
-    if (selected === "square") {
+    if (selected === "wompi") {
       return (
         <div className="mt-4 space-y-3">
           <button
-            onClick={handleSquarePayment}
+            onClick={handleWompiPayment}
             disabled={loading}
             className="w-full py-3 bg-[#2C2C2C] text-white text-[11px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ fontFamily: "Outfit, sans-serif" }}
@@ -619,7 +619,7 @@ export default function PackPaymentModal({
           <p className="text-[10px] tracking-[0.2em] text-[#C9A96E] uppercase mb-2">
             {lang === "es" ? "Metodo de Pago" : "Payment Method"}
           </p>
-          {PAYMENT_METHODS.filter((m) => m.value !== "square" || process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY).map((method) => {
+          {PAYMENT_METHODS.filter((m) => m.value !== "wompi" || process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY).map((method) => {
             const isSelected = selected === method.value;
             const Icon = method.icon;
             return (

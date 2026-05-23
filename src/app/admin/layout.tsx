@@ -7,6 +7,7 @@ import { createBrowserClient } from "@supabase/ssr";
 
 const tabs = [
   { href: "/admin", label: "Hoy", icon: "\u25C9" },
+  { href: "/admin/bookings", label: "Reservas", icon: "\u25CB" },
   { href: "/admin/sessions", label: "Clases", icon: "\u25A6" },
   { href: "/admin/events", label: "Eventos", icon: "\u2726" },
   { href: "/admin/students", label: "Alumnos", icon: "\u25CE" },

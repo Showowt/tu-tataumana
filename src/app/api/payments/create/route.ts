@@ -5,7 +5,7 @@
  * POST /api/payments/create
  * Creates a Square checkout link OR records a manual payment pending.
  *
- * Body: { pack_type: string, payment_method: 'square' | 'nequi' | 'bancolombia' | 'zelle' }
+ * Body: { pack_type: string, payment_method: 'square' | 'wompi' | 'nequi' | 'bancolombia' | 'zelle' }
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -14,6 +14,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { getPackDefinition } from "@/lib/constants/packs";
 import { createSquareCheckout } from "@/lib/square";
+import { createPaymentLink } from "@/lib/wompi";
 import { notifyPaymentReceived, notifyPackPurchase, notifyDiscountUsed } from "@/lib/telegram";
 import { captureApiError } from "@/lib/sentry-helpers";
 import { systemLog } from "@/lib/system-log";
@@ -22,7 +23,7 @@ import { systemLog } from "@/lib/system-log";
 // Types
 // -------------------------------------------------------------------
 
-type PaymentMethod = "square" | "nequi" | "bancolombia" | "zelle";
+type PaymentMethod = "square" | "wompi" | "nequi" | "bancolombia" | "zelle";
 
 interface CreatePaymentBody {
   pack_type: string;
@@ -56,6 +57,16 @@ interface SquareSuccessResponse {
   message: string;
 }
 
+interface WompiSuccessResponse {
+  data: {
+    method: "wompi";
+    checkout_url: string;
+    reference: string;
+  };
+  error: null;
+  message: string;
+}
+
 interface ManualSuccessResponse {
   data: {
     method: PaymentMethod;
@@ -73,7 +84,7 @@ interface ErrorResponse {
   message: string;
 }
 
-type CreatePaymentResponse = SquareSuccessResponse | ManualSuccessResponse | ErrorResponse;
+type CreatePaymentResponse = SquareSuccessResponse | WompiSuccessResponse | ManualSuccessResponse | ErrorResponse;
 
 // -------------------------------------------------------------------
 // Manual payment account details
@@ -94,7 +105,7 @@ const MANUAL_ACCOUNTS: Record<"nequi" | "bancolombia" | "zelle", { label: string
   },
 };
 
-const VALID_PAYMENT_METHODS: PaymentMethod[] = ["square", "nequi", "bancolombia", "zelle"];
+const VALID_PAYMENT_METHODS: PaymentMethod[] = ["square", "wompi", "nequi", "bancolombia", "zelle"];
 
 const TATA_WHATSAPP = "573166333663";
 
@@ -498,6 +509,90 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
         },
         error: null,
         message: "Square checkout ready",
+      });
+    }
+
+    // -------------------------------------------------------------------
+    // WOMPI CHECKOUT (card payments via Colombian gateway)
+    // -------------------------------------------------------------------
+    if (payment_method === "wompi") {
+      const amountCentavos = effectivePrice * 100;
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
+      const redirectUrl = `${baseUrl}/payment/success?ref=${encodeURIComponent(reference)}`;
+      const description = `TU. ${packDef.name.es} — ${packDef.totalClasses === -1 ? "Ilimitado" : packDef.totalClasses + " clases"}`;
+
+      const paymentLink = await createPaymentLink({
+        amount: amountCentavos,
+        currency: "COP",
+        reference,
+        customerEmail: student?.email || "",
+        customerName: student?.full_name || "Guest",
+        redirectUrl,
+        description,
+        expirationMinutes: 30,
+      });
+
+      // Insert pending transaction
+      const { data: wompiTxData, error: wompiTxError } = await serviceDb
+        .from("tu_transactions")
+        .insert({
+          wompi_reference: reference,
+          amount: effectivePrice,
+          currency: "COP",
+          payment_method: "wompi",
+          status: "pending",
+          student_id: student?.id || null,
+          related_pack_type: pack_type,
+          description: `${packDef.name.en} — Wompi checkout`,
+          metadata: {
+            pack_name: packDef.name.en,
+            pack_classes: packDef.totalClasses,
+            customer_email: student?.email || null,
+            customer_name: student?.full_name || null,
+            wompi_link_id: paymentLink.id,
+            initiated_at: new Date().toISOString(),
+            ...(discountApplication && {
+              discount_code: discountApplication.code,
+              discount_code_id: discountApplication.code_id,
+              discount_type: discountApplication.discount_type,
+              discount_value: discountApplication.discount_value,
+              original_price: discountApplication.original_price,
+              discounted_price: discountApplication.discounted_price,
+              savings: discountApplication.savings,
+            }),
+          },
+        })
+        .select("id")
+        .single();
+
+      if (wompiTxError) {
+        systemLog({ category: "payment", level: "error", message: "Wompi payment DB insert failed", route: "payments/create", details: { error: wompiTxError.message, reference, pack_type, student_id: student?.id } });
+        console.error("[payments/create] Wompi transaction insert failed:", wompiTxError.message);
+        return NextResponse.json(
+          { data: null, error: "db_error", message: "Failed to create payment record" },
+          { status: 500 },
+        );
+      }
+
+      // Consume discount code AFTER transaction was successfully created
+      if (discountApplication && student?.id && wompiTxData?.id) {
+        try {
+          await consumeDiscountCode(serviceDb, discountApplication, student.id, wompiTxData.id);
+        } catch (usageErr) {
+          console.error("[payments/create] Discount consumption failed:", usageErr);
+        }
+      }
+
+      systemLog({ category: "payment", level: "info", message: "Wompi checkout created", route: "payments/create", details: { reference, pack_type, student_id: student?.id, amount: effectivePrice, has_discount: !!discountApplication } });
+
+      return NextResponse.json({
+        data: {
+          method: "wompi" as const,
+          checkout_url: paymentLink.payment_link_url,
+          reference,
+        },
+        error: null,
+        message: "Wompi checkout ready",
       });
     }
 
