@@ -53,6 +53,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (admin.role === "manager") {
+    return NextResponse.json({ error: "Solo admins pueden crear descuentos" }, { status: 403 });
+  }
+
   const body: unknown = await request.json();
   const parsed = CreateDiscountSchema.safeParse(body);
   if (!parsed.success) {
@@ -132,6 +136,10 @@ export async function PATCH(request: NextRequest) {
   const admin = await verifyAdmin(request);
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (admin.role === "manager") {
+    return NextResponse.json({ error: "Solo admins pueden editar descuentos" }, { status: 403 });
   }
 
   const body: unknown = await request.json();

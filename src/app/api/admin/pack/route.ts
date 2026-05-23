@@ -73,6 +73,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (admin.role === "manager") {
+    return NextResponse.json({ error: "Solo admins pueden crear packs" }, { status: 403 });
+  }
+
   const supabase = admin.supabase;
 
   const body = await request.json();
@@ -147,6 +151,10 @@ export async function PATCH(request: NextRequest) {
   const admin = await verifyAdmin(request);
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (admin.role === "manager") {
+    return NextResponse.json({ error: "Solo admins pueden editar packs" }, { status: 403 });
   }
 
   const supabase = admin.supabase;

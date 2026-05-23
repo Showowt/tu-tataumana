@@ -33,6 +33,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (admin.role === "manager") {
+    return NextResponse.json({ error: "Solo admins pueden verificar pagos" }, { status: 403 });
+  }
+
   const supabase = admin.supabase;
 
   // Parse and validate body
