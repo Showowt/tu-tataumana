@@ -14,6 +14,7 @@ const tabs = [
   { href: "/admin/packs", label: "Packs", icon: "\u25C6" },
   { href: "/admin/payments", label: "Pagos", icon: "\u25C8" },
   { href: "/admin/discounts", label: "Descuentos", icon: "\u25D9" },
+  { href: "/admin/team", label: "Equipo", icon: "\u25C7" },
   { href: "/admin/logs", label: "Logs", icon: "\u25A3" },
 ];
 

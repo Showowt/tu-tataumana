@@ -1,6 +1,37 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { ADMIN_EMAILS } from "@/lib/constants/business-rules";
+
+/**
+ * Check if email has admin access — hardcoded list + database check.
+ */
+async function checkAdminAccess(email: string): Promise<boolean> {
+  const normalized = email.toLowerCase().trim();
+
+  // Fast path: hardcoded list
+  if (ADMIN_EMAILS.includes(normalized)) return true;
+
+  // DB check via service role
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return false;
+
+  try {
+    const supabase = createClient(url, key);
+    const { data } = await supabase
+      .from("tu_admin_users")
+      .select("id")
+      .eq("email", normalized)
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle();
+
+    return !!data;
+  } catch {
+    return false;
+  }
+}
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -45,8 +76,22 @@ export async function middleware(request: NextRequest) {
 
   // Admin API routes: reject with 401 if not admin
   if (request.nextUrl.pathname.startsWith("/api/admin")) {
-    if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase() || "")) {
+    const isAdmin = user?.email
+      ? await checkAdminAccess(user.email)
+      : false;
+
+    if (!isAdmin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
+  // Admin pages: reject if not admin (show login instead of blank page)
+  if (request.nextUrl.pathname.startsWith("/admin") && user?.email) {
+    const isAdmin = await checkAdminAccess(user.email);
+    if (!isAdmin) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/portal";
+      return NextResponse.redirect(url);
     }
   }
 

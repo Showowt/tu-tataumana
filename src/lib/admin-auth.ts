@@ -5,16 +5,18 @@ import { createClient as adminCreateClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ADMIN_EMAILS } from "@/lib/constants/business-rules";
 
+export type AdminRole = "owner" | "admin" | "manager";
+
 interface AdminResult {
   id: string;
   email: string;
-  role: string;
+  role: AdminRole;
   supabase: SupabaseClient;
 }
 
 /**
  * Verifies admin access via Supabase Auth session.
- * Only users with admin emails can access admin routes.
+ * Checks tu_admin_users table first, falls back to ADMIN_EMAILS.
  *
  * Returns the admin record + service-role supabase client, or null.
  */
@@ -48,18 +50,69 @@ export async function verifyAdmin(
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase() || "")) {
-      return null;
+    if (!user?.email) return null;
+
+    const email = user.email.toLowerCase();
+    const serviceClient = getServiceClient();
+
+    // Check tu_admin_users table first
+    const { data: adminUser } = await serviceClient
+      .from("tu_admin_users")
+      .select("role, is_active")
+      .eq("email", email)
+      .eq("is_active", true)
+      .single();
+
+    if (adminUser) {
+      return {
+        id: user.id,
+        email,
+        role: adminUser.role as AdminRole,
+        supabase: serviceClient,
+      };
     }
 
-    return {
-      id: user.id,
-      email: user.email!,
-      role: "admin",
-      supabase: getServiceClient(),
-    };
+    // Fallback to hardcoded ADMIN_EMAILS (backwards compatibility)
+    if (ADMIN_EMAILS.includes(email)) {
+      return {
+        id: user.id,
+        email,
+        role: "admin",
+        supabase: serviceClient,
+      };
+    }
+
+    return null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Check if an email has admin access (for middleware — lightweight check).
+ * Uses service role client to query tu_admin_users.
+ */
+export async function isAdminEmail(email: string): Promise<boolean> {
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // Fast path: hardcoded list
+  if (ADMIN_EMAILS.includes(normalizedEmail)) return true;
+
+  // DB check
+  try {
+    const serviceClient = getServiceClient();
+    const { data } = await serviceClient
+      .from("tu_admin_users")
+      .select("id")
+      .eq("email", normalizedEmail)
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle();
+
+    return !!data;
+  } catch {
+    // If DB check fails, fall back to hardcoded list only
+    return false;
   }
 }
 
