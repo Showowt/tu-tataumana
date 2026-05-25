@@ -46,6 +46,9 @@ export default function SchedulePage() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [bookingStatus, setBookingStatus] = useState<string>("");
+  // 2x1 guest flow
+  const [pending2x1, setPending2x1] = useState<{ sessionId: string; packId: string } | null>(null);
+  const [guestName, setGuestName] = useState("");
 
   const lang = profile?.preferred_lang || "es";
 
@@ -106,6 +109,10 @@ export default function SchedulePage() {
     loadSchedule();
   }, [loadSchedule]);
 
+  function is2x1Pack(packType: string): boolean {
+    return packType.toUpperCase().includes("2X1");
+  }
+
   async function handleBook(sessionId: string) {
     setBookingId(sessionId);
     setBookingStatus("");
@@ -120,16 +127,41 @@ export default function SchedulePage() {
       return;
     }
 
+    // 2x1 packs: prompt for guest name before booking
+    if (is2x1Pack(usablePack.pack_type) && usablePack.classes_remaining >= 2) {
+      setPending2x1({ sessionId, packId: usablePack.id });
+      return;
+    }
+
+    await executeBooking(sessionId, usablePack.id, undefined);
+  }
+
+  async function confirm2x1Booking() {
+    if (!pending2x1 || !guestName.trim()) return;
+    setBookingId(pending2x1.sessionId);
+    setBookingStatus("");
+    await executeBooking(pending2x1.sessionId, pending2x1.packId, guestName.trim());
+    setPending2x1(null);
+    setGuestName("");
+  }
+
+  function cancel2x1() {
+    setPending2x1(null);
+    setGuestName("");
+    setBookingId(null);
+  }
+
+  async function executeBooking(sessionId: string, packId: string, guestNameParam?: string) {
     const res = await fetch("/api/student/book", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         session_id: sessionId,
-        pack_id: usablePack.id,
+        pack_id: packId,
+        ...(guestNameParam && { guest_name: guestNameParam }),
       }),
     });
 
-    // Session expired during booking — force re-login
     if (res.status === 401) {
       window.location.href = "/login?redirect=/portal/schedule";
       return;
@@ -142,9 +174,16 @@ export default function SchedulePage() {
       return;
     }
 
-    setBookingStatus(lang === "es" ? "Reservado" : "Booked!");
+    setBookingStatus(
+      guestNameParam
+        ? lang === "es"
+          ? `Reservado para ti y ${guestNameParam}`
+          : `Booked for you and ${guestNameParam}!`
+        : lang === "es"
+          ? "Reservado"
+          : "Booked!",
+    );
 
-    // Refresh schedule and packs
     await loadSchedule();
     const packsRes = await fetch("/api/student/packs?status=active");
     if (packsRes.status === 401) {
@@ -159,7 +198,7 @@ export default function SchedulePage() {
     setTimeout(() => {
       setBookingId(null);
       setBookingStatus("");
-    }, 2000);
+    }, 3000);
   }
 
   // Group sessions by date
@@ -181,6 +220,46 @@ export default function SchedulePage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+      {/* 2x1 Guest Name Modal */}
+      {pending2x1 && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+          <div className="bg-white w-full max-w-sm p-6 space-y-4" style={{ fontFamily: "Outfit, sans-serif" }}>
+            <h3 className="text-lg text-[#2C2C2C]" style={{ fontFamily: "Cormorant Garamond, serif" }}>
+              {lang === "es" ? "Promo 2x1" : "2-for-1 Promo"}
+            </h3>
+            <p className="text-xs text-[#2C2C2C]/50 leading-relaxed">
+              {lang === "es"
+                ? "Tu pack 2x1 reserva 2 cupos en la misma clase. Ingresa el nombre de tu acompanante:"
+                : "Your 2-for-1 pack books 2 spots in the same class. Enter your guest's name:"}
+            </p>
+            <input
+              type="text"
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && guestName.trim()) confirm2x1Booking(); }}
+              placeholder={lang === "es" ? "Nombre del acompanante" : "Guest's name"}
+              autoFocus
+              className="w-full px-3 py-2.5 border border-[#2C2C2C]/10 text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/20 focus:outline-none focus:border-[#B87777]"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={confirm2x1Booking}
+                disabled={!guestName.trim()}
+                className="flex-1 py-2.5 bg-[#C9A96E] text-white text-[11px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-30"
+              >
+                {lang === "es" ? "Reservar 2 Cupos" : "Book 2 Spots"}
+              </button>
+              <button
+                onClick={cancel2x1}
+                className="px-4 py-2.5 border border-[#2C2C2C]/10 text-[11px] text-[#2C2C2C]/40 tracking-[0.15em] uppercase hover:border-[#2C2C2C]/30 transition-colors"
+              >
+                {lang === "es" ? "Cancelar" : "Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1

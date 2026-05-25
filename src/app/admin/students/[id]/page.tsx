@@ -487,6 +487,7 @@ export default function AdminStudentDetailPage() {
           student_id: selectedGuest.id,
           session_id: sessionId,
           pack_id: activePacks[0].id,
+          credit_from_student_id: id,
         }),
       });
 

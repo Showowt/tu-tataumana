@@ -8,6 +8,7 @@ import { systemLog } from "@/lib/system-log";
 const BookSchema = z.object({
   session_id: z.string().uuid("Invalid session ID"),
   pack_id: z.string().uuid("Invalid pack ID").optional().nullable(),
+  guest_name: z.string().min(2).optional(), // For 2x1 packs: guest's name
 });
 
 /**
@@ -51,7 +52,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Call atomic booking function
+    const { guest_name } = parsed.data;
+
+    // Detect 2x1 pack: if guest_name provided, handle dual booking
+    const is2x1 = !!guest_name && parsed.data.pack_id;
+
+    // Call atomic booking function for the primary student
     const { data, error } = await supabase.rpc("tu_book_class", {
       p_student_id: student.id,
       p_session_id: parsed.data.session_id,
@@ -76,6 +82,57 @@ export async function POST(request: NextRequest) {
         { error: result.error as string },
         { status: 400 },
       );
+    }
+
+    // 2x1: Book the guest into the same class using the second credit
+    if (is2x1 && guest_name) {
+      try {
+        // Find or create guest student record
+        const { data: existingGuest } = await supabase
+          .from("tu_students")
+          .select("id")
+          .ilike("full_name", guest_name.trim())
+          .limit(1)
+          .maybeSingle();
+
+        let guestId = existingGuest?.id;
+
+        if (!guestId) {
+          // Create a minimal guest student record
+          const { data: newGuest } = await supabase
+            .from("tu_students")
+            .insert({
+              full_name: guest_name.trim(),
+              email: null,
+              role: "student",
+              notes: "Created via 2x1 promo booking",
+            })
+            .select("id")
+            .single();
+          guestId = newGuest?.id;
+        }
+
+        if (guestId) {
+          // Book the guest (deducts second credit from same pack)
+          await supabase.rpc("tu_book_class", {
+            p_student_id: guestId,
+            p_session_id: parsed.data.session_id,
+            p_pack_id: parsed.data.pack_id,
+          });
+
+          systemLog({
+            category: "booking",
+            level: "info",
+            message: "2x1 guest booked",
+            route: "student/book",
+            student_id: student.id,
+            details: { guest_name, guest_id: guestId, session_id: parsed.data.session_id },
+          });
+        }
+      } catch (guestErr) {
+        console.error("[student/book] 2x1 guest booking failed:", guestErr);
+        // Primary booking succeeded — don't fail the whole request
+      }
     }
 
     // Fire-and-forget Telegram notification — never fails the booking
