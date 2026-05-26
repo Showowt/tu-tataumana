@@ -141,6 +141,21 @@ export const PACK_DEFINITIONS: PackDefinition[] = [
     sortOrder: 11,
   },
   {
+    type: "ANNIVERSARY_5EXP",
+    name: { en: "5 Experiences — Anniversary Special", es: "5 Experiencias — Especial Aniversario" },
+    description: {
+      en: "First Shala Anniversary! 4 classes + 1 Sound Healing session",
+      es: "Primer Aniversario del Shala! 4 clases + 1 sesion de Sound Healing",
+    },
+    totalClasses: 5,
+    priceCop: 180000,
+    priceUsd: 47,
+    expirationDays: 45,
+    isPromo: true,
+    isActive: true,
+    sortOrder: 12,
+  },
+  {
     type: "INDUSTRY_SPECIAL",
     name: { en: "Industry Special", es: "Especial Industria" },
     description: {
