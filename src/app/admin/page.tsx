@@ -206,7 +206,17 @@ export default function AdminDashboard() {
   }
 
   async function handleCancelSession(sessionId: string) {
-    if (!confirm("¿Cancelar esta sesión? Se reembolsarán todos los créditos.")) return;
+    // Show booked students before confirming cancellation
+    const bookedNames = roster
+      .filter((b) => b.status === "confirmed" || b.checked_in)
+      .map((b) => `${b.student?.full_name || "?"} (${b.student?.phone || b.student?.email || "sin contacto"})`)
+      .join("\n");
+
+    const confirmMsg = bookedNames
+      ? `¿Cancelar esta sesión?\n\nAlumnos reservados:\n${bookedNames}\n\nSe reembolsarán sus créditos y deberás contactarles.`
+      : "¿Cancelar esta sesión? No hay alumnos reservados.";
+
+    if (!confirm(confirmMsg)) return;
     setActionLoading(sessionId);
     try {
       const res = await fetch("/api/admin/sessions", {
@@ -219,7 +229,8 @@ export default function AdminDashboard() {
         }),
       });
       if (res.ok) {
-        showMessage("Sesión cancelada");
+        const cancelledStudents = bookedNames ? `\nAlumnos afectados:\n${bookedNames}` : "";
+        showMessage(`Sesión cancelada${cancelledStudents}`);
         await loadDashboard();
         setExpandedSession(null);
       }
