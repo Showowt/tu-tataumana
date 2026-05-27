@@ -23,7 +23,8 @@ const BOOKING_RULES = [
 ];
 
 // Schedule loaded from database via API — no hardcoded data
-let _cachedSchedule: Record<number, { time: string; name: string }[]> | null = null;
+let _cachedSchedule: { data: Record<number, { time: string; name: string }[]>; ts: number } | null = null;
+const SCHEDULE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 function formatTime12(time: string): string {
   const [h, m] = time.split(":").map(Number);
@@ -33,7 +34,9 @@ function formatTime12(time: string): string {
 }
 
 async function getScheduleByDay(): Promise<Record<number, { time: string; name: string }[]>> {
-  if (_cachedSchedule) return _cachedSchedule;
+  if (_cachedSchedule && Date.now() - _cachedSchedule.ts < SCHEDULE_CACHE_TTL) {
+    return _cachedSchedule.data;
+  }
   try {
     const res = await fetch("/api/public/schedule");
     const data = await res.json();
@@ -44,10 +47,10 @@ async function getScheduleByDay(): Promise<Record<number, { time: string; name: 
         name: c.name,
       }));
     }
-    _cachedSchedule = result;
+    _cachedSchedule = { data: result, ts: Date.now() };
     return result;
   } catch {
-    return {};
+    return _cachedSchedule?.data || {};
   }
 }
 

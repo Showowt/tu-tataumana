@@ -955,8 +955,8 @@ Welcome.
  */
 export function buildSystemPrompt(scheduleBlock: string, teachersBlock: string): string {
   return TU_SYSTEM_PROMPT
-    .replace("{{DYNAMIC_SCHEDULE}}", scheduleBlock)
-    .replace("{{DYNAMIC_TEACHERS}}", teachersBlock);
+    .replaceAll("{{DYNAMIC_SCHEDULE}}", scheduleBlock)
+    .replaceAll("{{DYNAMIC_TEACHERS}}", teachersBlock);
 }
 
 export const CONVERSATION_STARTERS = [

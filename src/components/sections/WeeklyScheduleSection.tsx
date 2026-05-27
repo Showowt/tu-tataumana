@@ -37,13 +37,17 @@ function formatTime12(time: string): string {
 }
 
 /** Fetch schedule from DB and convert to component format */
-function useScheduleData(): { schedule: ScheduleDay[]; loading: boolean } {
+function useScheduleData(): { schedule: ScheduleDay[]; loading: boolean; error: boolean } {
   const [schedule, setSchedule] = useState<ScheduleDay[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch("/api/public/schedule")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         const days: ScheduleDay[] = (data.schedule || []).map(
           (day: { day_of_week: number; day_name: string; day_name_es: string; day_short: string; classes: { name: string; name_es: string; start_time: string; teacher: string; description: string | null; description_es: string | null; note: string | null }[] }) => ({
@@ -64,11 +68,14 @@ function useScheduleData(): { schedule: ScheduleDay[]; loading: boolean } {
         );
         setSchedule(days);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("[WeeklyScheduleSection] schedule fetch failed:", err);
+        setError(true);
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  return { schedule, loading };
+  return { schedule, loading, error };
 }
 
 // ─── Helper functions ─────────────────────────────────────────────────────────
@@ -141,13 +148,29 @@ function isClassBookable(dateStr: string, timeStr: string): boolean {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function WeeklyScheduleSection({ lang, L, openBooking, closedDates }: WeeklyScheduleSectionProps) {
-  const { schedule: weeklySchedule, loading: scheduleLoading } = useScheduleData();
+  const { schedule: weeklySchedule, loading: scheduleLoading, error: scheduleError } = useScheduleData();
 
   if (scheduleLoading) {
     return (
+      <section id="schedule" className="relative py-24 md:py-32 bg-charcoal" style={{ minHeight: "600px" }}>
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-white/[0.06] bg-white/[0.04] h-48 animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (scheduleError || weeklySchedule.length === 0) {
+    return (
       <section id="schedule" className="relative py-24 md:py-32 bg-charcoal">
-        <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-gold/40 border-t-transparent rounded-full animate-spin" />
+        <div className="text-center py-20">
+          <p className="text-white/40 text-sm font-[family-name:var(--font-body)]">
+            {lang === "en" ? "Schedule temporarily unavailable. Contact us via WhatsApp." : "Horario temporalmente no disponible. Contactanos por WhatsApp."}
+          </p>
         </div>
       </section>
     );

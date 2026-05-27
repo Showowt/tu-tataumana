@@ -97,17 +97,19 @@ export async function POST(request: NextRequest) {
 
     const timeContext = `\n\n═══ CURRENT DATE & TIME (Colombia Time) ═══\nToday is ${dayName}, ${dateStr}. The current time is ${hour12}:${minutes} ${ampm} Colombia Time (UTC-5).\nUse this to answer questions about "today's classes", "next class", "what's happening tomorrow", etc. Always reference the WEEKLY CLASS SCHEDULE above with this date/time to give accurate, specific answers.\n═══════════════════════════════════════════\n`;
 
+    let dynamicPrompt: string;
+    try {
+      const { scheduleBlock, teachersBlock } = await generateScheduleText();
+      dynamicPrompt = buildSystemPrompt(scheduleBlock, teachersBlock) + timeContext;
+    } catch {
+      console.error("[chat] generateScheduleText failed, using static prompt");
+      dynamicPrompt = TU_SYSTEM_PROMPT + timeContext;
+    }
+
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
-      system: await (async () => {
-        try {
-          const { scheduleBlock, teachersBlock } = await generateScheduleText();
-          return buildSystemPrompt(scheduleBlock, teachersBlock) + timeContext;
-        } catch {
-          return TU_SYSTEM_PROMPT + timeContext;
-        }
-      })(),
+      system: dynamicPrompt,
       messages: messages.map((msg) => ({
         role: msg.role,
         content: msg.content,

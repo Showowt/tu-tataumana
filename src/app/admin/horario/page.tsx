@@ -35,7 +35,7 @@ export default function AdminHorarioPage() {
   const [editData, setEditData] = useState<Partial<ClassDef>>({});
   const [saving, setSaving] = useState(false);
   const [showAdd, setShowAdd] = useState<number | null>(null); // day_of_week to add to
-  const [newClass, setNewClass] = useState({ name: "", name_es: "", start_time: "09:00", teacher: "", style: "Yoga", capacity: 12 });
+  const [newClass, setNewClass] = useState({ name: "", name_es: "", start_time: "09:00", teacher: "", style: "Hatha", capacity: 12 });
   const [creating, setCreating] = useState(false);
 
   function showMsg(msg: string) { setMessage(msg); setTimeout(() => setMessage(""), 4000); }
