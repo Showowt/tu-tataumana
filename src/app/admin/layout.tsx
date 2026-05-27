@@ -10,6 +10,7 @@ const tabs = [
   { href: "/admin/bookings", label: "Reservas", icon: "\u25CB" },
   { href: "/admin/sessions", label: "Clases", icon: "\u25A6" },
   { href: "/admin/events", label: "Eventos", icon: "\u2726" },
+  { href: "/admin/private", label: "Privadas", icon: "\u2727" },
   { href: "/admin/students", label: "Alumnos", icon: "\u25CE" },
   { href: "/admin/packs", label: "Packs", icon: "\u25C6" },
   { href: "/admin/payments", label: "Pagos", icon: "\u25C8" },

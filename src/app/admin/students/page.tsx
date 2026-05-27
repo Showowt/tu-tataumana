@@ -29,6 +29,55 @@ export default function AdminStudentsPage() {
   const [loginLink, setLoginLink] = useState("");
   const [createdName, setCreatedName] = useState("");
 
+  // CSV import
+  const [showImport, setShowImport] = useState(false);
+  const [csvText, setCsvText] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ created: number; skipped: number; errors: string[] } | null>(null);
+
+  async function handleCsvImport() {
+    if (!csvText.trim()) return;
+    setImporting(true);
+    setImportResult(null);
+
+    // Parse CSV: each line is "name, email, phone" or "name, email" or just "name"
+    const lines = csvText.split("\n").filter((l) => l.trim());
+    const students = lines.map((line) => {
+      const parts = line.split(",").map((p) => p.trim());
+      return {
+        name: parts[0] || "",
+        email: parts[1] || undefined,
+        phone: parts[2] || undefined,
+      };
+    }).filter((s) => s.name.length >= 2);
+
+    if (students.length === 0) {
+      showMessage("No se encontraron alumnos validos en el CSV");
+      setImporting(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/students/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ students }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage(data.error || "Error al importar");
+      } else {
+        setImportResult(data);
+        showMessage(`${data.created} alumnos creados`);
+        setCsvText("");
+        await loadStudents();
+      }
+    } catch {
+      showMessage("Error de conexion");
+    }
+    setImporting(false);
+  }
+
   const loadStudents = useCallback(async () => {
     setLoading(true);
     try {
@@ -125,13 +174,78 @@ export default function AdminStudentsPage() {
         >
           Alumnos
         </h1>
-        <button
-          onClick={() => setShowCreate(!showCreate)}
-          className="text-[10px] tracking-[0.15em] uppercase px-4 py-2 bg-[#2C2C2C] text-white hover:bg-[#B87777] transition-colors"
-        >
-          {showCreate ? "Cerrar" : "+ Nuevo"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setShowImport(!showImport); setShowCreate(false); }}
+            className="text-[10px] tracking-[0.15em] uppercase px-4 py-2 border border-[#C9A96E] text-[#C9A96E] hover:bg-[#C9A96E] hover:text-white transition-colors"
+          >
+            CSV
+          </button>
+          <button
+            onClick={() => { setShowCreate(!showCreate); setShowImport(false); }}
+            className="text-[10px] tracking-[0.15em] uppercase px-4 py-2 bg-[#2C2C2C] text-white hover:bg-[#B87777] transition-colors"
+          >
+            {showCreate ? "Cerrar" : "+ Nuevo"}
+          </button>
+        </div>
       </div>
+
+      {/* CSV Import */}
+      {showImport && (
+        <div className="bg-white border border-[#C9A96E]/20 p-4 space-y-3">
+          <p className="text-[10px] tracking-[0.2em] text-[#C9A96E] uppercase" style={{ fontFamily: "Outfit, sans-serif" }}>
+            Importar Alumnos (CSV)
+          </p>
+          <p className="text-[9px] text-[#2C2C2C]/40 leading-relaxed" style={{ fontFamily: "Outfit, sans-serif" }}>
+            Pega los datos en formato: <b>nombre, email, telefono</b> (uno por linea). Email y telefono son opcionales.
+          </p>
+          <textarea
+            value={csvText}
+            onChange={(e) => setCsvText(e.target.value)}
+            placeholder={"Maria Garcia, maria@email.com, 3001234567\nJuan Perez, juan@email.com\nAna Lopez"}
+            rows={8}
+            className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/15 focus:outline-none focus:border-[#C9A96E] font-mono"
+          />
+          <div className="flex items-center justify-between">
+            <p className="text-[9px] text-[#2C2C2C]/30">
+              {csvText.split("\n").filter((l) => l.trim()).length} lineas
+            </p>
+            <button
+              onClick={handleCsvImport}
+              disabled={importing || !csvText.trim()}
+              className="text-[10px] tracking-[0.15em] uppercase px-6 py-2 bg-[#C9A96E] text-white hover:bg-[#B87777] transition-colors disabled:opacity-30 flex items-center gap-2"
+              style={{ fontFamily: "Outfit, sans-serif" }}
+            >
+              {importing ? (
+                <>
+                  <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Importando...
+                </>
+              ) : (
+                "Importar"
+              )}
+            </button>
+          </div>
+          {importResult && (
+            <div className="bg-[#FAF8F5] border border-[#2C2C2C]/5 p-3 space-y-1">
+              <p className="text-xs text-green-600">{importResult.created} creados</p>
+              {importResult.skipped > 0 && (
+                <p className="text-xs text-amber-600">{importResult.skipped} omitidos</p>
+              )}
+              {importResult.errors.length > 0 && (
+                <details>
+                  <summary className="text-[9px] text-[#2C2C2C]/30 cursor-pointer">Detalles</summary>
+                  <div className="mt-1 space-y-0.5">
+                    {importResult.errors.map((e, i) => (
+                      <p key={i} className="text-[9px] text-[#2C2C2C]/40">{e}</p>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Create form */}
       {showCreate && (
