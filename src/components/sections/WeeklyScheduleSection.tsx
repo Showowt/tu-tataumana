@@ -34,9 +34,9 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "MON",
     dayIndex: 1,
     classes: [
-      { time: "9:30 AM", name: "Stress Release", teacher: "Tata", desc: { es: "Libera tensión y estrés a través de movimiento consciente y respiración profunda.", en: "Release tension and stress through conscious movement and deep breathing." } },
+      { time: "9:30 AM", name: "Stress Release", teacher: "Tata", desc: { es: "Libera tension y estres a traves de movimiento consciente y respiracion profunda.", en: "Release tension and stress through conscious movement and deep breathing." } },
       { time: "11:00 AM", name: "Sculpt Your Body", teacher: "Tata", desc: { es: "Tonifica y fortalece tu cuerpo con movimientos precisos y controlados.", en: "Tone and strengthen your body with precise, controlled movements." } },
-      { time: "7:15 PM", name: "Open Flow", teacher: "Violeta", desc: { es: "Secuencias fluidas para liberar, expandir y equilibrar tu energía.", en: "Fluid sequences to release, expand and balance your energy." } },
+      { time: "7:15 PM", name: "Hatha Flow", teacher: "Violeta", desc: { es: "Flujo de hatha yoga para liberar, expandir y equilibrar tu energia.", en: "Hatha yoga flow to release, expand and balance your energy." } },
     ],
   },
   {
@@ -45,20 +45,21 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "TUE",
     dayIndex: 2,
     classes: [
-      { time: "9:30 AM", name: "Yoga for the Back", teacher: "Tata", desc: { es: "Cuida tu espalda, mejora tu postura y alivia tensiones.", en: "Care for your back, improve your posture and relieve tension." } },
-      { time: "5:30 PM", name: "Meditación Viaje Interior", note: "(solo en español)", teacher: "Álvaro", desc: { es: "Meditación guiada para volver a ti y encontrar paz interior.", en: "Guided meditation to return to yourself and find inner peace." } },
-      { time: "7:15 PM", name: "Hip Opening · Hatha", teacher: "Alejandro", desc: { es: "Abre tus caderas y libera tensión profunda con posturas conscientes de hatha.", en: "Open your hips and release deep tension with conscious hatha postures." } },
+      { time: "9:30 AM", name: "Yogalates", teacher: "Tata", desc: { es: "Fusion de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
+      { time: "5:30 PM", name: "Inner Journey Meditation", note: "(solo en español)", teacher: "Alvaro", desc: { es: "Meditacion guiada para volver a ti y encontrar paz interior.", en: "Guided meditation to return to yourself and find inner peace." } },
+      { time: "7:15 PM", name: "Hatha", teacher: "Alejandro", desc: { es: "Posturas conscientes de hatha para abrir caderas y liberar tension profunda.", en: "Conscious hatha postures to open hips and release deep tension." } },
     ],
   },
   {
     day: "Wednesday",
-    dayEs: "Miércoles",
+    dayEs: "Miercoles",
     dayShort: "WED",
     dayIndex: 3,
     classes: [
-      { time: "9:30 AM", name: "Yogalates", teacher: "Tata", desc: { es: "Fusión de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
+      { time: "9:30 AM", name: "Yogalates", teacher: "Tata", desc: { es: "Fusion de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
       { time: "10:45 AM", name: "Pilates Flow", teacher: "Tata", desc: { es: "Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.", en: "Strengthen, align and tone your body with fluidity from the core." } },
-      { time: "7:15 PM", name: "Open Flow", teacher: "Violeta", desc: { es: "Secuencias fluidas para liberar, expandir y equilibrar tu energía.", en: "Fluid sequences to release, expand and balance your energy." } },
+      { time: "5:30 PM", name: "Sound Therapy", teacher: "Leandra", desc: { es: "Terapia de sonido para relajacion profunda y sanacion interior.", en: "Sound therapy for deep relaxation and inner healing." } },
+      { time: "7:15 PM", name: "Hatha Flow", teacher: "Violeta", desc: { es: "Flujo de hatha yoga para liberar, expandir y equilibrar tu energia.", en: "Hatha yoga flow to release, expand and balance your energy." } },
     ],
   },
   {
@@ -67,9 +68,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "THU",
     dayIndex: 4,
     classes: [
-      { time: "9:30 AM", name: "Yoga Intro", teacher: "Tata", desc: { es: "Práctica accesible para descubrir el yoga y activar tu cuerpo.", en: "Accessible practice to discover yoga and activate your body." } },
-      { time: "5:30 PM", name: "Sound Healing", teacher: "Tata", desc: { es: "Relajación profunda a través de sonidos sanadores que armonizan tu energía.", en: "Deep relaxation through healing sounds that harmonize your energy." } },
-      { time: "7:15 PM", name: "Hip Opening", teacher: "Alejandro", desc: { es: "Abre tus caderas y libera tensión profunda con movimiento consciente.", en: "Open your hips and release deep tension with conscious movement." } },
+      { time: "9:30 AM", name: "Yogalates", teacher: "Tata", desc: { es: "Fusion de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
+      { time: "7:15 PM", name: "Hatha", teacher: "Alejandro", desc: { es: "Posturas conscientes de hatha para abrir caderas y liberar tension profunda.", en: "Conscious hatha postures to open hips and release deep tension." } },
     ],
   },
   {
@@ -78,18 +78,18 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "FRI",
     dayIndex: 5,
     classes: [
-      { time: "10:00 AM", name: "Power Yoga", teacher: "Tata", desc: { es: "Fuerza, alineación y presencia para activar tu poder interior.", en: "Strength, alignment and presence to activate your inner power." } },
-      { time: "7:00 PM", name: "Open Flow", teacher: "Betty & Violeta", desc: { es: "Fluye, suelta y recarga tu energía para cerrar la semana en balance.", en: "Flow, release and recharge your energy to close the week in balance." } },
+      { time: "10:00 AM", name: "Yogalates", teacher: "Tata", desc: { es: "Fusion de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
+      { time: "7:00 PM", name: "Hatha Flow", teacher: "Betty & Violeta", desc: { es: "Fluye, suelta y recarga tu energia para cerrar la semana en balance.", en: "Flow, release and recharge your energy to close the week in balance." } },
     ],
   },
   {
     day: "Saturday",
-    dayEs: "Sábado",
+    dayEs: "Sabado",
     dayShort: "SAT",
     dayIndex: 6,
     classes: [
-      { time: "11:00 AM", name: "Sun Salutation", teacher: "Tata", desc: { es: "Salud al sol: movimiento consciente para despertar y agradecer.", en: "Sun salute: conscious movement to awaken and give thanks." } },
-      { time: "6:00 PM", name: "Meditación Viaje Interior", note: "(solo en español)", teacher: "Álvaro", desc: { es: "Meditación guiada para volver a ti y encontrar paz interior.", en: "Guided meditation to return to yourself and find inner peace." } },
+      { time: "11:00 AM", name: "Yogalates", teacher: "Tata", desc: { es: "Fusion de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
+      { time: "6:00 PM", name: "Inner Journey Meditation", note: "(solo en español)", teacher: "Alvaro", desc: { es: "Meditacion guiada para volver a ti y encontrar paz interior.", en: "Guided meditation to return to yourself and find inner peace." } },
     ],
   },
   {

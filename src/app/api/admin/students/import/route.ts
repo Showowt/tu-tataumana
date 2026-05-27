@@ -1,12 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { z } from "zod";
 import { sendTelegramMessage, escapeHtml } from "@/lib/telegram";
 import { systemLog } from "@/lib/system-log";
+
+const ImportRowSchema = z.object({
+  name: z.string().min(2).max(100),
+  email: z.string().email().max(254).optional().or(z.literal("")),
+  phone: z.string().max(20).optional().or(z.literal("")),
+});
+
+const ImportBodySchema = z.object({
+  students: z.array(ImportRowSchema).min(1).max(200),
+});
+
+function sanitizeField(value: string): string {
+  return value.replace(/^[=+\-@\t\r]+/, "").trim();
+}
 
 /**
  * POST /api/admin/students/import
  * Bulk import students from CSV data.
- * Expects JSON body: { students: [{ name, email?, phone? }] }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -15,32 +29,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const students = body.students as { name: string; email?: string; phone?: string }[];
-
-    if (!Array.isArray(students) || students.length === 0) {
-      return NextResponse.json({ error: "No students provided" }, { status: 400 });
+    if (admin.role === "manager") {
+      return NextResponse.json(
+        { error: "Solo admins pueden importar alumnos en masa" },
+        { status: 403 },
+      );
     }
 
-    if (students.length > 200) {
-      return NextResponse.json({ error: "Maximum 200 students per import" }, { status: 400 });
+    const body = await request.json();
+    const parsed = ImportBodySchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Datos invalidos", details: parsed.error.flatten() },
+        { status: 400 },
+      );
     }
 
     const supabase = admin.supabase;
     const results = { created: 0, skipped: 0, errors: [] as string[] };
 
-    for (const s of students) {
-      const name = (s.name || "").trim();
-      if (!name || name.length < 2) {
-        results.errors.push(`Skipped: empty name`);
+    for (const s of parsed.data.students) {
+      const name = sanitizeField(s.name);
+      if (name.length < 2) {
+        results.errors.push("Skipped: empty name");
         results.skipped++;
         continue;
       }
 
-      const email = (s.email || "").trim().toLowerCase() || null;
-      const phone = (s.phone || "").trim() || null;
+      const email = s.email ? s.email.trim().toLowerCase() : null;
+      const phone = s.phone ? sanitizeField(s.phone) : null;
 
-      // Check for duplicate by email or name
       if (email) {
         const { data: existing } = await supabase
           .from("tu_students")
@@ -57,12 +76,7 @@ export async function POST(request: NextRequest) {
 
       const { error: insertErr } = await supabase
         .from("tu_students")
-        .insert({
-          full_name: name,
-          email,
-          phone,
-          role: "student",
-        });
+        .insert({ full_name: name, email, phone, role: "student" });
 
       if (insertErr) {
         results.errors.push(`Error: ${name} — ${insertErr.message}`);
@@ -72,7 +86,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Notify via Telegram
     try {
       await sendTelegramMessage(
         `📋 <b>Importacion masiva de alumnos</b>\n\n` +
@@ -89,7 +102,7 @@ export async function POST(request: NextRequest) {
       level: "info",
       message: `Bulk import: ${results.created} created, ${results.skipped} skipped`,
       route: "admin/students/import",
-      details: { created: results.created, skipped: results.skipped, total: students.length },
+      details: { created: results.created, skipped: results.skipped, total: parsed.data.students.length },
     });
 
     return NextResponse.json({

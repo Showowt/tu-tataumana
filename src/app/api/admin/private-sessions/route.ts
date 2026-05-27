@@ -116,6 +116,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
+const PatchSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(["scheduled", "completed", "cancelled", "no_show"]).optional(),
+  payment_status: z.enum(["pending", "paid", "partial"]).optional(),
+  payment_method: z.string().max(50).optional().nullable(),
+  notes: z.string().max(1000).optional().nullable(),
+  price_cop: z.number().int().min(0).max(50000000).optional(),
+  teacher: z.string().min(1).max(100).optional(),
+});
+
 export async function PATCH(request: NextRequest) {
   try {
     const admin = await verifyAdmin(request);
@@ -124,16 +134,33 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, ...updates } = body as { id: string; [key: string]: unknown };
-
-    if (!id) {
-      return NextResponse.json({ error: "ID required" }, { status: 400 });
+    const parsed = PatchSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Datos invalidos" }, { status: 400 });
     }
 
-    const allowed = ["status", "payment_status", "payment_method", "notes", "price_cop", "teacher"];
+    const { id, ...updates } = parsed.data;
+
+    // Managers can only update status/payment/notes — not price/teacher
+    if (admin.role === "manager") {
+      delete (updates as Record<string, unknown>).price_cop;
+      delete (updates as Record<string, unknown>).teacher;
+    }
+
+    // Verify session exists
+    const { data: existing } = await admin.supabase
+      .from("tu_private_sessions")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (!existing) {
+      return NextResponse.json({ error: "Sesion no encontrada" }, { status: 404 });
+    }
+
     const safeUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    for (const key of allowed) {
-      if (key in updates) safeUpdates[key] = updates[key];
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined) safeUpdates[key] = value;
     }
 
     const { error } = await admin.supabase
