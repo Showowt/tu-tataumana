@@ -34,8 +34,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "MON",
     dayIndex: 1,
     classes: [
-      { time: "9:30 AM", name: "Stress Release", teacher: "Karla", desc: { es: "Libera tensión y estrés a través de movimiento consciente y respiración profunda.", en: "Release tension and stress through conscious movement and deep breathing." } },
-      { time: "11:00 AM", name: "Sculpt Your Body", teacher: "Karla", desc: { es: "Tonifica y fortalece tu cuerpo con movimientos precisos y controlados.", en: "Tone and strengthen your body with precise, controlled movements." } },
+      { time: "9:30 AM", name: "Stress Release", teacher: "Tata", desc: { es: "Libera tensión y estrés a través de movimiento consciente y respiración profunda.", en: "Release tension and stress through conscious movement and deep breathing." } },
+      { time: "11:00 AM", name: "Sculpt Your Body", teacher: "Tata", desc: { es: "Tonifica y fortalece tu cuerpo con movimientos precisos y controlados.", en: "Tone and strengthen your body with precise, controlled movements." } },
       { time: "7:15 PM", name: "Open Flow", teacher: "Violeta", desc: { es: "Secuencias fluidas para liberar, expandir y equilibrar tu energía.", en: "Fluid sequences to release, expand and balance your energy." } },
     ],
   },
@@ -56,8 +56,8 @@ const weeklySchedule: ScheduleDay[] = [
     dayShort: "WED",
     dayIndex: 3,
     classes: [
-      { time: "9:30 AM", name: "Yogalates", teacher: "Karla", desc: { es: "Fusión de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
-      { time: "10:45 AM", name: "Pilates Flow", teacher: "Karla", desc: { es: "Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.", en: "Strengthen, align and tone your body with fluidity from the core." } },
+      { time: "9:30 AM", name: "Yogalates", teacher: "Tata", desc: { es: "Fusión de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
+      { time: "10:45 AM", name: "Pilates Flow", teacher: "Tata", desc: { es: "Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.", en: "Strengthen, align and tone your body with fluidity from the core." } },
       { time: "7:15 PM", name: "Open Flow", teacher: "Violeta", desc: { es: "Secuencias fluidas para liberar, expandir y equilibrar tu energía.", en: "Fluid sequences to release, expand and balance your energy." } },
     ],
   },

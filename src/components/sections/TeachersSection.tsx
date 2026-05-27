@@ -63,14 +63,14 @@ const teachers: Teacher[] = [
     isLead: false,
   },
   {
-    name: "Karla",
-    role: { en: "Pilates Teacher", es: "Teacher de Pilates" },
+    name: "Leandra",
+    role: { en: "Sound Therapy Teacher", es: "Teacher de Terapia de Sonido" },
     bio: {
-      es: "Karla transforma cada clase de Pilates en un viaje de conexión con tu centro. Con precisión y calidez, guía movimientos que fortalecen, alinean y tonifican, creando espacios donde el cuerpo encuentra su equilibrio y la mente su claridad.",
-      en: "Karla transforms every Pilates class into a journey of connection with your center. With precision and warmth, she guides movements that strengthen, align and tone, creating spaces where the body finds its balance and the mind its clarity.",
+      es: "Leandra guia sesiones de sanacion con sonido que conectan cuerpo, mente y espiritu. A traves de cuencos tibetanos y frecuencias armonicas, crea espacios de profunda relajacion y transformacion interior.",
+      en: "Leandra guides sound healing sessions that connect body, mind and spirit. Through Tibetan bowls and harmonic frequencies, she creates spaces of deep relaxation and inner transformation.",
     },
-    image: "/teacher-karla.png",
-    specialties: ["Pilates", "Yogalates", "Body Sculpt"],
+    image: "/teacher-tata.jpg",
+    specialties: ["Sound Healing", "Sound Therapy", "Meditation"],
     isLead: false,
   },
   {

@@ -1944,7 +1944,7 @@ async function handleFullSchedule(supabase: SupabaseClient): Promise<string> {
   lines.push("\nPara cambiar un nombre:");
   lines.push("<code>/renombrar 9:30 martes Nuevo Nombre</code>");
   lines.push("Para cambiar teacher:");
-  lines.push("<code>/teacher 9:30 manana Karla</code>");
+  lines.push("<code>/teacher 9:30 manana Leandra</code>");
 
   return lines.join("\n");
 }
@@ -2029,9 +2029,9 @@ async function handleChangeTeacher(
     return (
       "Necesito la fecha, hora y nombre del nuevo teacher.\n\n" +
       "Ejemplo:\n" +
-      "/teacher 9:30 manana Karla\n" +
+      "/teacher 9:30 manana Leandra\n" +
       "/teacher 7:15 lunes Alejandro\n\n" +
-      "Teachers disponibles: Tata, Alejandro, Karla, Violeta, Alvaro, Betty & Violeta"
+      "Teachers disponibles: Tata, Alejandro, Leandra, Violeta, Alvaro, Betty & Violeta"
     );
   }
 
@@ -2106,7 +2106,7 @@ function handleHelp(): string {
     `<b>/llena</b> 7:15 hoy — Marcar como llena\n` +
     `<b>/cerrar</b> viernes — Cerrar un dia\n` +
     `<b>/abrir</b> viernes — Reabrir dia cerrado\n` +
-    `<b>/teacher</b> 9:30 manana Karla — Cambiar teacher de una clase\n` +
+    `<b>/teacher</b> 9:30 manana Leandra — Cambiar teacher de una clase\n` +
     `<b>/horario</b> — Ver todas las clases de la semana completa\n` +
     `<b>/renombrar</b> 9:30 martes Yoga Restaurativo — Cambiar nombre de clase\n\n` +
     `<b>/evento</b> Sound Healing mayo 25 5:30pm $80,000 15 cupos\n` +
@@ -2641,8 +2641,8 @@ export async function POST(request: NextRequest) {
       }
     } else if (firstWord === "/teacher" || firstWord === "/profesor") {
       // Direct parse: /teacher TIME DATE TEACHER_NAME
-      // e.g., /teacher 9:30 manana Karla
-      // or: /teacher 9:30 2026-05-19 Karla
+      // e.g., /teacher 9:30 manana Leandra
+      // or: /teacher 9:30 2026-05-19 Leandra
       const parts = rawText.split(/\s+/).slice(1);
       if (parts.length >= 3) {
         const timeStr = parts[0];
@@ -2679,14 +2679,14 @@ export async function POST(request: NextRequest) {
         directResponse =
           "Necesito hora, dia y nombre del teacher.\n\n" +
           "Ejemplo:\n" +
-          "<b>/teacher</b> 9:30 manana Karla\n" +
+          "<b>/teacher</b> 9:30 manana Leandra\n" +
           "<b>/teacher</b> 7:15 lunes Alejandro\n" +
           "<b>/teacher</b> 19:15 viernes Violeta\n\n" +
-          "Teachers: Tata, Alejandro, Karla, Violeta, Alvaro, Betty & Violeta";
+          "Teachers: Tata, Alejandro, Leandra, Violeta, Alvaro, Betty & Violeta";
       } else {
         directResponse =
           "Formato: /teacher [hora] [dia] [nombre]\n\n" +
-          "Ejemplo: /teacher 9:30 manana Karla";
+          "Ejemplo: /teacher 9:30 manana Leandra";
       }
     } else if (firstWord === "/promo" || firstWord === "/promos") {
       const rest = rawText.slice(firstWord.length).trim().toLowerCase();

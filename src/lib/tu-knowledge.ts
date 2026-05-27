@@ -127,32 +127,32 @@ WEEKLY CLASS SCHEDULE (ACTUAL — use this to tell people what's happening on sp
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 MONDAY (Lunes):
-  9:30 AM — Stress Release (con Karla) — Libera tensión y estrés a través de movimiento consciente y respiración profunda.
-  11:00 AM — Sculpt Your Body (con Karla) — Tonifica y fortalece tu cuerpo con movimientos precisos y controlados.
-  7:15 PM — Open Flow (con Violeta) — Secuencias fluidas para liberar, expandir y equilibrar tu energía.
+  9:30 AM — Stress Release (con Tata) — Libera tension y estres a traves de movimiento consciente y respiracion profunda.
+  11:00 AM — Sculpt Your Body (con Tata) — Tonifica y fortalece tu cuerpo con movimientos precisos y controlados.
+  7:15 PM — Hatha Flow (con Violeta) — Flujo de hatha yoga para liberar, expandir y equilibrar tu energia.
 
-TUESDAY (Martes) — SPECIAL: $45,000 COP (Martes de Industria):
-  9:30 AM — Yoga for the Back (con Tata) — Cuida tu espalda, mejora tu postura y alivia tensiones.
-  5:30 PM — Meditación Viaje Interior (con Álvaro, solo en español) — Meditación guiada para volver a ti y encontrar paz interior.
-  7:15 PM — Hip Opening · Hatha (con Alejandro) — Abre tus caderas y libera tensión profunda con posturas conscientes de hatha.
+TUESDAY (Martes):
+  9:30 AM — Yogalates (con Tata) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
+  5:30 PM — Inner Journey Meditation (con Alvaro, solo en espanol) — Meditacion guiada para volver a ti y encontrar paz interior.
+  7:15 PM — Hatha (con Alejandro) — Posturas conscientes de hatha para abrir caderas y liberar tension profunda.
 
-WEDNESDAY (Miércoles):
-  9:30 AM — Yogalates (con Karla) — Fusión de yoga y pilates para fortalecer, estirar y equilibrar.
-  10:45 AM — Pilates Flow (con Karla) — Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.
-  7:15 PM — Open Flow (con Violeta) — Secuencias fluidas para liberar, expandir y equilibrar tu energía.
+WEDNESDAY (Miercoles):
+  9:30 AM — Yogalates (con Tata) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
+  10:45 AM — Pilates Flow (con Tata) — Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.
+  5:30 PM — Sound Therapy (con Leandra) — Terapia de sonido para relajacion profunda y sanacion interior.
+  7:15 PM — Hatha Flow (con Violeta) — Flujo de hatha yoga para liberar, expandir y equilibrar tu energia.
 
 THURSDAY (Jueves):
-  9:30 AM — Yoga Intro (con Tata) — Práctica accesible para descubrir el yoga y activar tu cuerpo.
-  5:30 PM — Sound Healing (con Tata) — Relajación profunda a través de sonidos sanadores que armonizan tu energía.
-  7:15 PM — Hip Opening (con Alejandro) — Abre tus caderas y libera tensión profunda con movimiento consciente.
+  9:30 AM — Yogalates (con Tata) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
+  7:15 PM — Hatha (con Alejandro) — Posturas conscientes de hatha para abrir caderas y liberar tension profunda.
 
-FRIDAY (Viernes) — SPECIAL: $45,000 COP:
-  10:00 AM — Power Yoga (con Tata) — Fuerza, alineación y presencia para activar tu poder interior.
-  7:00 PM — Open Flow (con Betty & Violeta) — Fluye, suelta y recarga tu energía para cerrar la semana en balance.
+FRIDAY (Viernes):
+  10:00 AM — Yogalates (con Tata) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
+  7:00 PM — Hatha Flow (con Betty & Violeta) — Fluye, suelta y recarga tu energia para cerrar la semana en balance.
 
-SATURDAY (Sábado):
-  11:00 AM — Sun Salutation (con Tata) — Salud al sol: movimiento consciente para despertar y agradecer.
-  6:00 PM — Meditación Viaje Interior (con Álvaro, solo en español) — Meditación guiada para volver a ti y encontrar paz interior.
+SATURDAY (Sabado):
+  11:00 AM — Yogalates (con Tata) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
+  6:00 PM — Inner Journey Meditation (con Alvaro, solo en espanol) — Meditacion guiada para volver a ti y encontrar paz interior.
 
 SUNDAY (Domingo):
   9:00 AM — Just Hatha Flow (con Alejandro) — Flujo suave de hatha yoga para conectar cuerpo, mente y respiración.
@@ -176,13 +176,12 @@ CLASS DESCRIPTIONS (for recommending the right class):
 - Meditación Viaje Interior: Guided meditation for inner peace and reconnection with self. A journey inward through stillness and conscious word. Solo en español.
 
 TEACHERS:
-- Tata (Founder & Lead Teacher, 30+ years): Sound Healing, Reiki, Kundalini, Vinyasa, Ceremonies. Teaches Tue/Thu mornings, Thu 5:30 PM Sound Healing, Fri morning, Sat morning.
+- Tata (Founder & Lead Teacher, 30+ years): Sound Healing, Reiki, Kundalini, Vinyasa, Yogalates, Pilates Flow, Ceremonies. Teaches Mon/Tue/Wed/Thu/Fri/Sat mornings, plus Stress Release and Sculpt Your Body.
 - Betty Quintana: Psychologist and yoga instructor. Integrates meditation and mental reprogramming. Co-teaches Friday evening with Violeta.
-- Violeta: Movement artist. Explores dance, fascia work, and conscious movement. Teaches Mon/Wed evenings, co-teaches Friday evening with Betty.
-- Álvaro: Guides meditation and ontology-based connection. Teaches Meditación Viaje Interior (Tue/Sat/Sun).
-- Karla: Pilates specialist. Teaches Mon 9:30 AM Stress Release, Mon 11:00 AM Sculpt Your Body, Wed 9:30 AM Yogalates, and Wed 10:45 AM Pilates Flow. All her classes focus on Pilates-style movement.
-- Alejandro: Guides practices combining strength and calm. Teaches Tue/Thu evenings (Hip Opening) and Sunday morning.
-- Karla: Creates accessible, loving practice spaces. Teaches Monday 11:00 AM Sculpt Your Body.
+- Violeta: Movement artist. Explores dance, fascia work, and conscious movement. Teaches Mon/Wed Hatha Flow evenings, co-teaches Friday evening with Betty.
+- Alvaro: Guides meditation and ontology-based connection. Teaches Inner Journey Meditation (Tue/Sat/Sun).
+- Leandra: Sound therapy specialist. Guides Sound Therapy sessions on Wednesday 5:30 PM.
+- Alejandro: Guides practices combining strength and calm. Teaches Tue/Thu evenings (Hatha) and Sunday morning.
 
 ALL GROUP CLASSES (2026 Pricing):
 Walk-in class: $80,000 COP per class
