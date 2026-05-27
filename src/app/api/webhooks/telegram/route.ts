@@ -65,6 +65,7 @@ interface SessionWithDef {
   enrolled: number;
   status: string;
   cancel_reason: string | null;
+  definition_id?: string;
   definition: {
     name: string;
     name_es: string;
@@ -2041,7 +2042,7 @@ async function handleChangeTeacher(
   const { data: sessions, error: findError } = await supabase
     .from("tu_class_sessions")
     .select(`
-      id, session_date, start_time, teacher, status,
+      id, session_date, start_time, teacher, status, definition_id,
       definition:tu_class_definitions (name, name_es)
     `)
     .eq("session_date", date)
@@ -2073,7 +2074,7 @@ async function handleChangeTeacher(
   const className = (match.definition as unknown as { name_es: string } | null)?.name_es || "Clase";
   const oldTeacher = match.teacher;
 
-  // Update teacher
+  // Update teacher on this session
   const { error: updateError } = await supabase
     .from("tu_class_sessions")
     .update({ teacher: teacher.trim() })
@@ -2084,12 +2085,29 @@ async function handleChangeTeacher(
     return "Error al cambiar el teacher. Intenta de nuevo.";
   }
 
+  // PERMANENT: Also update the class definition + all future sessions
+  if (match.definition_id) {
+    await supabase
+      .from("tu_class_definitions")
+      .update({ teacher: teacher.trim(), updated_at: new Date().toISOString() })
+      .eq("id", match.definition_id);
+
+    const today = getColombiaDateStr();
+    await supabase
+      .from("tu_class_sessions")
+      .update({ teacher: teacher.trim() })
+      .eq("definition_id", match.definition_id)
+      .gte("session_date", today)
+      .eq("status", "scheduled");
+  }
+
   return (
     `<b>Teacher cambiado</b>\n\n` +
     `${className}\n` +
     `${match.start_time} - ${spanishDate(date)}\n\n` +
     `${oldTeacher} → <b>${teacher.trim()}</b>\n\n` +
-    `El horario en la pagina web se actualiza automaticamente.`
+    `Cambio permanente — todas las clases futuras actualizadas.\n` +
+    `La pagina web y el chatbot se actualizan automaticamente.`
   );
 }
 

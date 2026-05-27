@@ -1,7 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { DAY_NAMES } from "@/lib/schedule";
-import { TIMEZONE } from "@/lib/constants/business-rules";
+import { DAY_NAMES, TIMEZONE } from "@/lib/constants/business-rules";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -70,7 +69,7 @@ export async function GET(request: NextRequest) {
 
     const targetDate = new Date(dateStr + "T12:00:00");
     const dayOfWeek = targetDate.getDay();
-    const dayName = DAY_NAMES[dayOfWeek];
+    const dayName = DAY_NAMES.en[dayOfWeek];
 
     const supabase = getSupabase();
     if (!supabase) {

@@ -123,65 +123,9 @@ JUSTBYOGA BY TUISYOU — MY DAILY YOGA CLASSES
 
 JustbYoga is my daily yoga offering. Group classes at accessible prices so more people can access this practice. I created this because yoga shouldn't only be for those who can afford private sessions.
 
-WEEKLY CLASS SCHEDULE (ACTUAL — use this to tell people what's happening on specific days):
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{DYNAMIC_SCHEDULE}}
 
-MONDAY (Lunes):
-  9:30 AM — Stress Release (Special Class) — Libera tension y estres a traves de movimiento consciente y respiracion profunda.
-  11:00 AM — Sculpt Your Body (Special Class) — Tonifica y fortalece tu cuerpo con movimientos precisos y controlados.
-  7:15 PM — Hatha Flow (con Violeta) — Flujo de hatha yoga para liberar, expandir y equilibrar tu energia.
-
-TUESDAY (Martes):
-  9:30 AM — Yogalates (Special Class) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
-  5:30 PM — Inner Journey Meditation (con Alvaro, solo en espanol) — Meditacion guiada para volver a ti y encontrar paz interior.
-  7:15 PM — Hatha (con Alejandro) — Posturas conscientes de hatha para abrir caderas y liberar tension profunda.
-
-WEDNESDAY (Miercoles):
-  9:30 AM — Yogalates (Special Class) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
-  10:45 AM — Pilates Flow (Special Class) — Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.
-  5:30 PM — Sound Therapy (con Leandra) — Terapia de sonido para relajacion profunda y sanacion interior.
-  7:15 PM — Hatha Flow (con Violeta) — Flujo de hatha yoga para liberar, expandir y equilibrar tu energia.
-
-THURSDAY (Jueves):
-  9:30 AM — Yogalates (Special Class) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
-  7:15 PM — Hatha (con Alejandro) — Posturas conscientes de hatha para abrir caderas y liberar tension profunda.
-
-FRIDAY (Viernes):
-  10:00 AM — Yogalates (Special Class) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
-  7:00 PM — Hatha Flow (con Betty & Violeta) — Fluye, suelta y recarga tu energia para cerrar la semana en balance.
-
-SATURDAY (Sabado):
-  11:00 AM — Yogalates (Special Class) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
-  6:00 PM — Inner Journey Meditation (con Alvaro, solo en espanol) — Meditacion guiada para volver a ti y encontrar paz interior.
-
-SUNDAY (Domingo):
-  9:00 AM — Just Hatha Flow (con Alejandro) — Flujo suave de hatha yoga para conectar cuerpo, mente y respiración.
-  10:30 AM — Meditación Viaje Interior (con Álvaro, solo en español) — Un viaje hacia adentro a través de la meditación y la quietud.
-
-CLASS DESCRIPTIONS (for recommending the right class):
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Stress Release: Conscious movement and deep breathing to release tension and stress. Great for anyone carrying tension from work or daily life.
-- Sculpt Your Body: Precise, controlled movements to tone and strengthen. Focuses on body shaping through mindful effort.
-- Yoga for the Back: Therapeutic practice targeting the spine, posture, and tension relief. Perfect for desk workers or anyone with back issues.
-- Yogalates: Fusion of yoga and pilates — combines flexibility, core strength, and balance in one class.
-- Pilates Flow: Core-centered practice with fluidity. Strengthen, align, and tone the body from the center with flowing transitions.
-- Open Flow: Free-flowing sequences to release, expand, and balance energy. Less structured, more intuitive — go with the flow.
-- Hip Opening · Hatha: Opens hips and releases deep tension through conscious hatha postures. Great for flexibility and emotional release.
-- Hip Opening: Focused on opening hips and releasing deep tension through conscious movement. Excellent for those with tight hips.
-- Yoga Intro: Accessible practice for discovering yoga and activating the body. Perfect entry point for newcomers.
-- Sound Healing: Deep relaxation through healing sounds (singing bowls, etc). Harmonizes energy and calms the nervous system. No movement required.
-- Power Yoga: Strength-focused practice with emphasis on alignment and presence. Activates inner power and builds physical confidence.
-- Sun Salutation: Conscious movement to greet the day with gratitude. Flowing sun salutation sequences to awaken and energize.
-- Just Hatha Flow: Gentle hatha yoga flow connecting body, mind, and breath. A classic, grounding practice.
-- Meditación Viaje Interior: Guided meditation for inner peace and reconnection with self. A journey inward through stillness and conscious word. Solo en español.
-
-TEACHERS:
-- Tata (Founder & Lead Teacher, 30+ years): Sound Healing, Reiki, Kundalini, Vinyasa, Yogalates, Pilates Flow, Ceremonies. Teaches Mon/Tue/Wed/Thu/Fri/Sat mornings, plus Stress Release and Sculpt Your Body.
-- Betty Quintana: Psychologist and yoga instructor. Integrates meditation and mental reprogramming. Co-teaches Friday evening with Violeta.
-- Violeta: Movement artist. Explores dance, fascia work, and conscious movement. Teaches Mon/Wed Hatha Flow evenings, co-teaches Friday evening with Betty.
-- Alvaro: Guides meditation and ontology-based connection. Teaches Inner Journey Meditation (Tue/Sat/Sun).
-- Leandra: Sound therapy specialist. Guides Sound Therapy sessions on Wednesday 5:30 PM.
-- Alejandro: Guides practices combining strength and calm. Teaches Tue/Thu evenings (Hatha) and Sunday morning.
+{{DYNAMIC_TEACHERS}}
 
 ALL GROUP CLASSES (2026 Pricing):
 Walk-in class: $80,000 COP per class
@@ -1004,6 +948,16 @@ This is TU. This is me. This is Tata.
 
 Welcome.
 `;
+
+/**
+ * Build the system prompt with dynamic schedule from database.
+ * Replaces {{DYNAMIC_SCHEDULE}} and {{DYNAMIC_TEACHERS}} placeholders.
+ */
+export function buildSystemPrompt(scheduleBlock: string, teachersBlock: string): string {
+  return TU_SYSTEM_PROMPT
+    .replace("{{DYNAMIC_SCHEDULE}}", scheduleBlock)
+    .replace("{{DYNAMIC_TEACHERS}}", teachersBlock);
+}
 
 export const CONVERSATION_STARTERS = [
   "I've never done yoga before",

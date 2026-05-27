@@ -22,40 +22,34 @@ const BOOKING_RULES = [
   "Mats and props provided — just bring water",
 ];
 
-const scheduleByDay: Record<number, { time: string; name: string }[]> = {
-  0: [ // Sunday
-    { time: "9:00 AM", name: "Just Hatha Flow" },
-    { time: "10:30 AM", name: "Meditación Viaje Interior" },
-  ],
-  1: [ // Monday
-    { time: "9:30 AM", name: "Stress Release" },
-    { time: "11:00 AM", name: "Sculpt Your Body" },
-    { time: "7:15 PM", name: "Open Flow" },
-  ],
-  2: [ // Tuesday
-    { time: "9:30 AM", name: "Yoga for the Back" },
-    { time: "5:30 PM", name: "Meditación Viaje Interior" },
-    { time: "7:15 PM", name: "Hip Opening · Hatha" },
-  ],
-  3: [ // Wednesday
-    { time: "9:30 AM", name: "Yogalates" },
-    { time: "10:45 AM", name: "Pilates Flow" },
-    { time: "7:15 PM", name: "Open Flow" },
-  ],
-  4: [ // Thursday
-    { time: "9:30 AM", name: "Yoga Intro" },
-    { time: "5:30 PM", name: "Sound Healing" },
-    { time: "7:15 PM", name: "Hip Opening" },
-  ],
-  5: [ // Friday
-    { time: "10:00 AM", name: "Power Yoga" },
-    { time: "7:00 PM", name: "Open Flow" },
-  ],
-  6: [ // Saturday
-    { time: "11:00 AM", name: "Sun Salutation" },
-    { time: "6:00 PM", name: "Meditación Viaje Interior" },
-  ],
-};
+// Schedule loaded from database via API — no hardcoded data
+let _cachedSchedule: Record<number, { time: string; name: string }[]> | null = null;
+
+function formatTime12(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const displayH = h % 12 || 12;
+  return `${displayH}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+async function getScheduleByDay(): Promise<Record<number, { time: string; name: string }[]>> {
+  if (_cachedSchedule) return _cachedSchedule;
+  try {
+    const res = await fetch("/api/public/schedule");
+    const data = await res.json();
+    const result: Record<number, { time: string; name: string }[]> = {};
+    for (const day of data.schedule || []) {
+      result[day.day_of_week] = (day.classes || []).map((c: { start_time: string; name: string }) => ({
+        time: formatTime12(c.start_time),
+        name: c.name,
+      }));
+    }
+    _cachedSchedule = result;
+    return result;
+  } catch {
+    return {};
+  }
+}
 
 const dayNames = [
   "Sunday",
@@ -127,15 +121,12 @@ function isClassBookable(dateStr: string, timeStr: string): boolean {
   return (classTotalMinutes - nowTotalMinutes) >= 120;
 }
 
-function getClassesForDate(dateStr: string) {
+function getClassesForDate(dateStr: string, scheduleByDay: Record<number, { time: string; name: string }[]>) {
   if (!dateStr) return [];
-  // Parse YYYY-MM-DD manually to avoid timezone-shifting bugs
   const [y, m, d] = dateStr.split("-").map(Number);
-  const date = new Date(y, m - 1, d, 12, 0, 0); // noon local — getDay() is safe
+  const date = new Date(y, m - 1, d, 12, 0, 0);
   const day = date.getDay();
   const classes = scheduleByDay[day] || [];
-
-  // Filter out classes within the 2-hour booking window
   return classes.filter((cls) => isClassBookable(dateStr, cls.time));
 }
 
@@ -155,6 +146,7 @@ function formatDateDisplay(dateStr: string) {
 function getNextAvailableClass(
   bookedDateStr: string,
   bookedClassName: string,
+  scheduleByDay: Record<number, { time: string; name: string }[]>,
 ): { date: string; dateDisplay: string; time: string; name: string } | null {
   const [y, m, d] = bookedDateStr.split("-").map(Number);
   const bookedDate = new Date(y, m - 1, d, 12, 0, 0);
@@ -168,7 +160,7 @@ function getNextAvailableClass(
   // First pass: find the next occurrence of the SAME class
   for (let offset = 1; offset <= 14; offset++) {
     const dateStr = offsetDateStr(bookedDate, offset);
-    const dayClasses = getClassesForDate(dateStr);
+    const dayClasses = getClassesForDate(dateStr, scheduleByDay);
     const sameClass = dayClasses.find((c) => c.name === bookedClassName);
     if (sameClass) {
       return {
@@ -183,7 +175,7 @@ function getNextAvailableClass(
   // Second pass: find ANY available class
   for (let offset = 1; offset <= 14; offset++) {
     const dateStr = offsetDateStr(bookedDate, offset);
-    const dayClasses = getClassesForDate(dateStr);
+    const dayClasses = getClassesForDate(dateStr, scheduleByDay);
     if (dayClasses.length > 0) {
       return {
         date: dateStr,
@@ -220,7 +212,13 @@ export default function BookingModal({
   const [wompiState, setWompiState] = useState<WompiState>("idle");
   const [wompiError, setWompiError] = useState("");
   const [activePass, setActivePass] = useState<{ pass_type: string; classes_remaining: number | string; is_unlimited: boolean } | null>(null);
+  const [scheduleByDay, setScheduleByDay] = useState<Record<number, { time: string; name: string }[]>>({});
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Load schedule from DB
+  useEffect(() => {
+    getScheduleByDay().then(setScheduleByDay);
+  }, []);
 
   // Reset form when modal opens with new preselected values
   useEffect(() => {
@@ -237,7 +235,7 @@ export default function BookingModal({
     }
   }, [isOpen, preselectedService, preselectedDate, preselectedTime]);
 
-  const availableClasses = getClassesForDate(date);
+  const availableClasses = getClassesForDate(date, scheduleByDay);
   const isDateClosed = date && closedDates.includes(date);
 
   const bookingService = selectedTime
@@ -1134,7 +1132,7 @@ export default function BookingModal({
               {/* ━━━ NEXT AVAILABLE CLASS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
               {(() => {
                 const nextClass = date && service
-                  ? getNextAvailableClass(date, service.split(" @ ")[0])
+                  ? getNextAvailableClass(date, service.split(" @ ")[0], scheduleByDay)
                   : null;
                 if (!nextClass) return null;
                 return (

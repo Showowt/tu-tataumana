@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { notifyNewBooking } from "@/lib/telegram";
-import { CAPACITY } from "@/lib/schedule";
+import { DEFAULT_CLASS_CAPACITY as CAPACITY } from "@/lib/constants/business-rules";
 import { getAdminClient } from "@/lib/admin-auth";
 
 export async function POST(request: Request) {

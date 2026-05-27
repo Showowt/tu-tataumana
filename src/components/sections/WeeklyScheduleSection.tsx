@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { t, type Lang } from "@/lib/translations";
 
 export interface WeeklyScheduleSectionProps {
@@ -9,7 +10,7 @@ export interface WeeklyScheduleSectionProps {
   closedDates: string[];
 }
 
-// ─── Schedule data ────────────────────────────────────────────────────────────
+// ─── Schedule types ───────────────────────────────────────────────────────────
 
 interface ScheduleClass {
   time: string;
@@ -27,82 +28,48 @@ interface ScheduleDay {
   classes: ScheduleClass[];
 }
 
-const weeklySchedule: ScheduleDay[] = [
-  {
-    day: "Monday",
-    dayEs: "Lunes",
-    dayShort: "MON",
-    dayIndex: 1,
-    classes: [
-      { time: "9:30 AM", name: "Stress Release", teacher: "Special Class", desc: { es: "Libera tension y estres a traves de movimiento consciente y respiracion profunda.", en: "Release tension and stress through conscious movement and deep breathing." } },
-      { time: "11:00 AM", name: "Sculpt Your Body", teacher: "Special Class", desc: { es: "Tonifica y fortalece tu cuerpo con movimientos precisos y controlados.", en: "Tone and strengthen your body with precise, controlled movements." } },
-      { time: "7:15 PM", name: "Hatha Flow", teacher: "Violeta", desc: { es: "Flujo de hatha yoga para liberar, expandir y equilibrar tu energia.", en: "Hatha yoga flow to release, expand and balance your energy." } },
-    ],
-  },
-  {
-    day: "Tuesday",
-    dayEs: "Martes",
-    dayShort: "TUE",
-    dayIndex: 2,
-    classes: [
-      { time: "9:30 AM", name: "Yogalates", teacher: "Special Class", desc: { es: "Fusion de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
-      { time: "5:30 PM", name: "Inner Journey Meditation", note: "(solo en español)", teacher: "Alvaro", desc: { es: "Meditacion guiada para volver a ti y encontrar paz interior.", en: "Guided meditation to return to yourself and find inner peace." } },
-      { time: "7:15 PM", name: "Hatha", teacher: "Alejandro", desc: { es: "Posturas conscientes de hatha para abrir caderas y liberar tension profunda.", en: "Conscious hatha postures to open hips and release deep tension." } },
-    ],
-  },
-  {
-    day: "Wednesday",
-    dayEs: "Miercoles",
-    dayShort: "WED",
-    dayIndex: 3,
-    classes: [
-      { time: "9:30 AM", name: "Yogalates", teacher: "Special Class", desc: { es: "Fusion de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
-      { time: "10:45 AM", name: "Pilates Flow", teacher: "Special Class", desc: { es: "Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.", en: "Strengthen, align and tone your body with fluidity from the core." } },
-      { time: "5:30 PM", name: "Sound Therapy", teacher: "Leandra", desc: { es: "Terapia de sonido para relajacion profunda y sanacion interior.", en: "Sound therapy for deep relaxation and inner healing." } },
-      { time: "7:15 PM", name: "Hatha Flow", teacher: "Violeta", desc: { es: "Flujo de hatha yoga para liberar, expandir y equilibrar tu energia.", en: "Hatha yoga flow to release, expand and balance your energy." } },
-    ],
-  },
-  {
-    day: "Thursday",
-    dayEs: "Jueves",
-    dayShort: "THU",
-    dayIndex: 4,
-    classes: [
-      { time: "9:30 AM", name: "Yogalates", teacher: "Special Class", desc: { es: "Fusion de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
-      { time: "7:15 PM", name: "Hatha", teacher: "Alejandro", desc: { es: "Posturas conscientes de hatha para abrir caderas y liberar tension profunda.", en: "Conscious hatha postures to open hips and release deep tension." } },
-    ],
-  },
-  {
-    day: "Friday",
-    dayEs: "Viernes",
-    dayShort: "FRI",
-    dayIndex: 5,
-    classes: [
-      { time: "10:00 AM", name: "Yogalates", teacher: "Special Class", desc: { es: "Fusion de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
-      { time: "7:00 PM", name: "Hatha Flow", teacher: "Betty & Violeta", desc: { es: "Fluye, suelta y recarga tu energia para cerrar la semana en balance.", en: "Flow, release and recharge your energy to close the week in balance." } },
-    ],
-  },
-  {
-    day: "Saturday",
-    dayEs: "Sabado",
-    dayShort: "SAT",
-    dayIndex: 6,
-    classes: [
-      { time: "11:00 AM", name: "Yogalates", teacher: "Special Class", desc: { es: "Fusion de yoga y pilates para fortalecer, estirar y equilibrar.", en: "Fusion of yoga and pilates to strengthen, stretch and balance." } },
-      { time: "6:00 PM", name: "Inner Journey Meditation", note: "(solo en español)", teacher: "Alvaro", desc: { es: "Meditacion guiada para volver a ti y encontrar paz interior.", en: "Guided meditation to return to yourself and find inner peace." } },
-    ],
-  },
-  {
-    day: "Sunday",
-    dayEs: "Domingo",
-    dayShort: "SUN",
-    dayIndex: 0,
-    classes: [
-      { time: "9:00 AM", name: "Just Hatha Flow", teacher: "Alejandro", desc: { es: "Flujo suave de hatha yoga para conectar cuerpo, mente y respiración.", en: "Gentle hatha yoga flow to connect body, mind and breath." } },
-      { time: "10:30 AM", name: "Meditación Viaje Interior", note: "(solo en español)", teacher: "Álvaro", desc: { es: "Un viaje hacia adentro a través de la meditación y la quietud.", en: "A journey inward through meditation and stillness." } },
-    ],
-  },
-];
+/** Convert "09:30:00" or "09:30" to "9:30 AM" */
+function formatTime12(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const displayH = h % 12 || 12;
+  return `${displayH}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+/** Fetch schedule from DB and convert to component format */
+function useScheduleData(): { schedule: ScheduleDay[]; loading: boolean } {
+  const [schedule, setSchedule] = useState<ScheduleDay[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/public/schedule")
+      .then((res) => res.json())
+      .then((data) => {
+        const days: ScheduleDay[] = (data.schedule || []).map(
+          (day: { day_of_week: number; day_name: string; day_name_es: string; day_short: string; classes: { name: string; name_es: string; start_time: string; teacher: string; description: string | null; description_es: string | null; note: string | null }[] }) => ({
+            day: day.day_name,
+            dayEs: day.day_name_es,
+            dayShort: day.day_short,
+            dayIndex: day.day_of_week,
+            classes: day.classes.map((cls) => ({
+              time: formatTime12(cls.start_time),
+              name: cls.name,
+              note: cls.note || undefined,
+              teacher: cls.teacher || undefined,
+              desc: cls.description || cls.description_es
+                ? { en: cls.description || "", es: cls.description_es || "" }
+                : undefined,
+            })),
+          }),
+        );
+        setSchedule(days);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { schedule, loading };
+}
 
 // ─── Helper functions ─────────────────────────────────────────────────────────
 
@@ -174,6 +141,18 @@ function isClassBookable(dateStr: string, timeStr: string): boolean {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function WeeklyScheduleSection({ lang, L, openBooking, closedDates }: WeeklyScheduleSectionProps) {
+  const { schedule: weeklySchedule, loading: scheduleLoading } = useScheduleData();
+
+  if (scheduleLoading) {
+    return (
+      <section id="schedule" className="relative py-24 md:py-32 bg-charcoal">
+        <div className="flex items-center justify-center py-20">
+          <div className="w-6 h-6 border-2 border-gold/40 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="schedule" className="relative py-24 md:py-32 bg-charcoal overflow-clip grain-overlay">
       {/* Background video */}

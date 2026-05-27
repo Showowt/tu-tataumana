@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/admin-auth";
-import { CAPACITY } from "@/lib/schedule";
+import { DEFAULT_CLASS_CAPACITY as CAPACITY } from "@/lib/constants/business-rules";
 
 // POST /api/admin/book — Admin books a student into a class (legacy tu_bookings)
 export async function POST(request: NextRequest) {

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
-import { TU_SYSTEM_PROMPT } from "@/lib/tu-knowledge";
+import { TU_SYSTEM_PROMPT, buildSystemPrompt } from "@/lib/tu-knowledge";
+import { generateScheduleText } from "@/lib/schedule-text-generator";
 import { notifyChatConversation } from "@/lib/telegram";
 
 // Rate limiting
@@ -99,7 +100,14 @@ export async function POST(request: NextRequest) {
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
-      system: TU_SYSTEM_PROMPT + timeContext,
+      system: await (async () => {
+        try {
+          const { scheduleBlock, teachersBlock } = await generateScheduleText();
+          return buildSystemPrompt(scheduleBlock, teachersBlock) + timeContext;
+        } catch {
+          return TU_SYSTEM_PROMPT + timeContext;
+        }
+      })(),
       messages: messages.map((msg) => ({
         role: msg.role,
         content: msg.content,
