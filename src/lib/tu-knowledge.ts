@@ -127,31 +127,31 @@ WEEKLY CLASS SCHEDULE (ACTUAL — use this to tell people what's happening on sp
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 MONDAY (Lunes):
-  9:30 AM — Stress Release (con Tata) — Libera tension y estres a traves de movimiento consciente y respiracion profunda.
-  11:00 AM — Sculpt Your Body (con Tata) — Tonifica y fortalece tu cuerpo con movimientos precisos y controlados.
+  9:30 AM — Stress Release (Special Class) — Libera tension y estres a traves de movimiento consciente y respiracion profunda.
+  11:00 AM — Sculpt Your Body (Special Class) — Tonifica y fortalece tu cuerpo con movimientos precisos y controlados.
   7:15 PM — Hatha Flow (con Violeta) — Flujo de hatha yoga para liberar, expandir y equilibrar tu energia.
 
 TUESDAY (Martes):
-  9:30 AM — Yogalates (con Tata) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
+  9:30 AM — Yogalates (Special Class) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
   5:30 PM — Inner Journey Meditation (con Alvaro, solo en espanol) — Meditacion guiada para volver a ti y encontrar paz interior.
   7:15 PM — Hatha (con Alejandro) — Posturas conscientes de hatha para abrir caderas y liberar tension profunda.
 
 WEDNESDAY (Miercoles):
-  9:30 AM — Yogalates (con Tata) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
-  10:45 AM — Pilates Flow (con Tata) — Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.
+  9:30 AM — Yogalates (Special Class) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
+  10:45 AM — Pilates Flow (Special Class) — Fortalece, alinea y tonifica tu cuerpo con fluidez desde el centro.
   5:30 PM — Sound Therapy (con Leandra) — Terapia de sonido para relajacion profunda y sanacion interior.
   7:15 PM — Hatha Flow (con Violeta) — Flujo de hatha yoga para liberar, expandir y equilibrar tu energia.
 
 THURSDAY (Jueves):
-  9:30 AM — Yogalates (con Tata) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
+  9:30 AM — Yogalates (Special Class) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
   7:15 PM — Hatha (con Alejandro) — Posturas conscientes de hatha para abrir caderas y liberar tension profunda.
 
 FRIDAY (Viernes):
-  10:00 AM — Yogalates (con Tata) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
+  10:00 AM — Yogalates (Special Class) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
   7:00 PM — Hatha Flow (con Betty & Violeta) — Fluye, suelta y recarga tu energia para cerrar la semana en balance.
 
 SATURDAY (Sabado):
-  11:00 AM — Yogalates (con Tata) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
+  11:00 AM — Yogalates (Special Class) — Fusion de yoga y pilates para fortalecer, estirar y equilibrar.
   6:00 PM — Inner Journey Meditation (con Alvaro, solo en espanol) — Meditacion guiada para volver a ti y encontrar paz interior.
 
 SUNDAY (Domingo):
