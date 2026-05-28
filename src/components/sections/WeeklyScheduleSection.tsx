@@ -36,11 +36,46 @@ function formatTime12(time: string): string {
   return `${displayH}:${String(m).padStart(2, "0")} ${period}`;
 }
 
-/** Fetch schedule from DB and convert to component format */
-function useScheduleData(): { schedule: ScheduleDay[]; loading: boolean; error: boolean } {
-  const [schedule, setSchedule] = useState<ScheduleDay[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+// Fallback schedule — used immediately while API loads, never shows blank
+const FALLBACK_SCHEDULE: ScheduleDay[] = [
+  { day: "Monday", dayEs: "Lunes", dayShort: "MON", dayIndex: 1, classes: [
+    { time: "9:30 AM", name: "Stress Release", teacher: "Special Class" },
+    { time: "11:00 AM", name: "Sculpt Your Body", teacher: "Special Class" },
+    { time: "7:15 PM", name: "Hatha Flow", teacher: "Violeta" },
+  ]},
+  { day: "Tuesday", dayEs: "Martes", dayShort: "TUE", dayIndex: 2, classes: [
+    { time: "9:30 AM", name: "Yogalates", teacher: "Special Class" },
+    { time: "5:30 PM", name: "Inner Journey Meditation", teacher: "Alvaro", note: "(solo en español)" },
+    { time: "7:15 PM", name: "Hatha", teacher: "Alejandro" },
+  ]},
+  { day: "Wednesday", dayEs: "Miercoles", dayShort: "WED", dayIndex: 3, classes: [
+    { time: "9:30 AM", name: "Yogalates", teacher: "Special Class" },
+    { time: "10:45 AM", name: "Pilates Flow", teacher: "Special Class" },
+    { time: "5:30 PM", name: "Sound Therapy", teacher: "Leandra" },
+    { time: "7:15 PM", name: "Hatha Flow", teacher: "Violeta" },
+  ]},
+  { day: "Thursday", dayEs: "Jueves", dayShort: "THU", dayIndex: 4, classes: [
+    { time: "9:30 AM", name: "Yogalates", teacher: "Special Class" },
+    { time: "7:15 PM", name: "Hatha", teacher: "Alejandro" },
+  ]},
+  { day: "Friday", dayEs: "Viernes", dayShort: "FRI", dayIndex: 5, classes: [
+    { time: "10:00 AM", name: "Yogalates", teacher: "Special Class" },
+    { time: "7:00 PM", name: "Hatha Flow", teacher: "Betty & Violeta" },
+  ]},
+  { day: "Saturday", dayEs: "Sabado", dayShort: "SAT", dayIndex: 6, classes: [
+    { time: "11:00 AM", name: "Yogalates", teacher: "Special Class" },
+    { time: "6:00 PM", name: "Inner Journey Meditation", teacher: "Alvaro", note: "(solo en español)" },
+  ]},
+  { day: "Sunday", dayEs: "Domingo", dayShort: "SUN", dayIndex: 0, classes: [
+    { time: "9:00 AM", name: "Just Hatha Flow", teacher: "Alejandro" },
+    { time: "10:30 AM", name: "Inner Journey Meditation", teacher: "Alvaro", note: "(solo en español)" },
+  ]},
+];
+
+/** Fetch schedule from DB — falls back to hardcoded data if API fails */
+function useScheduleData(): { schedule: ScheduleDay[]; loading: boolean } {
+  const [schedule, setSchedule] = useState<ScheduleDay[]>(FALLBACK_SCHEDULE);
+  const [loading, setLoading] = useState(false); // Start as NOT loading — show fallback immediately
 
   useEffect(() => {
     fetch("/api/public/schedule")
@@ -66,16 +101,15 @@ function useScheduleData(): { schedule: ScheduleDay[]; loading: boolean; error: 
             })),
           }),
         );
-        setSchedule(days);
+        if (days.length > 0) setSchedule(days);
       })
       .catch((err) => {
-        console.error("[WeeklyScheduleSection] schedule fetch failed:", err);
-        setError(true);
-      })
-      .finally(() => setLoading(false));
+        console.error("[WeeklyScheduleSection] API failed, using fallback:", err);
+        // Keep fallback — already set as default
+      });
   }, []);
 
-  return { schedule, loading, error };
+  return { schedule, loading };
 }
 
 // ─── Helper functions ─────────────────────────────────────────────────────────
@@ -148,33 +182,7 @@ function isClassBookable(dateStr: string, timeStr: string): boolean {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function WeeklyScheduleSection({ lang, L, openBooking, closedDates }: WeeklyScheduleSectionProps) {
-  const { schedule: weeklySchedule, loading: scheduleLoading, error: scheduleError } = useScheduleData();
-
-  if (scheduleLoading) {
-    return (
-      <section id="schedule" className="relative py-24 md:py-32 bg-charcoal" style={{ minHeight: "600px" }}>
-        <div className="max-w-6xl mx-auto px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-2xl border border-white/[0.06] bg-white/[0.04] h-48 animate-pulse" />
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (scheduleError || weeklySchedule.length === 0) {
-    return (
-      <section id="schedule" className="relative py-24 md:py-32 bg-charcoal">
-        <div className="text-center py-20">
-          <p className="text-white/40 text-sm font-[family-name:var(--font-body)]">
-            {lang === "en" ? "Schedule temporarily unavailable. Contact us via WhatsApp." : "Horario temporalmente no disponible. Contactanos por WhatsApp."}
-          </p>
-        </div>
-      </section>
-    );
-  }
+  const { schedule: weeklySchedule } = useScheduleData();
 
   return (
     <section id="schedule" className="relative py-24 md:py-32 bg-charcoal overflow-clip grain-overlay">
