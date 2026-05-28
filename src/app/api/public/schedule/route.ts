@@ -48,15 +48,13 @@ interface ScheduleDay {
 export async function GET() {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!url || (!anonKey && !serviceKey)) {
+    if (!url || !key) {
       return NextResponse.json({ error: "Not configured" }, { status: 503 });
     }
 
-    // Prefer anon key for public reads — service role only as fallback
-    const supabase = createClient(url, anonKey || serviceKey!);
+    const supabase = createClient(url, key);
 
     const { data, error } = await supabase
       .from("tu_class_definitions")
