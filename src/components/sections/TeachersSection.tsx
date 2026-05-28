@@ -69,7 +69,7 @@ const teachers: Teacher[] = [
       es: "Leandra guia sesiones de sanacion con sonido que conectan cuerpo, mente y espiritu. A traves de cuencos tibetanos y frecuencias armonicas, crea espacios de profunda relajacion y transformacion interior.",
       en: "Leandra guides sound healing sessions that connect body, mind and spirit. Through Tibetan bowls and harmonic frequencies, she creates spaces of deep relaxation and inner transformation.",
     },
-    image: "/teacher-tata.jpg",
+    image: "/teacher-leandra.jpg",
     specialties: ["Sound Healing", "Sound Therapy", "Meditation"],
     isLead: false,
   },

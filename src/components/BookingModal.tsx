@@ -38,7 +38,7 @@ async function getScheduleByDay(): Promise<Record<number, { time: string; name: 
     return _cachedSchedule.data;
   }
   try {
-    const res = await fetch("/api/public/schedule");
+    const res = await fetch("/api/public/schedule", { signal: AbortSignal.timeout(5000) });
     const data = await res.json();
     const result: Record<number, { time: string; name: string }[]> = {};
     for (const day of data.schedule || []) {
@@ -388,8 +388,15 @@ export default function BookingModal({
         setSubmitting(false);
         return;
       }
+      if (!bookRes.ok && bookRes.status >= 500) {
+        alert("No pudimos confirmar tu reserva. Por favor contacta a Tata por WhatsApp antes de pagar. / We couldn't confirm your booking. Please contact Tata via WhatsApp before paying.");
+        setSubmitting(false);
+        return;
+      }
     } catch {
-      // Continue to payment even if API fails
+      alert("Error de conexion. Por favor contacta a Tata por WhatsApp para reservar. / Connection error. Please contact Tata via WhatsApp to book.");
+      setSubmitting(false);
+      return;
     }
 
     // Also capture as a lead (completed booking)

@@ -188,6 +188,7 @@ export async function createPaymentLink(
 
   const response = await fetch(`${WOMPI_API_BASE}/payment_links`, {
     method: "POST",
+    signal: AbortSignal.timeout(8000),
     headers: {
       Authorization: `Bearer ${WOMPI_PRIVATE_KEY}`,
       "Content-Type": "application/json",
