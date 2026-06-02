@@ -40,6 +40,7 @@ interface BookingData {
   cancel_reason: string | null;
   cancelled_at: string | null;
   created_at: string;
+  guest_name: string | null;
   student: BookingStudent | null;
   session: BookingSession | null;
 }
@@ -232,6 +233,28 @@ export default function AdminBookingsPage() {
     setActionLoading(null);
   }
 
+  async function handleCancelRefund(bookingId: string) {
+    if (!confirm("¿Cancelar reserva y devolver credito al alumno?")) return;
+    setActionLoading(bookingId);
+    try {
+      const res = await fetch("/api/admin/check-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ booking_id: bookingId, action: "cancel_refund" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage(data.error || "Error");
+      } else {
+        showMessage(data.message || "Reserva cancelada");
+        await loadBookings();
+      }
+    } catch {
+      showMessage("Error de conexion");
+    }
+    setActionLoading(null);
+  }
+
   // ---------------------------------------------------------------------------
   // Resolve display status (checked_in is a separate flag from status)
   // ---------------------------------------------------------------------------
@@ -387,6 +410,11 @@ export default function AdminBookingsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-[#2C2C2C] truncate">
                       {student?.full_name || "Desconocido"}
+                      {b.guest_name && (
+                        <span className="text-[10px] text-[#C9A96E] ml-1.5">
+                          → {b.guest_name}
+                        </span>
+                      )}
                     </p>
                     <p className="text-[10px] text-[#2C2C2C]/40 truncate">
                       {student?.phone || student?.email || ""}
@@ -445,6 +473,13 @@ export default function AdminBookingsPage() {
                         >
                           deshacer
                         </button>
+                        <button
+                          onClick={() => handleCancelRefund(b.id)}
+                          disabled={actionLoading === b.id}
+                          className="text-[9px] text-amber-500 hover:text-amber-700 transition-colors disabled:opacity-30"
+                        >
+                          cancelar + devolver
+                        </button>
                       </>
                     ) : b.status === "no_show" ? (
                       <span className="text-[9px] tracking-wider text-red-400 bg-red-50 px-2 py-1 uppercase">
@@ -458,6 +493,13 @@ export default function AdminBookingsPage() {
                           className="px-4 py-2 bg-[#2C2C2C] text-white text-[10px] tracking-[0.1em] uppercase active:bg-[#B87777] transition-colors disabled:opacity-30"
                         >
                           {actionLoading === b.id ? "..." : "Check-in"}
+                        </button>
+                        <button
+                          onClick={() => handleCancelRefund(b.id)}
+                          disabled={actionLoading === b.id}
+                          className="text-[9px] text-amber-500 hover:text-amber-700 transition-colors disabled:opacity-30 text-center"
+                        >
+                          Cancelar + Devolver
                         </button>
                         <button
                           onClick={() => handleNoShow(b.id)}

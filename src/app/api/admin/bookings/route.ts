@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
       cancel_reason,
       cancelled_at,
       created_at,
+      guest_name,
       student:tu_students!student_id (
         id,
         full_name,

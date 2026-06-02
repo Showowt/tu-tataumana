@@ -182,18 +182,18 @@ export const t = {
     en: "SPECIAL EVENT",
     es: "EVENTO ESPECIAL",
   },
-  // Mother's Month promo
+  // Anniversary promo
   mayPromoTitle: {
-    en: "Mayo Mes Mam\u00E1",
-    es: "Mayo Mes Mam\u00E1",
+    en: "Especial Aniversario",
+    es: "Especial Aniversario",
   },
   mayPromoSubtitle: {
-    en: "Mother\u2019s Month Special",
-    es: "Especial Mes de las Madres",
+    en: "Anniversary Special",
+    es: "Especial Aniversario",
   },
   mayPromoDesc: {
-    en: "Celebrate the month of mothers with a special wellness experience. Gift yourself or someone you love.",
-    es: "Celebra el mes de las madres con una experiencia especial de bienestar. Reg\u00E1late o regala a alguien que amas.",
+    en: "Celebrate our anniversary with a special wellness experience. Gift yourself or someone you love.",
+    es: "Celebra nuestro aniversario con una experiencia especial de bienestar. Reg\u00E1late o regala a alguien que amas.",
   },
   workshopPresale: { en: "PRESALE", es: "PREVENTA" },
   workshopRegular: { en: "REGULAR", es: "REGULAR" },

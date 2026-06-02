@@ -5,7 +5,7 @@ import { z } from "zod";
 
 const CheckInSchema = z.object({
   booking_id: z.string().uuid(),
-  action: z.enum(["check_in", "no_show", "undo_check_in"]),
+  action: z.enum(["check_in", "no_show", "undo_check_in", "cancel_refund"]),
 });
 
 /**
@@ -145,6 +145,111 @@ export async function POST(request: NextRequest) {
         .eq("status", "attended");
 
       return NextResponse.json({ message: "Check-in undone" });
+    }
+
+    case "cancel_refund": {
+      if (booking.status === "cancelled") {
+        return NextResponse.json(
+          { error: "La reserva ya esta cancelada" },
+          { status: 400 },
+        );
+      }
+
+      // 1. Cancel the booking
+      const { error: cancelErr } = await supabase
+        .from("tu_class_bookings")
+        .update({
+          status: "cancelled",
+          checked_in: false,
+          checked_in_at: null,
+          cancelled_at: new Date().toISOString(),
+          cancel_reason: "Cancelada por admin (credito devuelto)",
+        })
+        .eq("id", booking_id);
+
+      if (cancelErr) {
+        console.error("[admin/check-in] cancel_refund booking update:", cancelErr.message);
+        return NextResponse.json({ error: "Error cancelando reserva" }, { status: 500 });
+      }
+
+      // 2. Remove attendance record if checked in
+      if (booking.checked_in) {
+        await supabase
+          .from("tu_attendance")
+          .delete()
+          .eq("booking_id", booking_id);
+      }
+
+      // 3. Decrement session enrolled count
+      const { data: session } = await supabase
+        .from("tu_class_sessions")
+        .select("enrolled")
+        .eq("id", booking.session_id)
+        .single();
+
+      if (session && (session.enrolled || 0) > 0) {
+        await supabase
+          .from("tu_class_sessions")
+          .update({ enrolled: (session.enrolled || 1) - 1 })
+          .eq("id", booking.session_id);
+      }
+
+      // 4. Refund pack credit if booking had a pack
+      let creditRefunded = false;
+      if (booking.pack_id) {
+        const { data: pack } = await supabase
+          .from("tu_packs")
+          .select("id, classes_used, total_classes, status")
+          .eq("id", booking.pack_id)
+          .single();
+
+        if (pack && (pack.classes_used || 0) > 0) {
+          const newUsed = (pack.classes_used || 1) - 1;
+          const newStatus =
+            pack.total_classes === -1
+              ? "active"
+              : newUsed < pack.total_classes
+                ? "active"
+                : "exhausted";
+
+          await supabase
+            .from("tu_packs")
+            .update({ classes_used: newUsed, status: newStatus })
+            .eq("id", pack.id);
+
+          creditRefunded = true;
+        }
+      }
+
+      // 5. Get student info for Telegram notification
+      try {
+        const { data: studentInfo } = await supabase
+          .from("tu_students")
+          .select("full_name")
+          .eq("id", booking.student_id)
+          .single();
+
+        const { data: sessionInfo } = await supabase
+          .from("tu_class_sessions")
+          .select("session_date, start_time, definition:definition_id(name)")
+          .eq("id", booking.session_id)
+          .single();
+
+        const def = sessionInfo?.definition as unknown as { name: string } | { name: string }[] | null;
+        const className = (Array.isArray(def) ? def[0]?.name : def?.name) || "Clase";
+        const sessionDate = sessionInfo?.session_date || "";
+
+        await sendTelegramMessage(
+          `🔄 <b>RESERVA CANCELADA + CREDITO DEVUELTO</b>\n\n<b>Alumno:</b> ${studentInfo?.full_name || "Desconocido"}\n<b>Clase:</b> ${className}\n<b>Fecha:</b> ${sessionDate}\n<b>Credito:</b> ${creditRefunded ? "Devuelto ✅" : "Sin pack asociado"}`,
+        );
+      } catch {}
+
+      return NextResponse.json({
+        message: creditRefunded
+          ? "Reserva cancelada y credito devuelto"
+          : "Reserva cancelada (sin pack para reembolsar)",
+        credit_refunded: creditRefunded,
+      });
     }
   }
 }

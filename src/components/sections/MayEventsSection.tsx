@@ -38,7 +38,7 @@ export default function MayEventsSection({
           <div className="fade-in inline-flex items-center gap-2 px-5 py-2 rounded-full border border-gold/20 bg-gold/5 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
             <span className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-gold">
-              {lang === "en" ? "MAY EVENTS" : "EVENTOS DE MAYO"}
+              {lang === "en" ? "SPECIAL EVENTS" : "EVENTOS ESPECIALES"}
             </span>
           </div>
         </div>
@@ -97,12 +97,12 @@ export default function MayEventsSection({
             </div>
           </div>
 
-          {/* RIGHT — Mayo Mes Mamá Promo */}
+          {/* RIGHT — Especial Aniversario Promo */}
           <div className="fade-in fade-in-delay-1 rounded-2xl border border-rose-soft/20 bg-white/[0.03] overflow-hidden flex flex-col">
             <div className="relative">
               <Image
                 src="/promo-mothers.png"
-                alt="Edición Especial Mamás — Mother's Month 4 classes for $160,000 COP at JustbYoga Cartagena"
+                alt="Especial Aniversario — Anniversary Special 4 classes for $160,000 COP at JustbYoga Cartagena"
                 width={900}
                 height={1200}
                 className="w-full h-auto"
@@ -112,7 +112,7 @@ export default function MayEventsSection({
             <div className="p-6 md:p-8 flex flex-col flex-1">
               <div className="mt-auto">
                 <button
-                  onClick={() => openBooking(lang === "en" ? "Mayo Mes Mamá — 4 Classes" : "Mayo Mes Mamá — 4 Clases")}
+                  onClick={() => openBooking(lang === "en" ? "Especial Aniversario — 4 Classes" : "Especial Aniversario — 4 Clases")}
                   className="btn-tactile w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-rose-soft text-white font-[family-name:var(--font-body)] text-sm tracking-[0.25em] hover:bg-white hover:text-charcoal transition-all duration-500 rounded-full"
                 >
                   {lang === "en" ? "RESERVE PROMO" : "RESERVAR PROMO"}
@@ -121,7 +121,7 @@ export default function MayEventsSection({
                   </svg>
                 </button>
                 <p className="font-[family-name:var(--font-body)] text-[10px] text-white/25 text-center mt-3">
-                  {lang === "en" ? "Valid for May 2026" : "Válido para mayo 2026"}
+                  {lang === "en" ? "Anniversary Special" : "Especial Aniversario"}
                 </p>
               </div>
             </div>

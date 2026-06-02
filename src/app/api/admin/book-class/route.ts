@@ -11,6 +11,8 @@ const BookClassSchema = z.object({
   pack_id: z.string().uuid().optional().nullable(),
   // For 2x1 promos: deduct credit from a DIFFERENT student's pack
   credit_from_student_id: z.string().uuid().optional().nullable(),
+  // For partner accounts: guest name per booking
+  guest_name: z.string().max(100).optional().nullable(),
 });
 
 /**
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { student_id, session_id, pack_id, credit_from_student_id } = parsed.data;
+  const { student_id, session_id, pack_id, credit_from_student_id, guest_name } = parsed.data;
 
   // 1. Verify session exists and isn't cancelled
   const { data: session, error: sessErr } = await supabase
@@ -53,17 +55,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Esta sesion fue cancelada" }, { status: 400 });
   }
 
-  // 2. Check for duplicate booking
-  const { data: existingBooking } = await supabase
-    .from("tu_class_bookings")
-    .select("id")
-    .eq("student_id", student_id)
-    .eq("session_id", session_id)
-    .neq("status", "cancelled")
+  // 1b. Check if student is a partner account (can book same class multiple times)
+  const { data: student } = await supabase
+    .from("tu_students")
+    .select("is_partner")
+    .eq("id", student_id)
     .single();
 
-  if (existingBooking) {
-    return NextResponse.json({ error: "El alumno ya tiene reserva para esta clase" }, { status: 409 });
+  const isPartner = student?.is_partner === true;
+
+  // 2. Check for duplicate booking (skip for partner accounts)
+  if (!isPartner) {
+    const { data: existingBooking } = await supabase
+      .from("tu_class_bookings")
+      .select("id")
+      .eq("student_id", student_id)
+      .eq("session_id", session_id)
+      .neq("status", "cancelled")
+      .single();
+
+    if (existingBooking) {
+      return NextResponse.json({ error: "El alumno ya tiene reserva para esta clase" }, { status: 409 });
+    }
   }
 
   // 3. Check capacity (admin can still override if needed, but warn)
@@ -121,6 +134,7 @@ export async function POST(request: NextRequest) {
       pack_id: pack_id || null,
       status: "confirmed",
       checked_in: false,
+      ...(isPartner && guest_name ? { guest_name: guest_name.trim() } : {}),
     })
     .select("id")
     .single();

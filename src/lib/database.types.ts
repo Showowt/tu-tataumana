@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      tu_admin_users: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          role: string
+          telegram_chat_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          role?: string
+          telegram_chat_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          role?: string
+          telegram_chat_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tu_admin_users_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "tu_admin_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tu_attendance: {
         Row: {
           booking_id: string
@@ -154,6 +198,7 @@ export type Database = {
           checked_in: boolean
           checked_in_at: string | null
           created_at: string
+          guest_name: string | null
           id: string
           pack_id: string | null
           session_id: string
@@ -167,6 +212,7 @@ export type Database = {
           checked_in?: boolean
           checked_in_at?: string | null
           created_at?: string
+          guest_name?: string | null
           id?: string
           pack_id?: string | null
           session_id: string
@@ -180,6 +226,7 @@ export type Database = {
           checked_in?: boolean
           checked_in_at?: string | null
           created_at?: string
+          guest_name?: string | null
           id?: string
           pack_id?: string | null
           session_id?: string
@@ -225,6 +272,7 @@ export type Database = {
           location: string
           name: string
           name_es: string
+          note: string | null
           price_cop: number
           price_usd: number
           start_time: string
@@ -245,6 +293,7 @@ export type Database = {
           location?: string
           name: string
           name_es: string
+          note?: string | null
           price_cop?: number
           price_usd?: number
           start_time: string
@@ -265,6 +314,7 @@ export type Database = {
           location?: string
           name?: string
           name_es?: string
+          note?: string | null
           price_cop?: number
           price_usd?: number
           start_time?: string
@@ -488,19 +538,26 @@ export type Database = {
       }
       tu_events: {
         Row: {
+          accent_color: string | null
+          booking_service: string | null
           capacity: number | null
           created_at: string
+          cta_text: string | null
+          cta_text_es: string | null
           description: string | null
           description_es: string | null
+          display_order: number | null
           end_time: string | null
           enrolled: number
           event_date: string
           id: string
           image_url: string | null
           is_active: boolean
+          link_url: string | null
           location: string
           price_cop: number
           price_usd: number
+          show_on_homepage: boolean | null
           start_time: string | null
           status: string
           title: string
@@ -508,19 +565,26 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accent_color?: string | null
+          booking_service?: string | null
           capacity?: number | null
           created_at?: string
+          cta_text?: string | null
+          cta_text_es?: string | null
           description?: string | null
           description_es?: string | null
+          display_order?: number | null
           end_time?: string | null
           enrolled?: number
           event_date: string
           id?: string
           image_url?: string | null
           is_active?: boolean
+          link_url?: string | null
           location?: string
           price_cop?: number
           price_usd?: number
+          show_on_homepage?: boolean | null
           start_time?: string | null
           status?: string
           title: string
@@ -528,19 +592,26 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accent_color?: string | null
+          booking_service?: string | null
           capacity?: number | null
           created_at?: string
+          cta_text?: string | null
+          cta_text_es?: string | null
           description?: string | null
           description_es?: string | null
+          display_order?: number | null
           end_time?: string | null
           enrolled?: number
           event_date?: string
           id?: string
           image_url?: string | null
           is_active?: boolean
+          link_url?: string | null
           location?: string
           price_cop?: number
           price_usd?: number
+          show_on_homepage?: boolean | null
           start_time?: string | null
           status?: string
           title?: string
@@ -734,6 +805,102 @@ export type Database = {
         }
         Relationships: []
       }
+      tu_private_sessions: {
+        Row: {
+          client_email: string | null
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          created_by: string | null
+          duration_minutes: number
+          group_size: number
+          id: string
+          location: string
+          notes: string | null
+          payment_method: string | null
+          payment_status: string
+          price_cop: number
+          service_type: string
+          session_date: string
+          start_time: string
+          status: string
+          teacher: string
+          updated_at: string
+        }
+        Insert: {
+          client_email?: string | null
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          group_size?: number
+          id?: string
+          location?: string
+          notes?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          price_cop?: number
+          service_type?: string
+          session_date: string
+          start_time: string
+          status?: string
+          teacher?: string
+          updated_at?: string
+        }
+        Update: {
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          group_size?: number
+          id?: string
+          location?: string
+          notes?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          price_cop?: number
+          service_type?: string
+          session_date?: string
+          start_time?: string
+          status?: string
+          teacher?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tu_settings: {
+        Row: {
+          category: string
+          editable: boolean
+          key: string
+          label: string
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          category?: string
+          editable?: boolean
+          key: string
+          label?: string
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          category?: string
+          editable?: boolean
+          key?: string
+          label?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       tu_students: {
         Row: {
           auth_id: string | null
@@ -742,6 +909,8 @@ export type Database = {
           emergency_contact: string | null
           full_name: string
           id: string
+          is_blocked: boolean
+          is_partner: boolean | null
           notes: string | null
           phone: string | null
           preferred_lang: string
@@ -755,6 +924,8 @@ export type Database = {
           emergency_contact?: string | null
           full_name: string
           id?: string
+          is_blocked?: boolean
+          is_partner?: boolean | null
           notes?: string | null
           phone?: string | null
           preferred_lang?: string
@@ -768,11 +939,46 @@ export type Database = {
           emergency_contact?: string | null
           full_name?: string
           id?: string
+          is_blocked?: boolean
+          is_partner?: boolean | null
           notes?: string | null
           phone?: string | null
           preferred_lang?: string
           role?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      tu_system_logs: {
+        Row: {
+          category: string
+          created_at: string
+          details: Json | null
+          id: string
+          level: string
+          message: string
+          route: string | null
+          student_id: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          level?: string
+          message: string
+          route?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          level?: string
+          message?: string
+          route?: string | null
+          student_id?: string | null
         }
         Relationships: []
       }

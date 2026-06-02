@@ -112,10 +112,10 @@ export const PACK_DEFINITIONS: PackDefinition[] = [
   },
   {
     type: "MAYO_MAMA",
-    name: { en: "Mother's Day Promo", es: "Promo Dia de la Madre" },
+    name: { en: "Anniversary Special", es: "Especial Aniversario" },
     description: {
-      en: "Mother's Day Special — celebrate with yoga!",
-      es: "Especial Dia de la Madre — celebra con yoga!",
+      en: "Anniversary Special — celebrate with yoga!",
+      es: "Especial Aniversario — celebra con yoga!",
     },
     totalClasses: 4,
     priceCop: 160000,

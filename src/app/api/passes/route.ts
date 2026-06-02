@@ -20,7 +20,7 @@ function getSupabase() {
 
 // Pass type definitions with class counts
 const PASS_TYPES: Record<string, { total: number; label: string }> = {
-  "MAYO MES MAMÁ": { total: 4, label: "Mayo Mes Mamá — 4 classes" },
+  "ESPECIAL ANIVERSARIO": { total: 4, label: "Especial Aniversario — 4 classes" },
   "JUST FLOW PACK": { total: 6, label: "Just Flow Pack — 6 classes" },
   "TU HEALING PACK": { total: 8, label: "TU Healing Pack — 8 classes" },
   "TU EQUILIBRIUM": { total: 12, label: "TU Equilibrium — 12 classes" },

@@ -653,7 +653,7 @@ export default function BookingModal({
                               {service}
                             </p>
                             <p className="font-[family-name:var(--font-body)] text-xs text-gold/70 mt-1">
-                              {service.includes("Mamá") || service.includes("Mother") ? "$160,000 COP · 4 classes" :
+                              {service.includes("Aniversario") || service.includes("Anniversary") || service.includes("Mamá") || service.includes("Mother") ? "$160,000 COP · 4 classes" :
                                service.includes("WALK-IN") || service.includes("Walk-In") ? "$80,000 COP" :
                                service.includes("2x1") || service.includes("2X1") ? "$80,000 COP · Bring a friend" :
                                service.includes("MARTES") || service.includes("Industry") ? "$45,000 COP · Tuesdays & Fridays" :
