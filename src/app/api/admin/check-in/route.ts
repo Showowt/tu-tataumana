@@ -155,8 +155,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 1. Cancel the booking
-      const { error: cancelErr } = await supabase
+      // 1. Cancel the booking with ATOMIC status guard (prevents double-refund race)
+      const { data: cancelData, error: cancelErr } = await supabase
         .from("tu_class_bookings")
         .update({
           status: "cancelled",
@@ -165,11 +165,13 @@ export async function POST(request: NextRequest) {
           cancelled_at: new Date().toISOString(),
           cancel_reason: "Cancelada por admin (credito devuelto)",
         })
-        .eq("id", booking_id);
+        .eq("id", booking_id)
+        .neq("status", "cancelled")
+        .select("id")
+        .single();
 
-      if (cancelErr) {
-        console.error("[admin/check-in] cancel_refund booking update:", cancelErr.message);
-        return NextResponse.json({ error: "Error cancelando reserva" }, { status: 500 });
+      if (cancelErr || !cancelData) {
+        return NextResponse.json({ error: "La reserva ya fue cancelada (posible doble-click)" }, { status: 409 });
       }
 
       // 2. Remove attendance record if checked in
@@ -180,7 +182,7 @@ export async function POST(request: NextRequest) {
           .eq("booking_id", booking_id);
       }
 
-      // 3. Decrement session enrolled count
+      // 3. Decrement session enrolled count with optimistic lock
       const { data: session } = await supabase
         .from("tu_class_sessions")
         .select("enrolled")
@@ -191,10 +193,11 @@ export async function POST(request: NextRequest) {
         await supabase
           .from("tu_class_sessions")
           .update({ enrolled: (session.enrolled || 1) - 1 })
-          .eq("id", booking.session_id);
+          .eq("id", booking.session_id)
+          .eq("enrolled", session.enrolled || 0);
       }
 
-      // 4. Refund pack credit if booking had a pack
+      // 4. Refund pack credit with optimistic lock (prevents double-refund)
       let creditRefunded = false;
       if (booking.pack_id) {
         const { data: pack } = await supabase
@@ -203,7 +206,9 @@ export async function POST(request: NextRequest) {
           .eq("id", booking.pack_id)
           .single();
 
-        if (pack && (pack.classes_used || 0) > 0) {
+        if (!pack) {
+          console.error("[admin/check-in] cancel_refund: pack not found:", booking.pack_id);
+        } else if ((pack.classes_used || 0) > 0) {
           const newUsed = (pack.classes_used || 1) - 1;
           const newStatus =
             pack.total_classes === -1
@@ -212,12 +217,15 @@ export async function POST(request: NextRequest) {
                 ? "active"
                 : "exhausted";
 
-          await supabase
+          const { data: updatedPack } = await supabase
             .from("tu_packs")
             .update({ classes_used: newUsed, status: newStatus })
-            .eq("id", pack.id);
+            .eq("id", pack.id)
+            .eq("classes_used", pack.classes_used || 0)
+            .select("id")
+            .single();
 
-          creditRefunded = true;
+          creditRefunded = !!updatedPack;
         }
       }
 

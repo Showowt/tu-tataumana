@@ -78,13 +78,22 @@ interface ManualSuccessResponse {
   message: string;
 }
 
+interface FreeSuccessResponse {
+  data: {
+    method: "free";
+    reference: string;
+  };
+  error: null;
+  message: string;
+}
+
 interface ErrorResponse {
   data: null;
   error: string;
   message: string;
 }
 
-type CreatePaymentResponse = SquareSuccessResponse | WompiSuccessResponse | ManualSuccessResponse | ErrorResponse;
+type CreatePaymentResponse = SquareSuccessResponse | WompiSuccessResponse | ManualSuccessResponse | FreeSuccessResponse | ErrorResponse;
 
 // -------------------------------------------------------------------
 // Manual payment account details
@@ -432,6 +441,81 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
     const effectivePrice = discountApplication
       ? discountApplication.discounted_price
       : packDef.priceCop;
+
+    // -------------------------------------------------------------------
+    // FREE CHECKOUT (100% discount — no payment gateway needed)
+    // -------------------------------------------------------------------
+    if (effectivePrice <= 0 && discountApplication && student) {
+      const reference = generateReference(pack_type);
+
+      // Create pack directly
+      const { error: freePackErr } = await serviceDb.from("tu_packs").insert({
+        student_id: student.id,
+        pack_type,
+        total_classes: packDef.totalClasses,
+        classes_used: 0,
+        status: "active",
+        price_paid: 0,
+        currency: "COP",
+        payment_method: "free_discount",
+        notes: `100% discount: ${discountApplication.code}`,
+        expires_at: new Date(Date.now() + packDef.expirationDays * 86400000).toISOString(),
+      });
+
+      if (freePackErr) {
+        console.error("[payments/create] Free pack insert failed:", freePackErr.message);
+        return NextResponse.json({ data: null, error: "db_error", message: "Error creando pack gratuito" }, { status: 500 });
+      }
+
+      // Record transaction
+      await serviceDb.from("tu_transactions").insert({
+        wompi_reference: reference,
+        amount: 0,
+        currency: "COP",
+        payment_method: "free_discount",
+        status: "approved",
+        student_id: student.id,
+        related_pack_type: pack_type,
+        description: `Free pack via ${discountApplication.code}`,
+        metadata: {
+          discount_code: discountApplication.code,
+          discount_code_id: discountApplication.code_id,
+          original_price: discountApplication.original_price,
+          savings: discountApplication.savings,
+        },
+      });
+
+      // Consume the discount code
+      try {
+        await consumeDiscountCode(serviceDb, discountApplication, student.id, reference);
+      } catch (usageErr) {
+        console.error("[payments/create] Free discount consumption failed:", usageErr);
+      }
+
+      // Notify
+      try {
+        await notifyPackPurchase({
+          studentName: student.full_name ?? "Alumno",
+          studentEmail: student.email ?? undefined,
+          packName: packDef.name.es,
+          packType: pack_type,
+          amount: 0,
+          currency: "COP",
+          paymentMethod: "Descuento 100%",
+          discountCode: discountApplication.code,
+          originalAmount: discountApplication.original_price,
+          discountAmount: discountApplication.savings,
+        });
+      } catch {}
+
+      systemLog({ category: "payment", level: "info", message: "Free pack activated via 100% discount", route: "payments/create", details: { reference, pack_type, student_id: student.id, discount_code: discountApplication.code } });
+
+      return NextResponse.json({
+        data: { method: "free" as const, reference },
+        error: null,
+        message: "Pack activado con descuento 100%",
+      });
+    }
 
     // -------------------------------------------------------------------
     // SQUARE CHECKOUT

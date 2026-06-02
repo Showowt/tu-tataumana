@@ -222,6 +222,12 @@ export default function PackPaymentModal({
         throw new Error(json.message || "Error al crear el pago");
       }
 
+      // Free checkout (100% discount) — redirect to success
+      if (json.data.method === "free") {
+        window.location.href = `/payment/success?ref=${json.data.reference}`;
+        return;
+      }
+
       // Wompi returns a checkout URL — redirect directly
       window.location.href = json.data.checkout_url;
     } catch (err) {
@@ -251,6 +257,12 @@ export default function PackPaymentModal({
 
       if (!res.ok || json.error) {
         throw new Error(json.message || "Error al registrar el pago");
+      }
+
+      // Free checkout (100% discount) — redirect to success
+      if (json.data.method === "free") {
+        window.location.href = `/payment/success?ref=${json.data.reference}`;
+        return;
       }
 
       // Open WhatsApp with proof request
