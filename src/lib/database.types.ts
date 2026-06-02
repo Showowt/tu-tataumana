@@ -805,6 +805,57 @@ export type Database = {
         }
         Relationships: []
       }
+      tu_pricing_cards: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          highlight: boolean | null
+          id: string
+          is_active: boolean | null
+          label: string
+          label_es: string | null
+          pack_type: string | null
+          price_cop: number
+          price_usd: number
+          sort_order: number | null
+          subtitle_en: string | null
+          subtitle_es: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          highlight?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          label_es?: string | null
+          pack_type?: string | null
+          price_cop: number
+          price_usd: number
+          sort_order?: number | null
+          subtitle_en?: string | null
+          subtitle_es?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          highlight?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          label_es?: string | null
+          pack_type?: string | null
+          price_cop?: number
+          price_usd?: number
+          sort_order?: number | null
+          subtitle_en?: string | null
+          subtitle_es?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       tu_private_sessions: {
         Row: {
           client_email: string | null

@@ -1,7 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { t, type Lang } from "@/lib/translations";
+
+interface PricingCardData {
+  id: string;
+  label: string;
+  label_es: string | null;
+  subtitle_en: string | null;
+  subtitle_es: string | null;
+  price_cop: number;
+  price_usd: number;
+  highlight: boolean;
+  category: string;
+  sort_order: number;
+}
+
+function formatCOP(n: number): string {
+  return "$" + n.toLocaleString("es-CO");
+}
 
 export interface WeeklyScheduleSectionProps {
   lang: Lang;
@@ -183,6 +200,20 @@ function isClassBookable(dateStr: string, timeStr: string): boolean {
 
 export default function WeeklyScheduleSection({ lang, L, openBooking, closedDates }: WeeklyScheduleSectionProps) {
   const { schedule: weeklySchedule } = useScheduleData();
+
+  // DB-driven pricing cards
+  const [pricingCards, setPricingCards] = useState<PricingCardData[]>([]);
+  const loadPricing = useCallback(async () => {
+    try {
+      const res = await fetch("/api/public/pricing", { signal: AbortSignal.timeout(5000) });
+      const data = await res.json();
+      if (data.cards?.length > 0) setPricingCards(data.cards);
+    } catch {}
+  }, []);
+  useEffect(() => { loadPricing(); }, [loadPricing]);
+
+  const groupCards = pricingCards.filter((c) => c.category === "group" || c.category === "promo" || c.category === "private");
+  const packCards = pricingCards.filter((c) => c.category === "pack");
 
   return (
     <section id="schedule" className="relative py-24 md:py-32 bg-charcoal overflow-clip grain-overlay">
@@ -376,66 +407,57 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
           })}
         </div>
 
-        {/* Pricing cards */}
+        {/* Pricing cards — DB-driven from tu_pricing_cards */}
+        {groupCards.length > 0 && (
         <div className="fade-in mt-12 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 stagger-reveal">
-          {[
-            { label: "WALK-IN CLASS", cop: "$80,000", usd: "$21", sub: lang === "en" ? "Single class" : "Clase individual" },
-            { label: "ESPECIAL ANIVERSARIO", cop: "$180,000", usd: "$47", sub: lang === "en" ? "4 classes" : "4 clases", highlight: true },
-            { label: "PROMO 2x1", cop: "$80,000", usd: "$21", sub: lang === "en" ? "Bring a friend" : "Trae un amigo" },
-            { label: "MARTES INDUSTRIA", cop: "$45,000", usd: "$12", sub: lang === "en" ? "Tuesdays only" : "Solo martes" },
-            { label: "VIERNES OPEN FLOW", cop: "$45,000", usd: "$12", sub: lang === "en" ? "Fridays only" : "Solo viernes" },
-            { label: "PRIVATE SESSION", cop: "$190,000", usd: "$50", sub: lang === "en" ? "One on One Experience" : "Experiencia Uno a Uno" },
-          ].map((promo) => (
+          {groupCards.map((card) => (
             <button
-              key={promo.label}
-              onClick={() => openBooking(promo.label)}
+              key={card.id}
+              onClick={() => openBooking(lang === "es" && card.label_es ? card.label_es : card.label)}
               className={`btn-tactile schedule-promo-card rounded-2xl border p-4 sm:p-5 text-center transition-all duration-500 cursor-pointer ${
-                "highlight" in promo && promo.highlight
+                card.highlight
                   ? "border-rose-soft/30 bg-rose-soft/10 hover:border-rose-soft/50 hover:bg-rose-soft/15"
                   : "border-gold/10 bg-white/[0.03] hover:border-gold/30 hover:bg-white/[0.06]"
               }`}
             >
               <p className={`font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] mb-2 ${
-                "highlight" in promo && promo.highlight ? "text-rose-soft" : "text-gold/70"
+                card.highlight ? "text-rose-soft" : "text-gold/70"
               }`}>
-                {promo.label}
+                {card.label}
               </p>
               <p className="font-[family-name:var(--font-display)] text-xl sm:text-2xl text-white">
-                {promo.cop}
+                {formatCOP(card.price_cop)}
               </p>
               <p className="font-[family-name:var(--font-body)] text-[10px] sm:text-xs text-white/30 mt-1">
-                COP &middot; {promo.usd} USD &middot; {promo.sub}
+                COP &middot; ${card.price_usd} USD &middot; {lang === "es" ? (card.subtitle_es || card.subtitle_en || "") : (card.subtitle_en || "")}
               </p>
               <p className={`font-[family-name:var(--font-body)] text-[9px] tracking-[0.15em] mt-3 transition-colors ${
-                "highlight" in promo && promo.highlight ? "text-rose-soft/70 hover:text-rose-soft" : "text-gold/50 hover:text-gold"
+                card.highlight ? "text-rose-soft/70 hover:text-rose-soft" : "text-gold/50 hover:text-gold"
               }`}>
                 {lang === "en" ? "BOOK NOW" : "RESERVAR"}
               </p>
             </button>
           ))}
         </div>
+        )}
 
-        {/* Premium packs row */}
+        {/* Premium packs row — DB-driven */}
+        {packCards.length > 0 && (
         <div className="fade-in mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-          {[
-            { label: "JUST FLOW PACK", cop: "$295,000", usd: "$78", sub: lang === "en" ? "6 classes" : "6 clases" },
-            { label: "TU HEALING PACK", cop: "$420,000", usd: "$111", sub: lang === "en" ? "8 classes" : "8 clases" },
-            { label: "TU BALANCE PACK", cop: "$630,000", usd: "$166", sub: lang === "en" ? "12 classes" : "12 clases" },
-            { label: "UNLIMITED MONTHLY", cop: "$1,050,000", usd: "$277", sub: lang === "en" ? "Unlimited" : "Ilimitado" },
-          ].map((promo) => (
+          {packCards.map((card) => (
             <button
-              key={promo.label}
-              onClick={() => openBooking(promo.label)}
+              key={card.id}
+              onClick={() => openBooking(card.label)}
               className="btn-tactile schedule-promo-card rounded-2xl border border-gold/10 bg-white/[0.03] p-4 sm:p-5 text-center hover:border-gold/30 hover:bg-white/[0.06] transition-all duration-500 cursor-pointer"
             >
               <p className="font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] text-gold/70 mb-2">
-                {promo.label}
+                {card.label}
               </p>
               <p className="font-[family-name:var(--font-display)] text-xl sm:text-2xl text-white">
-                {promo.cop}
+                {formatCOP(card.price_cop)}
               </p>
               <p className="font-[family-name:var(--font-body)] text-[10px] sm:text-xs text-white/30 mt-1">
-                COP &middot; {promo.usd} USD &middot; {promo.sub}
+                COP &middot; ${card.price_usd} USD &middot; {lang === "es" ? (card.subtitle_es || card.subtitle_en || "") : (card.subtitle_en || "")}
               </p>
               <p className="font-[family-name:var(--font-body)] text-[9px] tracking-[0.15em] text-gold/50 mt-3 hover:text-gold transition-colors">
                 {lang === "en" ? "BOOK NOW" : "RESERVAR"}
@@ -443,6 +465,7 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
             </button>
           ))}
         </div>
+        )}
 
         {/* Booking rules — prominent gold card */}
         <div className="fade-in mt-12 rounded-3xl border-2 border-gold/30 bg-gradient-to-br from-gold/[0.08] to-white/[0.03] p-8 sm:p-10 relative overflow-hidden">

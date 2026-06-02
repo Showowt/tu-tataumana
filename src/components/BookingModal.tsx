@@ -54,6 +54,36 @@ async function getScheduleByDay(): Promise<Record<number, { time: string; name: 
   }
 }
 
+// Pricing cards cache (loaded from DB via /api/public/pricing)
+let _cachedPricing: { data: Array<{ label: string; price_cop: number; price_usd: number; subtitle_en: string | null; subtitle_es: string | null }>; ts: number } | null = null;
+
+async function getPricingCards(): Promise<Array<{ label: string; price_cop: number; price_usd: number; subtitle_en: string | null; subtitle_es: string | null }>> {
+  if (_cachedPricing && Date.now() - _cachedPricing.ts < SCHEDULE_CACHE_TTL) {
+    return _cachedPricing.data;
+  }
+  try {
+    const res = await fetch("/api/public/pricing", { signal: AbortSignal.timeout(5000) });
+    const data = await res.json();
+    const cards = data.cards || [];
+    _cachedPricing = { data: cards, ts: Date.now() };
+    return cards;
+  } catch {
+    return _cachedPricing?.data || [];
+  }
+}
+
+function matchPricingCard(serviceName: string, cards: Array<{ label: string; price_cop: number; price_usd: number; subtitle_en: string | null; subtitle_es: string | null }>): string {
+  const upper = serviceName.toUpperCase();
+  for (const card of cards) {
+    if (upper.includes(card.label.toUpperCase()) || card.label.toUpperCase().includes(upper.replace(/\s*—.*/, "").trim())) {
+      const cop = "$" + card.price_cop.toLocaleString("es-CO");
+      const sub = card.subtitle_en || "";
+      return `${cop} COP${sub ? " · " + sub : ""}`;
+    }
+  }
+  return "Special promotion";
+}
+
 const dayNames = [
   "Sunday",
   "Monday",
@@ -216,11 +246,13 @@ export default function BookingModal({
   const [wompiError, setWompiError] = useState("");
   const [activePass, setActivePass] = useState<{ pass_type: string; classes_remaining: number | string; is_unlimited: boolean } | null>(null);
   const [scheduleByDay, setScheduleByDay] = useState<Record<number, { time: string; name: string }[]>>({});
+  const [pricingCards, setPricingCards] = useState<Array<{ label: string; price_cop: number; price_usd: number; subtitle_en: string | null; subtitle_es: string | null }>>([]);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Load schedule from DB
+  // Load schedule + pricing from DB
   useEffect(() => {
     getScheduleByDay().then(setScheduleByDay);
+    getPricingCards().then(setPricingCards);
   }, []);
 
   // Reset form when modal opens with new preselected values
@@ -653,18 +685,7 @@ export default function BookingModal({
                               {service}
                             </p>
                             <p className="font-[family-name:var(--font-body)] text-xs text-gold/70 mt-1">
-                              {service.includes("Aniversario") || service.includes("Anniversary") || service.includes("Mamá") || service.includes("Mother") ? "$180,000 COP · 4 classes" :
-                               service.includes("WALK-IN") || service.includes("Walk-In") ? "$80,000 COP" :
-                               service.includes("2x1") || service.includes("2X1") ? "$80,000 COP · Bring a friend" :
-                               service.includes("MARTES") || service.includes("Industry") ? "$45,000 COP · Tuesdays & Fridays" :
-                               service.includes("VIERNES") ? "$45,000 COP · Fridays" :
-                               service.includes("JUST FLOW") ? "$295,000 COP · 6 classes" :
-                               service.includes("HEALING") ? "$420,000 COP · 8 classes" :
-                               service.includes("BALANCE") ? "$630,000 COP · 12 classes" :
-                               service.includes("EQUILIBRIUM") ? "$630,000 COP · 12 classes" :
-                               service.includes("UNLIMITED") || service.includes("Unlimited") ? "$1,050,000 COP · Unlimited" :
-                               service.includes("LIFE") ? "$1,050,000 COP · Unlimited" :
-                               "Special promotion"}
+                              {matchPricingCard(service, pricingCards)}
                             </p>
                           </div>
                         ) : (

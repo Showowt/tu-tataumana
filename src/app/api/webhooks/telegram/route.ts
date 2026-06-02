@@ -152,9 +152,9 @@ function spanishDate(dateStr: string): string {
 // Telegram API helpers
 // ---------------------------------------------------------------------------
 
-async function sendTelegram(text: string): Promise<boolean> {
+async function sendTelegram(text: string, targetChatId?: string): Promise<boolean> {
   const botToken = getBotToken();
-  const chatId = getAllowedChatId();
+  const chatId = targetChatId || getAllowedChatId();
   if (!botToken || !chatId) return false;
 
   // Telegram limit is 4096 chars — split if needed
@@ -2390,6 +2390,7 @@ async function handleWeekClassRoster(supabase: SupabaseClient): Promise<string> 
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
+  let replyChatId: string | undefined;
   try {
     // Security: verify Telegram webhook secret token
     const telegramSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
@@ -2414,6 +2415,7 @@ export async function POST(request: NextRequest) {
     const extraChatIds = (process.env.TELEGRAM_EXTRA_CHAT_IDS || "").split(",").map(s => s.trim()).filter(Boolean);
     const allAllowed = [allowedChatId, ...extraChatIds].filter(Boolean);
     const incomingChatId = String(message.chat.id);
+    replyChatId = incomingChatId;
 
     if (allAllowed.length === 0 || !allAllowed.includes(incomingChatId)) {
       // Notify admin of new user trying to use the bot (so we can capture their chat_id)
@@ -2437,7 +2439,7 @@ export async function POST(request: NextRequest) {
     // Init Supabase
     const supabase = getSupabase();
     if (!supabase) {
-      await sendTelegram("Error: Base de datos no configurada. Contacta a Phil.");
+      await sendTelegram("Error: Base de datos no configurada. Contacta a Phil.", incomingChatId);
       return NextResponse.json({ ok: true });
     }
 
@@ -2450,6 +2452,7 @@ export async function POST(request: NextRequest) {
         isPromo
           ? "Creando promo para la homepage... Un momento."
           : "Analizando imagen... Un momento.",
+        incomingChatId,
       );
 
       // Get the highest resolution photo
@@ -2457,7 +2460,7 @@ export async function POST(request: NextRequest) {
       const imageBuffer = await downloadTelegramFile(largestPhoto.file_id);
 
       if (!imageBuffer) {
-        await sendTelegram("No pude descargar la imagen. Intenta enviarla de nuevo.");
+        await sendTelegram("No pude descargar la imagen. Intenta enviarla de nuevo.", incomingChatId);
         return NextResponse.json({ ok: true });
       }
 
@@ -2465,7 +2468,7 @@ export async function POST(request: NextRequest) {
         // /promo command with photo — add to homepage
         const promoCaption = caption.slice("/promo".length).replace(/^[\s,]*add[\s,]*/i, "").trim();
         const response = await handlePromoAdd(supabase, imageBuffer, promoCaption || undefined);
-        await sendTelegram(response);
+        await sendTelegram(response, incomingChatId);
       } else {
         // Regular photo — generic event creation
         const imageBase64 = imageBuffer.toString("base64");
@@ -2474,7 +2477,7 @@ export async function POST(request: NextRequest) {
           imageBase64,
           caption,
         );
-        await sendTelegram(response);
+        await sendTelegram(response, incomingChatId);
       }
       return NextResponse.json({ ok: true });
     }
@@ -2719,7 +2722,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (directResponse) {
-      await sendTelegram(directResponse);
+      await sendTelegram(directResponse, incomingChatId);
       return NextResponse.json({ ok: true });
     }
 
@@ -2832,15 +2835,16 @@ export async function POST(request: NextRequest) {
         break;
     }
 
-    await sendTelegram(response);
+    await sendTelegram(response, incomingChatId);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[Telegram Webhook] Unhandled error:", err);
 
-    // Always try to respond to Tata even if something broke
+    // Always try to respond to the sender even if something broke
     try {
       await sendTelegram(
-        "Hubo un error procesando tu mensaje. Intenta de nuevo o contacta a Phil."
+        "Hubo un error procesando tu mensaje. Intenta de nuevo o contacta a Phil.",
+        replyChatId,
       );
     } catch {
       // Silent fail — nothing more we can do
