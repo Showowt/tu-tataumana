@@ -380,7 +380,7 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
         <div className="fade-in mt-12 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 stagger-reveal">
           {[
             { label: "WALK-IN CLASS", cop: "$80,000", usd: "$21", sub: lang === "en" ? "Single class" : "Clase individual" },
-            { label: "ESPECIAL ANIVERSARIO", cop: "$160,000", usd: "$42", sub: lang === "en" ? "4 classes" : "4 clases", highlight: true },
+            { label: "ESPECIAL ANIVERSARIO", cop: "$180,000", usd: "$47", sub: lang === "en" ? "4 classes" : "4 clases", highlight: true },
             { label: "PROMO 2x1", cop: "$80,000", usd: "$21", sub: lang === "en" ? "Bring a friend" : "Trae un amigo" },
             { label: "MARTES INDUSTRIA", cop: "$45,000", usd: "$12", sub: lang === "en" ? "Tuesdays only" : "Solo martes" },
             { label: "VIERNES OPEN FLOW", cop: "$45,000", usd: "$12", sub: lang === "en" ? "Fridays only" : "Solo viernes" },
