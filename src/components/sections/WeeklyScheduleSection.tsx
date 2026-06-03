@@ -201,14 +201,32 @@ function isClassBookable(dateStr: string, timeStr: string): boolean {
 export default function WeeklyScheduleSection({ lang, L, openBooking, closedDates }: WeeklyScheduleSectionProps) {
   const { schedule: weeklySchedule } = useScheduleData();
 
-  // DB-driven pricing cards
-  const [pricingCards, setPricingCards] = useState<PricingCardData[]>([]);
+  // DB-driven pricing cards with hardcoded fallback
+  const FALLBACK_GROUP: PricingCardData[] = [
+    { id: "f1", label: "WALK-IN CLASS", label_es: "CLASE INDIVIDUAL", subtitle_en: "Single class", subtitle_es: "Clase individual", price_cop: 80000, price_usd: 21, highlight: false, category: "group", sort_order: 1 },
+    { id: "f2", label: "ESPECIAL ANIVERSARIO", label_es: "ESPECIAL ANIVERSARIO", subtitle_en: "4 classes", subtitle_es: "4 clases", price_cop: 180000, price_usd: 47, highlight: true, category: "promo", sort_order: 2 },
+    { id: "f3", label: "PROMO 2x1", label_es: "PROMO 2x1", subtitle_en: "Bring a friend", subtitle_es: "Trae un amigo", price_cop: 80000, price_usd: 21, highlight: false, category: "promo", sort_order: 3 },
+    { id: "f4", label: "MARTES INDUSTRIA", label_es: "MARTES INDUSTRIA", subtitle_en: "Tuesdays only", subtitle_es: "Solo martes", price_cop: 45000, price_usd: 12, highlight: false, category: "group", sort_order: 4 },
+    { id: "f5", label: "VIERNES OPEN FLOW", label_es: "VIERNES OPEN FLOW", subtitle_en: "Fridays only", subtitle_es: "Solo viernes", price_cop: 45000, price_usd: 12, highlight: false, category: "group", sort_order: 5 },
+    { id: "f6", label: "PRIVATE SESSION", label_es: "SESION PRIVADA", subtitle_en: "One on One Experience", subtitle_es: "Experiencia Uno a Uno", price_cop: 190000, price_usd: 50, highlight: false, category: "private", sort_order: 6 },
+  ];
+  const FALLBACK_PACKS: PricingCardData[] = [
+    { id: "f7", label: "JUST FLOW PACK", label_es: "JUST FLOW PACK", subtitle_en: "6 classes · 45 days", subtitle_es: "6 clases · 45 dias", price_cop: 295000, price_usd: 78, highlight: false, category: "pack", sort_order: 10 },
+    { id: "f8", label: "TU HEALING PACK", label_es: "TU HEALING PACK", subtitle_en: "8 classes · 60 days", subtitle_es: "8 clases · 60 dias", price_cop: 420000, price_usd: 111, highlight: false, category: "pack", sort_order: 11 },
+    { id: "f9", label: "TU BALANCE PACK", label_es: "TU BALANCE PACK", subtitle_en: "12 classes · 90 days", subtitle_es: "12 clases · 90 dias", price_cop: 630000, price_usd: 166, highlight: false, category: "pack", sort_order: 12 },
+    { id: "f10", label: "TU UNLIMITED", label_es: "TU ILIMITADO", subtitle_en: "Unlimited · 30 days", subtitle_es: "Ilimitado · 30 dias", price_cop: 1050000, price_usd: 277, highlight: false, category: "pack", sort_order: 13 },
+  ];
+
+  const [pricingCards, setPricingCards] = useState<PricingCardData[]>([...FALLBACK_GROUP, ...FALLBACK_PACKS]);
   const loadPricing = useCallback(async () => {
     try {
       const res = await fetch("/api/public/pricing", { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (data.cards?.length > 0) setPricingCards(data.cards);
-    } catch {}
+    } catch (err) {
+      console.error("[WeeklySchedule] Pricing fetch failed, using fallback:", err);
+    }
   }, []);
   useEffect(() => { loadPricing(); }, [loadPricing]);
 
