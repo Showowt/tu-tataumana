@@ -8,6 +8,28 @@
  * - Site activity
  */
 
+// Map raw pack_type codes to friendly display names
+const PACK_DISPLAY_NAMES: Record<string, string> = {
+  WALK_IN: "Clase Walk-In",
+  DROP_IN: "Clase Walk-In",
+  JUST_FLOW_PACK: "Just Flow Pack",
+  TU_HEALING_PACK: "TU Healing Pack",
+  TU_BALANCE_PACK: "TU Balance Pack",
+  TU_UNLIMITED: "Ilimitado Mensual",
+  TU_EQUILIBRIUM: "TU Balance Pack",
+  TU_LIFE_PACK: "Ilimitado Mensual",
+  PRIVATE_SESSION: "Sesion Privada",
+  MAYO_MAMA: "Especial Aniversario",
+  MAYO_2X1: "Promo 2x1",
+  ANNIVERSARY_5EXP: "Aniversario 5 Experiencias",
+  INDUSTRY_SPECIAL: "Especial Industria",
+  FRIDAY_OPEN: "Viernes Open Flow",
+};
+
+function packDisplayName(packType: string): string {
+  return PACK_DISPLAY_NAMES[packType] || packType.replace(/_/g, " ");
+}
+
 export async function sendTelegramMessage(text: string): Promise<boolean> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const primaryChatId = process.env.TELEGRAM_CHAT_ID;
@@ -236,7 +258,7 @@ export async function notifyNewMembership(data: {
     "",
     `<b>Student:</b> ${escapeHtml(data.studentName)}`,
     `<b>Email:</b> ${data.email}`,
-    `<b>Pack:</b> ${escapeHtml(data.packType)}`,
+    `<b>Pack:</b> ${escapeHtml(packDisplayName(data.packType))}`,
     `<b>Classes:</b> ${data.totalClasses}`,
     data.paymentMethod ? `<b>Payment:</b> ${escapeHtml(data.paymentMethod)}` : "",
     "",
@@ -281,7 +303,7 @@ export async function notifyClassBooking(data: {
     `<b>Clase:</b> ${data.className}`,
     `<b>Fecha:</b> ${data.classDate} · ${data.classTime}`,
     `<b>Profesor:</b> ${data.teacher}`,
-    `<b>Pack:</b> ${data.packType.replace(/_/g, " ")} (${creditsText} creditos restantes)`,
+    `<b>Pack:</b> ${packDisplayName(data.packType)} (${creditsText} creditos restantes)`,
   ].filter(Boolean).join("\n");
   await sendTelegramMessage(msg);
 }

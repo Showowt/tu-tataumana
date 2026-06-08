@@ -204,7 +204,7 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
   // DB-driven pricing cards with hardcoded fallback
   const FALLBACK_GROUP: PricingCardData[] = [
     { id: "f1", label: "WALK-IN CLASS", label_es: "CLASE INDIVIDUAL", subtitle_en: "Single class", subtitle_es: "Clase individual", price_cop: 80000, price_usd: 21, highlight: false, category: "group", sort_order: 1 },
-    { id: "f2", label: "ESPECIAL ANIVERSARIO", label_es: "ESPECIAL ANIVERSARIO", subtitle_en: "4 classes", subtitle_es: "4 clases", price_cop: 180000, price_usd: 47, highlight: true, category: "promo", sort_order: 2 },
+    { id: "f2", label: "ESPECIAL ANIVERSARIO", label_es: "ESPECIAL ANIVERSARIO", subtitle_en: "5 classes", subtitle_es: "5 clases", price_cop: 180000, price_usd: 47, highlight: true, category: "promo", sort_order: 2 },
     { id: "f3", label: "PROMO 2x1", label_es: "PROMO 2x1", subtitle_en: "Bring a friend", subtitle_es: "Trae un amigo", price_cop: 80000, price_usd: 21, highlight: false, category: "promo", sort_order: 3 },
     { id: "f4", label: "MARTES INDUSTRIA", label_es: "MARTES INDUSTRIA", subtitle_en: "Tuesdays only", subtitle_es: "Solo martes", price_cop: 45000, price_usd: 12, highlight: false, category: "group", sort_order: 4 },
     { id: "f5", label: "VIERNES OPEN FLOW", label_es: "VIERNES OPEN FLOW", subtitle_en: "Fridays only", subtitle_es: "Solo viernes", price_cop: 45000, price_usd: 12, highlight: false, category: "group", sort_order: 5 },

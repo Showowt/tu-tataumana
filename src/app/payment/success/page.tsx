@@ -29,7 +29,7 @@ const PACK_LABELS: Record<string, { es: string; classes: string }> = {
   TU_EQUILIBRIUM: { es: "TU Balance Pack", classes: "12 clases" },
   TU_LIFE_PACK: { es: "Ilimitado Mensual", classes: "Ilimitado" },
   PRIVATE_SESSION: { es: "Sesion Privada", classes: "1 sesion" },
-  MAYO_MAMA: { es: "Especial Aniversario", classes: "4 clases" },
+  MAYO_MAMA: { es: "Especial Aniversario", classes: "5 clases" },
   MAYO_2X1: { es: "Promo 2x1", classes: "2 clases" },
   INDUSTRY_SPECIAL: { es: "Especial Industria", classes: "1 clase" },
 };

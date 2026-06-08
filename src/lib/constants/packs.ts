@@ -117,7 +117,7 @@ export const PACK_DEFINITIONS: PackDefinition[] = [
       en: "Anniversary Special — celebrate with yoga!",
       es: "Especial Aniversario — celebra con yoga!",
     },
-    totalClasses: 4,
+    totalClasses: 5,
     priceCop: 180000,
     priceUsd: 47,
     expirationDays: 30,
