@@ -71,6 +71,10 @@ export default function AdminPrivatePage() {
   });
   const [creating, setCreating] = useState(false);
 
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editData, setEditData] = useState<Partial<PrivateSession>>({});
+
   function showMsg(msg: string) {
     setMessage(msg);
     setTimeout(() => setMessage(""), 4000);
@@ -126,6 +130,44 @@ export default function AdminPrivatePage() {
       if (res.ok) { showMsg("Actualizado"); await loadSessions(); }
       else { showMsg("Error al actualizar"); }
     } catch { showMsg("Error"); }
+    setActionLoading(null);
+  }
+
+  function startEdit(s: PrivateSession) {
+    setEditingId(s.id);
+    setEditData({
+      client_name: s.client_name,
+      client_email: s.client_email,
+      client_phone: s.client_phone,
+      service_type: s.service_type,
+      session_date: s.session_date,
+      start_time: s.start_time.slice(0, 5),
+      price_cop: s.price_cop,
+      group_size: s.group_size,
+      teacher: s.teacher,
+      notes: s.notes,
+    });
+  }
+
+  async function saveEdit() {
+    if (!editingId) return;
+    setActionLoading(editingId);
+    try {
+      const res = await fetch("/api/admin/private-sessions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingId, ...editData }),
+      });
+      if (res.ok) {
+        showMsg("Actualizado");
+        setEditingId(null);
+        setEditData({});
+        await loadSessions();
+      } else {
+        const data = await res.json();
+        showMsg(data.error || "Error al actualizar");
+      }
+    } catch { showMsg("Error de conexion"); }
     setActionLoading(null);
   }
 
@@ -238,48 +280,101 @@ export default function AdminPrivatePage() {
           {sessions.map((s) => {
             const sBadge = STATUS_BADGES[s.status] || { label: s.status, color: "text-[#2C2C2C]/30 bg-[#2C2C2C]/5" };
             const pBadge = PAYMENT_BADGES[s.payment_status] || { label: s.payment_status, color: "text-[#2C2C2C]/30 bg-[#2C2C2C]/5" };
+            const isEditing = editingId === s.id;
 
             return (
               <div key={s.id} className={`bg-white border p-4 ${s.status === "scheduled" ? "border-[#B87777]/15" : "border-[#2C2C2C]/5"}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#2C2C2C] truncate">{s.client_name}</p>
-                    <p className="text-[10px] text-[#2C2C2C]/40 truncate">
-                      {s.client_phone || s.client_email || "Sin contacto"}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className="text-xs text-[#2C2C2C]/60">{s.service_type}</span>
-                      {s.group_size > 1 && <span className="text-[9px] text-[#C9A96E]">{s.group_size} personas</span>}
-                    </div>
-                    <p className="text-[10px] text-[#2C2C2C]/30 mt-0.5">
-                      {formatDate(s.session_date)} {formatTime12(s.start_time)} · {s.teacher}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className={`text-[8px] tracking-wider uppercase px-2 py-0.5 ${sBadge.color}`}>{sBadge.label}</span>
-                      <span className={`text-[8px] tracking-wider uppercase px-2 py-0.5 ${pBadge.color}`}>{pBadge.label}</span>
-                    </div>
-                    {s.notes && <p className="text-[9px] text-[#2C2C2C]/30 italic mt-1">{s.notes}</p>}
-                  </div>
-                  <div className="text-right shrink-0 space-y-2">
-                    <p className="text-lg text-[#2C2C2C]" style={{ fontFamily: "Cormorant Garamond, serif" }}>
-                      {formatCOP(s.price_cop)}
-                    </p>
-                    {s.status === "scheduled" && (
-                      <div className="flex flex-col gap-1">
-                        <button onClick={() => updateSession(s.id, { status: "completed", payment_status: "paid" })}
-                          disabled={actionLoading === s.id}
-                          className="text-[9px] tracking-[0.1em] uppercase px-3 py-1 bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-30">
-                          Completar
-                        </button>
-                        <button onClick={() => updateSession(s.id, { payment_status: "paid" })}
-                          disabled={actionLoading === s.id || s.payment_status === "paid"}
-                          className="text-[9px] text-[#C9A96E] hover:text-[#B87777] transition-colors disabled:opacity-20">
-                          Marcar pagado
-                        </button>
+                {isEditing ? (
+                  /* Edit mode */
+                  <div className="space-y-3" style={{ fontFamily: "Outfit, sans-serif" }}>
+                    <p className="text-[10px] tracking-[0.2em] text-[#B87777] uppercase">Editar sesion</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="text" value={editData.client_name || ""} onChange={(e) => setEditData({ ...editData, client_name: e.target.value })} placeholder="Nombre *"
+                        className="col-span-2 px-2 py-1.5 border border-[#2C2C2C]/10 text-sm focus:outline-none focus:border-[#B87777]" />
+                      <input type="text" value={editData.client_phone || ""} onChange={(e) => setEditData({ ...editData, client_phone: e.target.value })} placeholder="Telefono"
+                        className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm focus:outline-none focus:border-[#B87777]" />
+                      <input type="email" value={editData.client_email || ""} onChange={(e) => setEditData({ ...editData, client_email: e.target.value })} placeholder="Email"
+                        className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm focus:outline-none focus:border-[#B87777]" />
+                      <select value={editData.service_type || ""} onChange={(e) => setEditData({ ...editData, service_type: e.target.value })}
+                        className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm bg-white focus:outline-none focus:border-[#B87777]">
+                        {SERVICE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <input type="text" value={editData.teacher || ""} onChange={(e) => setEditData({ ...editData, teacher: e.target.value })} placeholder="Teacher"
+                        className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm focus:outline-none focus:border-[#B87777]" />
+                      <input type="date" value={editData.session_date || ""} onChange={(e) => setEditData({ ...editData, session_date: e.target.value })}
+                        className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm focus:outline-none focus:border-[#B87777]" />
+                      <input type="time" value={editData.start_time || ""} onChange={(e) => setEditData({ ...editData, start_time: e.target.value })}
+                        className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm focus:outline-none focus:border-[#B87777]" />
+                      <div className="flex items-center gap-1">
+                        <span className="text-[9px] text-[#2C2C2C]/40">$</span>
+                        <input type="number" value={editData.price_cop || 0} onChange={(e) => setEditData({ ...editData, price_cop: Number(e.target.value) || 0 })}
+                          className="flex-1 px-2 py-1.5 border border-[#2C2C2C]/10 text-sm focus:outline-none focus:border-[#B87777]" />
                       </div>
-                    )}
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={editData.group_size || 1} min={1} max={30} onChange={(e) => setEditData({ ...editData, group_size: Number(e.target.value) || 1 })}
+                          className="w-16 px-2 py-1.5 border border-[#2C2C2C]/10 text-sm text-center focus:outline-none focus:border-[#B87777]" />
+                        <span className="text-[9px] text-[#2C2C2C]/30">personas</span>
+                      </div>
+                    </div>
+                    <textarea value={editData.notes || ""} onChange={(e) => setEditData({ ...editData, notes: e.target.value })} placeholder="Notas" rows={2}
+                      className="w-full px-2 py-1.5 border border-[#2C2C2C]/10 text-sm focus:outline-none focus:border-[#B87777]" />
+                    <div className="flex gap-2">
+                      <button onClick={saveEdit} disabled={actionLoading === s.id}
+                        className="flex-1 py-1.5 bg-[#2C2C2C] text-white text-[10px] tracking-[0.1em] uppercase disabled:opacity-30">
+                        {actionLoading === s.id ? "..." : "Guardar"}
+                      </button>
+                      <button onClick={() => { setEditingId(null); setEditData({}); }}
+                        className="flex-1 py-1.5 border border-[#2C2C2C]/10 text-[#2C2C2C]/40 text-[10px] tracking-[0.1em] uppercase">
+                        Cancelar
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* View mode */
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#2C2C2C] truncate">{s.client_name}</p>
+                      <p className="text-[10px] text-[#2C2C2C]/40 truncate">
+                        {s.client_phone || s.client_email || "Sin contacto"}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-xs text-[#2C2C2C]/60">{s.service_type}</span>
+                        {s.group_size > 1 && <span className="text-[9px] text-[#C9A96E]">{s.group_size} personas</span>}
+                      </div>
+                      <p className="text-[10px] text-[#2C2C2C]/30 mt-0.5">
+                        {formatDate(s.session_date)} {formatTime12(s.start_time)} · {s.teacher}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className={`text-[8px] tracking-wider uppercase px-2 py-0.5 ${sBadge.color}`}>{sBadge.label}</span>
+                        <span className={`text-[8px] tracking-wider uppercase px-2 py-0.5 ${pBadge.color}`}>{pBadge.label}</span>
+                      </div>
+                      {s.notes && <p className="text-[9px] text-[#2C2C2C]/30 italic mt-1">{s.notes}</p>}
+                    </div>
+                    <div className="text-right shrink-0 space-y-2">
+                      <p className="text-lg text-[#2C2C2C]" style={{ fontFamily: "Cormorant Garamond, serif" }}>
+                        {formatCOP(s.price_cop)}
+                      </p>
+                      {s.status === "scheduled" && (
+                        <div className="flex flex-col gap-1">
+                          <button onClick={() => updateSession(s.id, { status: "completed", payment_status: "paid" })}
+                            disabled={actionLoading === s.id}
+                            className="text-[9px] tracking-[0.1em] uppercase px-3 py-1 bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-30">
+                            Completar
+                          </button>
+                          <button onClick={() => updateSession(s.id, { payment_status: "paid" })}
+                            disabled={actionLoading === s.id || s.payment_status === "paid"}
+                            className="text-[9px] text-[#C9A96E] hover:text-[#B87777] transition-colors disabled:opacity-20">
+                            Marcar pagado
+                          </button>
+                        </div>
+                      )}
+                      <button onClick={() => startEdit(s)}
+                        className="text-[9px] text-[#2C2C2C]/25 hover:text-[#B87777] transition-colors">
+                        editar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
