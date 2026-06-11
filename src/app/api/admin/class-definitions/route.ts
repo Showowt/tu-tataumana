@@ -30,7 +30,7 @@ const UpdateSchema = z.object({
   description: z.string().max(500).optional().nullable(),
   description_es: z.string().max(500).optional().nullable(),
   day_of_week: z.number().int().min(0).max(6).optional(),
-  start_time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+  start_time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/).optional(),
   teacher: z.string().min(1).max(100).optional(),
   style: z.string().min(1).max(50).optional(),
   capacity: z.number().int().min(1).max(50).optional(),
