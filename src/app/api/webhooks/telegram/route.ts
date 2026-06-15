@@ -2511,8 +2511,8 @@ export async function POST(request: NextRequest) {
     };
 
     let text = rawText;
-    // Check for exact slash command match
-    const firstWord = rawText.split(" ")[0].toLowerCase();
+    // Check for exact slash command match (strip @botname suffix e.g. /hoy@Tataumana_bot)
+    const firstWord = rawText.split(" ")[0].toLowerCase().replace(/@.*$/, "");
     if (slashMap[firstWord]) {
       const rest = rawText.slice(firstWord.length).trim();
       text = slashMap[firstWord] + (rest ? " " + rest : "");
@@ -2534,10 +2534,35 @@ export async function POST(request: NextRequest) {
       text = "cambiar teacher " + rawText.slice(firstWord.length).trim();
     }
 
-    // Direct command parsing for discount + student commands (bypass Claude for reliability)
+    // Direct command parsing — bypass Claude API for reliability on known commands
     let directResponse: string | null = null;
 
-    if (firstWord === "/descuento" || firstWord === "/descuentos") {
+    // Core slash commands — handle directly without Claude API
+    if (firstWord === "/hoy") {
+      const params = { date: getColombiaDateStr() };
+      directResponse = await handleTodaySchedule(supabase, params);
+    } else if (firstWord === "/manana") {
+      const params = { date: getColombiaDateStr(1) };
+      directResponse = await handleTodaySchedule(supabase, params);
+    } else if (firstWord === "/semana" || firstWord === "/clases") {
+      directResponse = await handleWeekSchedule(supabase);
+    } else if (firstWord === "/reservas") {
+      directResponse = await handleBookingsToday(supabase);
+    } else if (firstWord === "/resumen") {
+      directResponse = await handleDashboard(supabase);
+    } else if (firstWord === "/alumnos") {
+      directResponse = await handleStudentCount(supabase);
+    } else if (firstWord === "/packs") {
+      directResponse = await handleActivePacks(supabase);
+    } else if (firstWord === "/pagos") {
+      directResponse = await handlePendingPayments(supabase);
+    } else if (firstWord === "/leads") {
+      directResponse = await handleRecentLeads(supabase);
+    } else if (firstWord === "/sitio") {
+      directResponse = await handleHealthCheck();
+    } else if (firstWord === "/ayuda" || firstWord === "/help" || firstWord === "/start") {
+      directResponse = handleHelp();
+    } else if (firstWord === "/descuento" || firstWord === "/descuentos") {
       const parts = rawText.split(/\s+/);
       if (firstWord === "/descuentos") {
         directResponse = await handleListDiscounts(supabase);
