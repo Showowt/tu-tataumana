@@ -250,7 +250,7 @@ Acciones posibles:
 - "search_student": buscar alumno por nombre. Params: { "name": "..." }
 - "recent_leads": ver leads recientes. Params: {}
 - "dashboard": resumen general del negocio. Params: {}
-- "bookings_today": ver reservas de hoy con nombres. Params: {}
+- "bookings_today": ver reservas de un dia con nombres. Params: { "offset_days": numero (0=hoy, 1=manana, -1=ayer) }
 - "health_check": verificar que el sitio funciona. Params: {}
 - "help": mostrar ayuda. Params: {}
 - "create_discount": crear codigo de descuento. Params: { "code": "...", "type": "percentage|fixed", "value": numero, "max_uses": numero o null, "valid_days": numero o null }
@@ -1569,30 +1569,32 @@ async function handleDashboard(
 }
 
 async function handleBookingsToday(
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  offsetDays = 0
 ): Promise<string> {
-  const todayStr = getColombiaDateStr();
+  const dateStr = getColombiaDateStr(offsetDays);
+  const label = offsetDays === 0 ? "Hoy" : offsetDays === 1 ? "Mañana" : spanishDate(dateStr);
 
-  // Get today's sessions with bookings
+  // Get sessions with bookings for the target date
   const { data: sessions, error: sessError } = await supabase
     .from("tu_class_sessions")
     .select(`
       id, session_date, start_time, teacher, capacity, enrolled, status,
       definition:tu_class_definitions (name, name_es)
     `)
-    .eq("session_date", todayStr)
+    .eq("session_date", dateStr)
     .neq("status", "cancelled")
     .order("start_time", { ascending: true });
 
   if (sessError) {
-    console.error("[Telegram] bookings_today error:", sessError.message);
+    console.error("[Telegram] bookings error:", sessError.message);
     return "Error al consultar reservas. Intenta de nuevo.";
   }
 
   const typedSessions = (sessions || []) as unknown as SessionWithDef[];
 
   if (typedSessions.length === 0) {
-    return `<b>Reservas de Hoy — ${spanishDate(todayStr)}</b>\n\nNo hay clases programadas para hoy.`;
+    return `<b>Reservas ${label} — ${spanishDate(dateStr)}</b>\n\nNo hay clases programadas.`;
   }
 
   const blocks: string[] = [];
@@ -1627,7 +1629,7 @@ async function handleBookingsToday(
     );
   }
 
-  return `<b>Reservas de Hoy — ${spanishDate(todayStr)}</b>\n\n${blocks.join("\n\n")}`;
+  return `<b>Reservas ${label} — ${spanishDate(dateStr)}</b>\n\n${blocks.join("\n\n")}`;
 }
 
 async function handleHealthCheck(): Promise<string> {
@@ -2119,6 +2121,8 @@ function handleHelp(): string {
     `<b>/clases</b> — Ver todas las clases de la semana con reservas\n` +
     `<b>/semana</b> — Horario de la semana\n` +
     `<b>/reservas</b> — Reservas de hoy con nombres\n` +
+    `<b>/reservas manana</b> — Reservas de mañana\n` +
+    `<b>/reservas +2</b> — Reservas en 2 días\n` +
     `<b>/resumen</b> — Dashboard general\n\n` +
     `<b>/cancelar</b> clase 9:30 manana — Cancelar sesion\n` +
     `<b>/llena</b> 7:15 hoy — Marcar como llena\n` +
@@ -2547,7 +2551,19 @@ export async function POST(request: NextRequest) {
     } else if (firstWord === "/semana" || firstWord === "/clases") {
       directResponse = await handleWeekSchedule(supabase);
     } else if (firstWord === "/reservas") {
-      directResponse = await handleBookingsToday(supabase);
+      // Parse optional day offset: /reservas manana, /reservas +2, /reservas pasado
+      const reservasArg = rawText.split(/\s+/).slice(1).join(" ").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      let reservasOffset = 0;
+      if (reservasArg === "manana" || reservasArg === "tomorrow") {
+        reservasOffset = 1;
+      } else if (reservasArg === "pasado" || reservasArg === "pasado manana") {
+        reservasOffset = 2;
+      } else if (reservasArg === "ayer" || reservasArg === "yesterday") {
+        reservasOffset = -1;
+      } else if (/^[+-]?\d+$/.test(reservasArg)) {
+        reservasOffset = Math.max(-7, Math.min(7, parseInt(reservasArg)));
+      }
+      directResponse = await handleBookingsToday(supabase, reservasOffset);
     } else if (firstWord === "/resumen") {
       directResponse = await handleDashboard(supabase);
     } else if (firstWord === "/alumnos") {
@@ -2818,7 +2834,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case "bookings_today":
-        response = await handleBookingsToday(supabase);
+        response = await handleBookingsToday(supabase, typeof intent.params?.offset_days === "number" ? intent.params.offset_days : 0);
         break;
 
       case "health_check":

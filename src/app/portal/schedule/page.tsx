@@ -127,9 +127,23 @@ export default function SchedulePage() {
       return;
     }
 
-    // 2x1 packs: prompt for guest name before booking
-    if (is2x1Pack(usablePack.pack_type) && usablePack.classes_remaining >= 2) {
-      setPending2x1({ sessionId, packId: usablePack.id });
+    // 2x1 packs: ALWAYS require guest name — both credits used together
+    if (is2x1Pack(usablePack.pack_type)) {
+      if (usablePack.classes_remaining >= 2) {
+        setPending2x1({ sessionId, packId: usablePack.id });
+        return;
+      }
+      // If only 1 credit remains on a 2x1, it's in an invalid state — skip this pack
+      const nextPack = packs.find(
+        (p) => p.id !== usablePack.id && p.status === "active" && (p.total_classes === -1 || p.classes_remaining > 0),
+      );
+      if (!nextPack) {
+        setBookingStatus(lang === "es"
+          ? "Tu pack 2x1 ya fue usado. Necesitas otro pack."
+          : "Your 2x1 pack was already used. You need another pack.");
+        return;
+      }
+      await executeBooking(sessionId, nextPack.id, undefined);
       return;
     }
 

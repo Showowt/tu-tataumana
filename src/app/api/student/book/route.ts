@@ -54,6 +54,34 @@ export async function POST(request: NextRequest) {
 
     const { guest_name } = parsed.data;
 
+    // If a 2x1 pack is being used, guest_name is REQUIRED
+    // 2x1 means "two people, one class" — not two separate bookings
+    if (parsed.data.pack_id) {
+      const { data: packCheck } = await supabase
+        .from("tu_packs")
+        .select("pack_type, classes_remaining, total_classes, classes_used")
+        .eq("id", parsed.data.pack_id)
+        .single<{ pack_type: string; classes_remaining: number; total_classes: number; classes_used: number }>();
+
+      if (packCheck && packCheck.pack_type.toUpperCase().includes("2X1")) {
+        const remaining = packCheck.total_classes - packCheck.classes_used;
+        if (remaining >= 2 && !guest_name) {
+          return NextResponse.json(
+            { error: "El pack 2x1 requiere el nombre de tu acompañante para reservar." },
+            { status: 400 },
+          );
+        }
+        // If only 1 credit left on a 2x1, it means the guest was already booked
+        // but the primary wasn't — this shouldn't happen, so block it
+        if (remaining < 2 && remaining > 0) {
+          return NextResponse.json(
+            { error: "Este pack 2x1 ya fue utilizado. Los créditos 2x1 se usan juntos en una sola clase." },
+            { status: 400 },
+          );
+        }
+      }
+    }
+
     // Detect 2x1 pack: if guest_name provided, handle dual booking
     const is2x1 = !!guest_name && parsed.data.pack_id;
 
