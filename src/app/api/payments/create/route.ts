@@ -685,6 +685,43 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
     // -------------------------------------------------------------------
     const account = MANUAL_ACCOUNTS[payment_method];
 
+    // Deduplication: reject if same student + pack_type has a pending manual
+    // transaction created within the last 2 minutes (prevents double-click)
+    if (student?.id) {
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      const { data: recentTx } = await serviceDb
+        .from("tu_transactions")
+        .select("id, wompi_reference")
+        .eq("student_id", student.id)
+        .eq("related_pack_type", pack_type)
+        .eq("payment_method", payment_method)
+        .eq("status", "pending")
+        .gte("created_at", twoMinutesAgo)
+        .limit(1)
+        .single();
+
+      if (recentTx) {
+        systemLog({ category: "payment", level: "warn", message: "Duplicate manual payment blocked", route: "payments/create", details: { existing_ref: recentTx.wompi_reference, pack_type, payment_method, student_id: student.id } });
+        // Return the existing transaction's WhatsApp link instead of creating a duplicate
+        const priceFormatted = new Intl.NumberFormat("es-CO", {
+          style: "currency", currency: "COP", minimumFractionDigits: 0, maximumFractionDigits: 0,
+        }).format(effectivePrice);
+        const waMessage = encodeURIComponent(
+          `Hola Tata! Acabo de hacer un pago por ${account.label} para el pack ${packDef.name.es} (${priceFormatted}). Referencia: ${recentTx.wompi_reference}`,
+        );
+        return NextResponse.json({
+          data: {
+            method: payment_method,
+            reference: recentTx.wompi_reference,
+            whatsapp_url: `https://wa.me/${TATA_WHATSAPP}?text=${waMessage}`,
+            account_info: `${account.label}: ${account.info}`,
+          },
+          error: null,
+          message: `Transfer to ${account.label} and confirm via WhatsApp`,
+        });
+      }
+    }
+
     // Insert pending transaction
     const { data: manualTxData, error: txError } = await serviceDb
       .from("tu_transactions")

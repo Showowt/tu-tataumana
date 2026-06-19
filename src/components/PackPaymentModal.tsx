@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 interface PackProp {
   type: string;
@@ -116,6 +116,7 @@ export default function PackPaymentModal({
 }: PackPaymentModalProps) {
   const [selected, setSelected] = useState<PaymentMethod | null>(null);
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -202,6 +203,8 @@ export default function PackPaymentModal({
   }
 
   async function handleWompiPayment() {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setLoading(true);
     setError(null);
 
@@ -235,10 +238,13 @@ export default function PackPaymentModal({
         err instanceof Error ? err.message : "Error inesperado";
       setError(message);
       setLoading(false);
+      submittingRef.current = false;
     }
   }
 
   async function handleManualPayment(method: PaymentMethod) {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setLoading(true);
     setError(null);
 
@@ -276,6 +282,7 @@ export default function PackPaymentModal({
       setError(message);
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   }
 

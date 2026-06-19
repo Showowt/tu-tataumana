@@ -188,12 +188,12 @@ export default function AdminPricingPage() {
             <input placeholder="Label (ES)" value={newCard.label_es} onChange={(e) => setNewCard({ ...newCard, label_es: e.target.value })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
             <input placeholder="Subtitulo (EN)" value={newCard.subtitle_en} onChange={(e) => setNewCard({ ...newCard, subtitle_en: e.target.value })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
             <input placeholder="Subtitulo (ES)" value={newCard.subtitle_es} onChange={(e) => setNewCard({ ...newCard, subtitle_es: e.target.value })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
-            <input placeholder="Precio COP" type="number" value={newCard.price_cop || ""} onChange={(e) => setNewCard({ ...newCard, price_cop: parseInt(e.target.value) || 0 })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
-            <input placeholder="Precio USD" type="number" value={newCard.price_usd || ""} onChange={(e) => setNewCard({ ...newCard, price_usd: parseInt(e.target.value) || 0 })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
+            <input placeholder="Precio COP" type="number" value={newCard.price_cop === 0 ? "" : newCard.price_cop} onChange={(e) => setNewCard({ ...newCard, price_cop: e.target.value === "" ? 0 : parseInt(e.target.value) || 0 })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
+            <input placeholder="Precio USD" type="number" value={newCard.price_usd === 0 ? "" : newCard.price_usd} onChange={(e) => setNewCard({ ...newCard, price_usd: e.target.value === "" ? 0 : parseInt(e.target.value) || 0 })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
             <select value={newCard.category} onChange={(e) => setNewCard({ ...newCard, category: e.target.value })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm">
               {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
-            <input placeholder="Orden" type="number" value={newCard.sort_order} onChange={(e) => setNewCard({ ...newCard, sort_order: parseInt(e.target.value) || 0 })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
+            <input placeholder="Orden" type="number" value={newCard.sort_order === 0 ? "" : newCard.sort_order} onChange={(e) => setNewCard({ ...newCard, sort_order: e.target.value === "" ? 0 : parseInt(e.target.value) || 0 })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
           </div>
           <button onClick={createCard} className="w-full py-2 bg-[#B87777] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#2C2C2C] transition-colors">
             Crear
@@ -224,12 +224,12 @@ export default function AdminPricingPage() {
                     <input value={editData.label_es || ""} onChange={(e) => editField("label_es", e.target.value)} placeholder="Label ES" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
                     <input value={editData.subtitle_en || ""} onChange={(e) => editField("subtitle_en", e.target.value)} placeholder="Subtitulo EN" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
                     <input value={editData.subtitle_es || ""} onChange={(e) => editField("subtitle_es", e.target.value)} placeholder="Subtitulo ES" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
-                    <input type="number" value={editData.price_cop || ""} onChange={(e) => editField("price_cop", parseInt(e.target.value) || 0)} placeholder="COP" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
-                    <input type="number" value={editData.price_usd || ""} onChange={(e) => editField("price_usd", parseInt(e.target.value) || 0)} placeholder="USD" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
+                    <input type="number" value={editData.price_cop === 0 ? "" : (editData.price_cop ?? "")} onChange={(e) => editField("price_cop", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)} placeholder="COP" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
+                    <input type="number" value={editData.price_usd === 0 ? "" : (editData.price_usd ?? "")} onChange={(e) => editField("price_usd", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)} placeholder="USD" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
                     <select value={editData.category || "group"} onChange={(e) => editField("category", e.target.value)} className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm">
                       {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                     </select>
-                    <input type="number" value={editData.sort_order ?? ""} onChange={(e) => editField("sort_order", parseInt(e.target.value) || 0)} placeholder="Orden" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
+                    <input type="number" value={editData.sort_order === 0 ? "" : (editData.sort_order ?? "")} onChange={(e) => editField("sort_order", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)} placeholder="Orden" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
                   </div>
                   <div className="flex gap-2">
                     <button onClick={saveEdit} className="flex-1 py-1.5 bg-[#2C2C2C] text-white text-[10px] tracking-[0.1em] uppercase">Guardar</button>
