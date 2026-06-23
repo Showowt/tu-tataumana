@@ -685,6 +685,7 @@ export type Database = {
           discount_value: number | null
           expires_at: string
           id: string
+          locked_session_id: string | null
           notes: string | null
           original_price: number | null
           pack_type: string
@@ -708,6 +709,7 @@ export type Database = {
           discount_value?: number | null
           expires_at: string
           id?: string
+          locked_session_id?: string | null
           notes?: string | null
           original_price?: number | null
           pack_type: string
@@ -731,6 +733,7 @@ export type Database = {
           discount_value?: number | null
           expires_at?: string
           id?: string
+          locked_session_id?: string | null
           notes?: string | null
           original_price?: number | null
           pack_type?: string

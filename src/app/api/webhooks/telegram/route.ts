@@ -1769,8 +1769,9 @@ async function handleStudentCredits(
   supabase: SupabaseClient,
   name: string,
 ): Promise<string> {
+  // No name provided → show ALL students with active credits (for follow-up)
   if (!name) {
-    return "Necesito el nombre. Ejemplo: /creditos Valentina";
+    return handleAllStudentsWithCredits(supabase);
   }
 
   const student = await findStudentByName(supabase, name);
@@ -1814,6 +1815,69 @@ async function handleStudentCredits(
       lines.push(`  ${p.pack_type.replace(/_/g, " ")} — ${p.status}`);
     }
   }
+
+  return lines.join("\n");
+}
+
+async function handleAllStudentsWithCredits(
+  supabase: SupabaseClient,
+): Promise<string> {
+  const { data: packs } = await supabase
+    .from("tu_packs")
+    .select("student_id, pack_type, total_classes, classes_used, classes_remaining, expires_at, student:tu_students(full_name)")
+    .eq("status", "active")
+    .order("classes_remaining", { ascending: false });
+
+  type PackRowRaw = {
+    student_id: string;
+    pack_type: string;
+    total_classes: number;
+    classes_used: number;
+    classes_remaining: number;
+    expires_at: string;
+    student: { full_name: string }[] | { full_name: string } | null;
+  };
+
+  type PackRow = Omit<PackRowRaw, "student"> & {
+    student: { full_name: string } | null;
+  };
+
+  const rows: PackRow[] = ((packs || []) as PackRowRaw[]).map((p) => ({
+    ...p,
+    student: Array.isArray(p.student) ? p.student[0] ?? null : p.student,
+  }));
+
+  // Filter to packs with remaining credits
+  const withCredits = rows.filter(
+    (p) => p.total_classes === -1 || (p.classes_remaining ?? (p.total_classes - p.classes_used)) > 0,
+  );
+
+  if (withCredits.length === 0) {
+    return "No hay alumnos con creditos activos en este momento.";
+  }
+
+  // Group by student
+  const byStudent = new Map<string, { name: string; packs: PackRow[] }>();
+  for (const p of withCredits) {
+    const name = p.student?.full_name ?? "Sin nombre";
+    if (!byStudent.has(p.student_id)) {
+      byStudent.set(p.student_id, { name, packs: [] });
+    }
+    byStudent.get(p.student_id)!.packs.push(p);
+  }
+
+  const lines: string[] = [`<b>Alumnos con Creditos Activos</b> (${byStudent.size})\n`];
+
+  for (const [, entry] of byStudent) {
+    const packSummaries = entry.packs.map((p) => {
+      const remaining = p.total_classes === -1 ? "ilimitado" : `${p.classes_remaining ?? (p.total_classes - p.classes_used)}`;
+      const expires = p.expires_at ? spanishDate(p.expires_at.split("T")[0]) : "";
+      return `${remaining} (${p.pack_type.replace(/_/g, " ")}${expires ? `, vence ${expires}` : ""})`;
+    });
+    lines.push(`<b>${entry.name}</b>: ${packSummaries.join(" | ")}`);
+  }
+
+  lines.push(`\nUsa /creditos [nombre] para ver detalle de un alumno.`);
 
   return lines.join("\n");
 }
@@ -2136,6 +2200,7 @@ function handleHelp(): string {
     `Enviar foto de flyer — Crear evento desde imagen\n\n` +
     `<b>/alumnos</b> — Conteo y registros recientes\n` +
     `<b>/buscar</b> Maria — Buscar alumno (creditos, packs, todo)\n` +
+    `<b>/creditos</b> — Todos los alumnos con creditos activos\n` +
     `<b>/creditos</b> Maria — Ver creditos de una alumna\n` +
     `<b>/link</b> Maria — Generar enlace de acceso para enviar por WhatsApp\n` +
     `<b>/reservar</b> Maria 9:30 manana — Reservar clase por una alumna\n` +

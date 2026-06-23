@@ -59,15 +59,22 @@ export async function POST(request: NextRequest) {
     if (parsed.data.pack_id) {
       const { data: packCheck } = await supabase
         .from("tu_packs")
-        .select("pack_type, classes_remaining, total_classes, classes_used")
+        .select("pack_type, classes_remaining, total_classes, classes_used, locked_session_id")
         .eq("id", parsed.data.pack_id)
-        .single<{ pack_type: string; classes_remaining: number; total_classes: number; classes_used: number }>();
+        .single<{ pack_type: string; classes_remaining: number; total_classes: number; classes_used: number; locked_session_id: string | null }>();
 
       if (packCheck && packCheck.pack_type.toUpperCase().includes("2X1")) {
         const remaining = packCheck.total_classes - packCheck.classes_used;
         if (remaining >= 2 && !guest_name) {
           return NextResponse.json(
             { error: "El pack 2x1 requiere el nombre de tu acompañante para reservar." },
+            { status: 400 },
+          );
+        }
+        // If pack is already locked to a different session, block it
+        if (packCheck.locked_session_id && packCheck.locked_session_id !== parsed.data.session_id) {
+          return NextResponse.json(
+            { error: "Este pack 2x1 ya fue usado en otra clase. Los créditos 2x1 son para una sola clase." },
             { status: 400 },
           );
         }
@@ -110,6 +117,15 @@ export async function POST(request: NextRequest) {
         { error: result.error as string },
         { status: 400 },
       );
+    }
+
+    // 2x1: Lock pack to this session so credits can't be split across classes
+    if (is2x1 && parsed.data.pack_id) {
+      await supabase
+        .from("tu_packs")
+        .update({ locked_session_id: parsed.data.session_id })
+        .eq("id", parsed.data.pack_id)
+        .is("locked_session_id", null);
     }
 
     // 2x1: Book the guest into the same class using the second credit

@@ -29,6 +29,34 @@ export default function AdminStudentsPage() {
   const [loginLink, setLoginLink] = useState("");
   const [createdName, setCreatedName] = useState("");
 
+  // CSV export
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/admin/students/export");
+      if (!res.ok) {
+        showMessage("Error al exportar");
+        setExporting(false);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1] || "alumnos.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showMessage("CSV descargado");
+    } catch {
+      showMessage("Error de conexion");
+    }
+    setExporting(false);
+  }
+
   // CSV import
   const [showImport, setShowImport] = useState(false);
   const [csvText, setCsvText] = useState("");
@@ -175,6 +203,13 @@ export default function AdminStudentsPage() {
           Alumnos
         </h1>
         <div className="flex gap-2">
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="text-[10px] tracking-[0.15em] uppercase px-4 py-2 border border-[#2C2C2C]/20 text-[#2C2C2C]/50 hover:border-[#C9A96E] hover:text-[#C9A96E] transition-colors disabled:opacity-30"
+          >
+            {exporting ? "..." : "Descargar"}
+          </button>
           <button
             onClick={() => { setShowImport(!showImport); setShowCreate(false); }}
             className="text-[10px] tracking-[0.15em] uppercase px-4 py-2 border border-[#C9A96E] text-[#C9A96E] hover:bg-[#C9A96E] hover:text-white transition-colors"

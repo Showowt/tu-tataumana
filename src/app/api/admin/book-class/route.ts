@@ -88,9 +88,9 @@ export async function POST(request: NextRequest) {
     const packOwnerId = credit_from_student_id || student_id;
     const { data: pack } = await supabase
       .from("tu_packs")
-      .select("id, total_classes, classes_used, status, student_id")
+      .select("id, total_classes, classes_used, status, student_id, pack_type, locked_session_id")
       .eq("id", pack_id)
-      .single();
+      .single<{ id: string; total_classes: number; classes_used: number; status: string; student_id: string; pack_type: string; locked_session_id: string | null }>();
 
     if (!pack || pack.status !== "active") {
       return NextResponse.json({ error: "Pack no activo" }, { status: 400 });
@@ -98,6 +98,24 @@ export async function POST(request: NextRequest) {
 
     if (pack.student_id !== packOwnerId) {
       return NextResponse.json({ error: "Pack no pertenece al alumno indicado" }, { status: 403 });
+    }
+
+    // 2x1 packs: all credits must go to the same session
+    if (pack.pack_type.toUpperCase().includes("2X1")) {
+      if (pack.locked_session_id && pack.locked_session_id !== session_id) {
+        return NextResponse.json(
+          { error: "Este pack 2x1 ya fue usado en otra clase. Los créditos 2x1 son para una sola clase." },
+          { status: 400 },
+        );
+      }
+      // Lock to this session on first use
+      if (!pack.locked_session_id) {
+        await supabase
+          .from("tu_packs")
+          .update({ locked_session_id: session_id })
+          .eq("id", pack_id)
+          .is("locked_session_id", null);
+      }
     }
 
     // Deduct credit (unless unlimited) with optimistic lock
