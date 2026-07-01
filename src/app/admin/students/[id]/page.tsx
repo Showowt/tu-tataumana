@@ -20,6 +20,7 @@ interface StudentDetail {
   notes: string | null;
   emergency_contact: string | null;
   is_blocked: boolean;
+  is_partner: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -118,6 +119,8 @@ export default function AdminStudentDetailPage() {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [bookingSessionId, setBookingSessionId] = useState("");
   const [bookingInProgress, setBookingInProgress] = useState(false);
+  // Optional guest name per booking for partner accounts (hotels booking guests)
+  const [guestName, setGuestName] = useState("");
 
   // Guest booking (2x1)
   const [guestSearch, setGuestSearch] = useState("");
@@ -425,6 +428,7 @@ export default function AdminStudentDetailPage() {
     }
 
     try {
+      const trimmedGuest = guestName.trim();
       const res = await fetch("/api/admin/book-class", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -432,6 +436,7 @@ export default function AdminStudentDetailPage() {
           student_id: id,
           session_id: sessionId,
           pack_id: activePacks[0].id,
+          ...(student.is_partner && trimmedGuest ? { guest_name: trimmedGuest } : {}),
         }),
       });
 
@@ -439,7 +444,12 @@ export default function AdminStudentDetailPage() {
       if (!res.ok || data.error) {
         showToast(data.error || "Error al reservar");
       } else {
-        showToast(`Reservado para ${student.full_name}`);
+        showToast(
+          student.is_partner
+            ? `Reservado${trimmedGuest ? ` para ${trimmedGuest}` : ""} (${student.full_name})`
+            : `Reservado para ${student.full_name}`,
+        );
+        setGuestName("");
         await Promise.all([loadStudent(), loadSessions()]);
       }
     } catch {
@@ -956,6 +966,26 @@ export default function AdminStudentDetailPage() {
               </div>
             );
           })()}
+
+          {/* Partner accounts: optional guest name so multiple guests can be booked into the same class */}
+          {student.is_partner && (
+            <div className="bg-[#C9A96E]/5 border border-[#C9A96E]/20 p-3">
+              <label className="text-[9px] tracking-[0.1em] text-[#C9A96E] uppercase block mb-1">
+                Nombre del invitado (opcional)
+              </label>
+              <input
+                type="text"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="Ej: Hab. 305 · Juan Pérez"
+                maxLength={100}
+                className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/20 focus:outline-none focus:border-[#C9A96E]"
+              />
+              <p className="text-[9px] text-[#2C2C2C]/40 mt-1">
+                Cuenta de socio: cada &quot;Reservar&quot; agrega un invitado a la clase. Déjalo en blanco y se numerará automáticamente.
+              </p>
+            </div>
+          )}
 
           {/* Sessions list */}
           {sessions.length === 0 ? (

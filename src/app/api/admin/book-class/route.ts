@@ -40,6 +40,10 @@ export async function POST(request: NextRequest) {
 
   const { student_id, session_id, pack_id, credit_from_student_id, guest_name } = parsed.data;
 
+  // If the booking insert fails after we've deducted a pack credit, we roll the
+  // credit back so it isn't silently lost.
+  let creditDeducted: { packId: string; prevUsed: number } | null = null;
+
   // 1. Verify session exists and isn't cancelled
   const { data: session, error: sessErr } = await supabase
     .from("tu_class_sessions")
@@ -140,10 +144,32 @@ export async function POST(request: NextRequest) {
       if (packErr || !updatedPack) {
         return NextResponse.json({ error: "Conflicto al deducir credito — intenta de nuevo" }, { status: 409 });
       }
+      creditDeducted = { packId: pack_id, prevUsed: pack.classes_used || 0 };
     }
   }
 
-  // 5. Create booking (NO cutoff check — admin override)
+  // 5. Resolve guest name for partner accounts.
+  // Partners (e.g. hotels) book the same class multiple times — one row per guest.
+  // The DB uniqueness index is (session_id, student_id, COALESCE(guest_name,'')),
+  // so every partner booking needs a DISTINCT guest_name or it collides. When no
+  // name is given we auto-number the guest so anonymous multi-bookings still work.
+  let finalGuestName: string | null = null;
+  if (isPartner) {
+    const typed = guest_name?.trim();
+    if (typed) {
+      finalGuestName = typed;
+    } else {
+      const { count } = await supabase
+        .from("tu_class_bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("student_id", student_id)
+        .eq("session_id", session_id)
+        .neq("status", "cancelled");
+      finalGuestName = `Invitado ${(count || 0) + 1}`;
+    }
+  }
+
+  // 6. Create booking (NO cutoff check — admin override)
   const { data: booking, error: bookErr } = await supabase
     .from("tu_class_bookings")
     .insert({
@@ -152,28 +178,51 @@ export async function POST(request: NextRequest) {
       pack_id: pack_id || null,
       status: "confirmed",
       checked_in: false,
-      ...(isPartner && guest_name ? { guest_name: guest_name.trim() } : {}),
+      ...(finalGuestName ? { guest_name: finalGuestName } : {}),
     })
     .select("id")
     .single();
 
   if (bookErr) {
-    systemLog({ category: "booking", level: "error", message: "Admin booking insert failed", route: "admin/book-class", details: { error: bookErr.message, student_id, session_id, pack_id } });
+    // Give the just-deducted credit back before returning.
+    if (creditDeducted) {
+      await supabase
+        .from("tu_packs")
+        .update({ classes_used: creditDeducted.prevUsed, status: "active" })
+        .eq("id", creditDeducted.packId);
+    }
+
+    const isDuplicate =
+      bookErr.code === "23505" ||
+      /duplicate key|idx_active_booking_unique/i.test(bookErr.message);
+
+    systemLog({ category: "booking", level: "error", message: "Admin booking insert failed", route: "admin/book-class", details: { error: bookErr.message, code: bookErr.code, student_id, session_id, pack_id, guest_name: finalGuestName } });
     console.error("[admin/book-class]", bookErr.message);
+
+    if (isDuplicate) {
+      return NextResponse.json(
+        {
+          error: isPartner
+            ? "Ya existe una reserva con ese nombre de invitado para esta clase. Usa un nombre distinto."
+            : "El alumno ya tiene reserva para esta clase.",
+        },
+        { status: 409 },
+      );
+    }
     return NextResponse.json(
-      { error: "Error al crear reserva: " + bookErr.message },
+      { error: "No se pudo crear la reserva. Intenta de nuevo." },
       { status: 500 },
     );
   }
 
-  // 6. Increment enrolled count on session (optimistic lock)
+  // 7. Increment enrolled count on session (optimistic lock)
   await supabase
     .from("tu_class_sessions")
     .update({ enrolled: (session.enrolled || 0) + 1 })
     .eq("id", session_id)
     .eq("enrolled", session.enrolled || 0);
 
-  // 7. Fire-and-forget notification
+  // 8. Fire-and-forget notification
   try {
     const { data: studentData } = await supabase
       .from("tu_students")
