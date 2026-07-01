@@ -132,6 +132,28 @@ export default function AdminSessionsPage() {
     setActionLoading(null);
   }
 
+  async function handleReactivate(sessionId: string) {
+    if (!confirm("¿Reactivar esta sesión? Volverá a estar disponible para reservas.")) return;
+    setActionLoading(sessionId);
+    try {
+      const res = await fetch("/api/admin/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reactivate", session_id: sessionId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showMessage("Sesión reactivada");
+        await loadSessions();
+      } else {
+        showMessage(data.error || "Error al reactivar");
+      }
+    } catch {
+      showMessage("Error");
+    }
+    setActionLoading(null);
+  }
+
   async function handleComplete(sessionId: string) {
     if (!confirm("¿Completar esta sesión?")) return;
     setActionLoading(sessionId);
@@ -595,6 +617,16 @@ export default function AdminSessionsPage() {
                                   cancelar
                                 </button>
                               </div>
+                            )}
+
+                            {isCancelled && (
+                              <button
+                                onClick={() => handleReactivate(s.id)}
+                                disabled={actionLoading === s.id}
+                                className="text-[9px] text-[#C9A96E] hover:text-[#B87777] transition-colors disabled:opacity-30 underline underline-offset-2"
+                              >
+                                reactivar
+                              </button>
                             )}
                           </div>
                         </div>

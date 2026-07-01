@@ -164,6 +164,42 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    case "reactivate": {
+      const { session_id } = body;
+      if (!session_id) {
+        return NextResponse.json({ error: "session_id required" }, { status: 400 });
+      }
+
+      // Only cancelled sessions can be reactivated
+      const { data: sess } = await supabase
+        .from("tu_class_sessions")
+        .select("id, status")
+        .eq("id", session_id)
+        .single();
+
+      if (!sess) {
+        return NextResponse.json({ error: "Sesion no encontrada" }, { status: 404 });
+      }
+      if (sess.status !== "cancelled") {
+        return NextResponse.json(
+          { error: "Solo se pueden reactivar sesiones canceladas" },
+          { status: 400 },
+        );
+      }
+
+      const { error: reactErr } = await supabase
+        .from("tu_class_sessions")
+        .update({ status: "scheduled", cancel_reason: null })
+        .eq("id", session_id);
+
+      if (reactErr) {
+        console.error("[admin/sessions reactivate]", reactErr.message);
+        return NextResponse.json({ error: "Failed to reactivate session" }, { status: 500 });
+      }
+
+      return NextResponse.json({ message: "Sesion reactivada" });
+    }
+
     case "complete": {
       const { session_id: sid, force } = body;
       if (!sid) {
@@ -265,19 +301,37 @@ export async function POST(request: NextRequest) {
 
       const closedSet = new Set((closedDates || []).map((d: { date: string }) => d.date));
 
-      // Get existing sessions
+      // Get existing sessions (including cancelled ones so we can reactivate them)
       const { data: existing } = await supabase
         .from("tu_class_sessions")
-        .select("definition_id, session_date")
+        .select("id, definition_id, session_date, status")
         .gte("session_date", nowDateStr)
         .lte("session_date", endDateStr);
 
-      const existingSet = new Set(
-        (existing || []).map(
-          (s: { definition_id: string; session_date: string }) =>
-            `${s.definition_id}_${s.session_date}`,
-        ),
+      // Slots with a live (non-cancelled) session — never touch these
+      const activeSet = new Set(
+        (existing || [])
+          .filter((s: { status: string }) => s.status !== "cancelled")
+          .map(
+            (s: { definition_id: string; session_date: string }) =>
+              `${s.definition_id}_${s.session_date}`,
+          ),
       );
+
+      // Slots whose only session is cancelled — reactivate instead of skipping.
+      // (Regenerating the schedule should bring back a class the schedule still calls for.)
+      const cancelledMap = new Map<string, string>();
+      for (const s of (existing || []) as Array<{
+        id: string;
+        definition_id: string;
+        session_date: string;
+        status: string;
+      }>) {
+        const key = `${s.definition_id}_${s.session_date}`;
+        if (s.status === "cancelled" && !activeSet.has(key)) {
+          cancelledMap.set(key, s.id);
+        }
+      }
 
       const toInsert: Array<{
         definition_id: string;
@@ -287,6 +341,7 @@ export async function POST(request: NextRequest) {
         capacity: number;
         status: string;
       }> = [];
+      const reactivateIds: string[] = [];
 
       const current = new Date(now);
       current.setHours(0, 0, 0, 0);
@@ -299,7 +354,11 @@ export async function POST(request: NextRequest) {
           for (const def of definitions) {
             if (def.day_of_week === dayOfWeek) {
               const key = `${def.id}_${dateStr}`;
-              if (!existingSet.has(key)) {
+              if (activeSet.has(key)) continue; // live session already exists
+              const cancelledId = cancelledMap.get(key);
+              if (cancelledId) {
+                reactivateIds.push(cancelledId); // bring back a cancelled slot
+              } else {
                 toInsert.push({
                   definition_id: def.id,
                   session_date: dateStr,
@@ -323,15 +382,32 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      if (reactivateIds.length > 0) {
+        const { error: reactErr } = await supabase
+          .from("tu_class_sessions")
+          .update({ status: "scheduled", cancel_reason: null })
+          .in("id", reactivateIds);
+        if (reactErr) {
+          console.error("[admin/sessions generate reactivate]", reactErr.message);
+          return NextResponse.json({ error: "Failed to reactivate sessions" }, { status: 500 });
+        }
+      }
+
+      const parts: string[] = [];
+      if (toInsert.length > 0) parts.push(`${toInsert.length} nuevas`);
+      if (reactivateIds.length > 0) parts.push(`${reactivateIds.length} reactivadas`);
       return NextResponse.json({
-        message: `Generated ${toInsert.length} sessions for ${weeks} weeks`,
+        message: parts.length
+          ? `Sesiones: ${parts.join(", ")} (${weeks} semanas)`
+          : `Sin cambios — el horario ya esta completo (${weeks} semanas)`,
         count: toInsert.length,
+        reactivated: reactivateIds.length,
       });
     }
 
     default:
       return NextResponse.json(
-        { error: "Invalid action. Use: cancel, complete, generate" },
+        { error: "Invalid action. Use: cancel, reactivate, complete, update_capacity, generate" },
         { status: 400 },
       );
   }
