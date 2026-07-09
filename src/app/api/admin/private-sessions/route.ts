@@ -118,6 +118,14 @@ export async function POST(request: NextRequest) {
 
 const PatchSchema = z.object({
   id: z.string().uuid(),
+  client_name: z.string().min(2).max(200).optional(),
+  client_email: z.string().email().optional().nullable().or(z.literal("")),
+  client_phone: z.string().max(30).optional().nullable().or(z.literal("")),
+  service_type: z.string().min(1).max(100).optional(),
+  session_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  duration_minutes: z.number().int().positive().optional(),
+  group_size: z.number().int().positive().max(30).optional(),
   status: z.enum(["scheduled", "completed", "cancelled", "no_show"]).optional(),
   payment_status: z.enum(["pending", "paid", "partial"]).optional(),
   payment_method: z.string().max(50).optional().nullable(),
@@ -160,7 +168,14 @@ export async function PATCH(request: NextRequest) {
 
     const safeUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     for (const [key, value] of Object.entries(updates)) {
-      if (value !== undefined) safeUpdates[key] = value;
+      if (value !== undefined) {
+        // Normalize empty strings to null for nullable fields
+        if ((key === "client_email" || key === "client_phone" || key === "notes") && value === "") {
+          safeUpdates[key] = null;
+        } else {
+          safeUpdates[key] = value;
+        }
+      }
     }
 
     const { error } = await admin.supabase
