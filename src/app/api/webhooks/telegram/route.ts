@@ -1593,10 +1593,6 @@ async function handleBookingsToday(
 
   const typedSessions = (sessions || []) as unknown as SessionWithDef[];
 
-  if (typedSessions.length === 0) {
-    return `<b>Reservas ${label} — ${spanishDate(dateStr)}</b>\n\nNo hay clases programadas.`;
-  }
-
   const blocks: string[] = [];
 
   for (const s of typedSessions) {
@@ -1629,7 +1625,40 @@ async function handleBookingsToday(
     );
   }
 
-  return `<b>Reservas ${label} — ${spanishDate(dateStr)}</b>\n\n${blocks.join("\n\n")}`;
+  // Private sessions for the same day
+  const { data: privateSessions } = await supabase
+    .from("tu_private_sessions")
+    .select("client_name, service_type, start_time, duration_minutes, teacher, group_size, status, payment_status")
+    .eq("session_date", dateStr)
+    .neq("status", "cancelled")
+    .order("start_time", { ascending: true });
+
+  const privateBlocks: string[] = [];
+  if (privateSessions && privateSessions.length > 0) {
+    for (const ps of privateSessions) {
+      const payIcon = ps.payment_status === "paid" ? "✅" : ps.payment_status === "partial" ? "⚠️" : "⏳";
+      const statusTag = ps.status === "completed" ? " [COMPLETADA]" : "";
+      privateBlocks.push(
+        `<b>${ps.start_time} — ${ps.service_type}</b> (${ps.teacher})\n` +
+        `  👤 ${ps.client_name} · ${ps.group_size} persona(s) · ${ps.duration_minutes}min\n` +
+        `  Pago: ${payIcon} ${ps.payment_status}${statusTag}`
+      );
+    }
+  }
+
+  if (blocks.length === 0 && privateBlocks.length === 0) {
+    return `<b>Reservas ${label} — ${spanishDate(dateStr)}</b>\n\nNo hay clases ni sesiones privadas programadas.`;
+  }
+
+  const classSection = blocks.length > 0
+    ? `<b>📋 Clases Grupales</b>\n\n${blocks.join("\n\n")}`
+    : "";
+
+  const privateSection = privateBlocks.length > 0
+    ? `${blocks.length > 0 ? "\n\n" : ""}<b>🧘 Sesiones Privadas</b>\n\n${privateBlocks.join("\n\n")}`
+    : "";
+
+  return `<b>Reservas ${label} — ${spanishDate(dateStr)}</b>\n\n${classSection}${privateSection}`;
 }
 
 async function handleHealthCheck(): Promise<string> {
