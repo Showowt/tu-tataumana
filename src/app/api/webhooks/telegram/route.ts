@@ -1376,13 +1376,13 @@ async function handleSearchStudent(
 ): Promise<string> {
   const { name } = params;
   if (!name) {
-    return "Necesito un nombre para buscar. Ej: buscar Maria";
+    return "Necesito nombre o email para buscar. Ej:\n/buscar Maria\n/buscar maria@email.com";
   }
 
   const { data: students, error } = await supabase
     .from("tu_students")
     .select("id, full_name, email, phone, auth_id, is_blocked, created_at")
-    .ilike("full_name", `%${name}%`)
+    .or(`full_name.ilike.%${name}%,email.ilike.%${name}%`)
     .order("full_name")
     .limit(10);
 
@@ -1392,7 +1392,7 @@ async function handleSearchStudent(
   }
 
   if (!students || students.length === 0) {
-    return `No encontre alumnos con nombre "${name}".`;
+    return `No encontre alumnos con "${name}".`;
   }
 
   const lines: string[] = [];
@@ -2228,7 +2228,7 @@ function handleHelp(): string {
     `<b>/cancelar_evento</b> Sound Healing\n` +
     `Enviar foto de flyer — Crear evento desde imagen\n\n` +
     `<b>/alumnos</b> — Conteo y registros recientes\n` +
-    `<b>/buscar</b> Maria — Buscar alumno (creditos, packs, todo)\n` +
+    `<b>/buscar</b> Maria — Buscar alumno por nombre o email\n` +
     `<b>/creditos</b> — Todos los alumnos con creditos activos\n` +
     `<b>/creditos</b> Maria — Ver creditos de una alumna\n` +
     `<b>/link</b> Maria — Generar enlace de acceso para enviar por WhatsApp\n` +
@@ -2243,7 +2243,9 @@ function handleHelp(): string {
     `<b>/descuentos</b> — Ver codigos activos\n` +
     `desactivar descuento WELCOME10 — Desactivar\n\n` +
     `<b>Alumnos:</b>\n` +
-    `<b>/alumno</b> Maria Garcia maria@email.com +573001234567 — Crear cuenta\n\n` +
+    `<b>/alumno</b> maria@email.com — Buscar por email\n` +
+    `<b>/alumno</b> Maria — Buscar por nombre\n` +
+    `<b>/alumno</b> Maria Garcia maria@email.com +57300... — Crear cuenta\n\n` +
     `<b>Promos Homepage:</b>\n` +
     `Enviar foto con caption <b>/promo</b> — Agregar promo con flyer\n` +
     `<b>/promo</b> list — Ver promos activas en homepage\n` +
@@ -2721,7 +2723,10 @@ export async function POST(request: NextRequest) {
       directResponse = await handleDeactivateDiscount(supabase, { code });
     } else if (firstWord === "/alumno" || firstWord === "/cuenta") {
       const parts = rawText.split(/\s+/).slice(1);
-      if (parts.length >= 2) {
+      if (parts.length === 1 && parts[0].includes("@")) {
+        // Single email = search by email
+        directResponse = await handleSearchStudent(supabase, { name: parts[0] });
+      } else if (parts.length >= 2) {
         // Try to extract: name (can be multi-word), email, optional phone
         const emailIdx = parts.findIndex(p => p.includes("@"));
         if (emailIdx >= 0) {
@@ -2730,10 +2735,14 @@ export async function POST(request: NextRequest) {
           const phone = parts.slice(emailIdx + 1).join(" ") || "";
           directResponse = await handleCreateStudentAccount(supabase, { name, email, phone });
         } else {
-          directResponse = "Necesito nombre y email. Ejemplo:\n/alumno Maria Garcia maria@email.com +573001234567";
+          // No email found — search by name instead
+          directResponse = await handleSearchStudent(supabase, { name: parts.join(" ") });
         }
+      } else if (parts.length === 1) {
+        // Single word without @ = search by name
+        directResponse = await handleSearchStudent(supabase, { name: parts[0] });
       } else {
-        directResponse = "Necesito nombre y email. Ejemplo:\n/alumno Maria Garcia maria@email.com +573001234567";
+        directResponse = "Uso:\n/alumno maria@email.com — Buscar por email\n/alumno Maria — Buscar por nombre\n/alumno Maria Garcia maria@email.com — Crear cuenta";
       }
     } else if (firstWord === "/clases" || firstWord === "/semana") {
       directResponse = await handleWeekClassRoster(supabase);

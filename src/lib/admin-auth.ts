@@ -21,9 +21,24 @@ interface AdminResult {
  * Returns the admin record + service-role supabase client, or null.
  */
 export async function verifyAdmin(
-  _request?: NextRequest,
+  request?: NextRequest,
 ): Promise<AdminResult | null> {
   try {
+    // Check x-admin-key header for internal server-to-server calls (e.g. Telegram bot)
+    if (request) {
+      const adminKey = request.headers.get("x-admin-key");
+      const expectedKey = process.env.TU_ADMIN_KEY;
+      if (adminKey && expectedKey && adminKey === expectedKey) {
+        const serviceClient = getServiceClient();
+        return {
+          id: "internal-bot",
+          email: "bot@tataumana.com",
+          role: "admin",
+          supabase: serviceClient,
+        };
+      }
+    }
+
     const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
