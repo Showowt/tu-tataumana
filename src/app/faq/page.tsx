@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 type Lang = "en" | "es";
@@ -11,7 +11,7 @@ interface FAQ {
   category: string;
 }
 
-const faqs: FAQ[] = [
+const FALLBACK_FAQS: FAQ[] = [
   // Booking
   {
     category: "booking",
@@ -170,6 +170,22 @@ export default function FAQPage() {
   const [lang, setLang] = useState<Lang>("es");
   const [activeCategory, setActiveCategory] = useState("all");
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [faqs, setFaqs] = useState<FAQ[]>(FALLBACK_FAQS);
+
+  useEffect(() => {
+    fetch("/api/public/faq")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.data?.length) {
+          setFaqs(d.data.map((f: { question_en: string; question_es: string; answer_en: string; answer_es: string; category: string }) => ({
+            q: { en: f.question_en, es: f.question_es },
+            a: { en: f.answer_en, es: f.answer_es },
+            category: f.category,
+          })));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const filtered = activeCategory === "all"
     ? faqs

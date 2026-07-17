@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { t, type Lang } from "@/lib/translations";
 
@@ -17,76 +18,24 @@ interface Teacher {
   isLead: boolean;
 }
 
-const teachers: Teacher[] = [
-  {
-    name: "Tata",
-    role: { en: "Founder & Lead Teacher", es: "Fundadora & Teacher Principal" },
-    bio: {
-      es: "Guardiana de espacios sagrados, guía del alma y del cuerpo que recuerda. Tata te acompaña a través del yoga, la energía, el toque y la palabra, a volver a ti — a tu verdad, a tu poder, a tu centro. Su enseñanza es medicina: suave pero firme, mística pero presente, amorosa pero clara. En cada clase, Tata abre portales donde el cuerpo respira, el corazón se calma y el alma florece.",
-      en: "Guardian of sacred spaces, guide of the soul and the body that remembers. Tata walks with you through yoga, energy, touch and word, back to yourself — to your truth, your power, your center. Her teaching is medicine: gentle yet firm, mystical yet present, loving yet clear. In every class, Tata opens portals where the body breathes, the heart calms and the soul blooms.",
-    },
-    image: "/practice-2.jpg",
-    specialties: ["Sound Healing", "Reiki", "Kundalini", "Vinyasa", "Ceremonies"],
-    isLead: true,
-  },
-  {
-    name: "Betty",
-    role: { en: "Yoga Teacher", es: "Teacher de Yoga" },
-    bio: {
-      es: "Psicóloga e instructora de yoga, Betty guía una práctica consciente para volver al cuerpo y al momento presente. Sus clases integran meditación y reprogramación mental, invitando a soltar el control, reconectar con tu autenticidad y habitarte con más amor.",
-      en: "Psychologist and yoga instructor, Betty guides a conscious practice to return to the body and the present moment. Her classes integrate meditation and mental reprogramming, inviting you to release control, reconnect with your authenticity and inhabit yourself with more love.",
-    },
-    image: "/teacher-betty.png",
-    specialties: ["Yoga", "Meditation", "Psychology"],
-    isLead: false,
-  },
-  {
-    name: "Violeta",
-    role: { en: "Yoga Teacher", es: "Teacher de Yoga" },
-    bio: {
-      es: "Artista del movimiento y creadora visual, Violeta explora la danza y la sensibilidad del cuerpo en conexión con la tierra, teniendo el yoga como su eje central. Su práctica integra el trabajo con la fascia y el movimiento consciente, creando espacios donde la presencia, la suavidad y la expresión se encuentran.",
-      en: "Movement artist and visual creator, Violeta explores dance and body sensitivity in connection with the earth, with yoga as her central axis. Her practice integrates fascia work and conscious movement, creating spaces where presence, softness and expression meet.",
-    },
-    image: "/teacher-violeta.png",
-    specialties: ["Yoga", "Movement", "Fascia"],
-    isLead: false,
-  },
-  {
-    name: "Álvaro",
-    role: { en: "Meditation Guide", es: "Guía de Meditación" },
-    bio: {
-      es: "A través de la meditación y la palabra consciente, Álvaro guía espacios de conexión profunda con el ser y la salud mental. Integrando su mirada desde la ontología, acompaña procesos de comprensión, liberación y transformación interior. Sus encuentros invitan a pausar, respirar y reconectar con lo esencial, cultivando paz, claridad y presencia.",
-      en: "Through meditation and conscious word, Álvaro guides spaces of deep connection with being and mental health. Integrating his perspective from ontology, he accompanies processes of understanding, liberation and inner transformation. His sessions invite you to pause, breathe and reconnect with the essential, cultivating peace, clarity and presence.",
-    },
-    image: "/teacher-alvaro.png",
-    specialties: ["Meditation", "Ontology", "Mindfulness"],
-    isLead: false,
-  },
-  {
-    name: "Leandra",
-    role: { en: "Sound Therapy Teacher", es: "Teacher de Terapia de Sonido" },
-    bio: {
-      es: "Leandra guia sesiones de sanacion con sonido que conectan cuerpo, mente y espiritu. A traves de cuencos tibetanos y frecuencias armonicas, crea espacios de profunda relajacion y transformacion interior.",
-      en: "Leandra guides sound healing sessions that connect body, mind and spirit. Through Tibetan bowls and harmonic frequencies, she creates spaces of deep relaxation and inner transformation.",
-    },
-    image: "/teacher-leandra.jpg",
-    specialties: ["Sound Healing", "Sound Therapy", "Meditation"],
-    isLead: false,
-  },
-  {
-    name: "Alejandro",
-    role: { en: "Yoga Teacher", es: "Teacher de Yoga" },
-    bio: {
-      es: "Alejandro guía prácticas que combinan fuerza y calma, invitando a cada estudiante a explorar su potencial a través de posturas conscientes y respiración profunda.",
-      en: "Alejandro guides practices that combine strength and calm, inviting each student to explore their potential through conscious postures and deep breathing.",
-    },
-    image: "/teacher-alejandro.png",
-    specialties: ["Hatha", "Hip Opening", "Yoga"],
-    isLead: false,
-  },
+// Fallback data — used until API responds
+const FALLBACK_TEACHERS: Teacher[] = [
+  { name: "Tata", role: { en: "Founder & Lead Teacher", es: "Fundadora & Teacher Principal" }, bio: { es: "Guardiana de espacios sagrados, guía del alma y del cuerpo que recuerda.", en: "Guardian of sacred spaces, guide of the soul and the body that remembers." }, image: "/practice-2.jpg", specialties: ["Sound Healing", "Reiki", "Kundalini", "Vinyasa", "Ceremonies"], isLead: true },
 ];
 
+function mapAPITeacher(t: { name: string; role_en: string; role_es: string; bio_en: string; bio_es: string; image_url: string; specialties: string[]; is_lead: boolean }): Teacher {
+  return { name: t.name, role: { en: t.role_en, es: t.role_es }, bio: { en: t.bio_en, es: t.bio_es }, image: t.image_url, specialties: t.specialties || [], isLead: t.is_lead };
+}
+
 export default function TeachersSection({ lang, L }: TeachersSectionProps) {
+  const [teachers, setTeachers] = useState<Teacher[]>(FALLBACK_TEACHERS);
+
+  useEffect(() => {
+    fetch("/api/public/teachers")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.data?.length) setTeachers(d.data.map(mapAPITeacher)); })
+      .catch(() => {});
+  }, []);
   return (
     <section id="teachers" className="py-28 md:py-36 bg-white">
       <div className="w-full max-w-6xl mx-auto px-6 lg:px-8">

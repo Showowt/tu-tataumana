@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { t, type Lang } from "@/lib/translations";
 
 export interface ServicesSectionProps {
@@ -8,62 +9,29 @@ export interface ServicesSectionProps {
   openBooking: (service?: string, date?: string, time?: string) => void;
 }
 
-const services = [
-  {
-    name: "Discovery Session",
-    nameEs: "Consulta de Descubrimiento",
-    price: "$85,000 COP / $22 USD",
-    duration: "30 min",
-  },
-  {
-    name: "Personalized Yoga",
-    nameEs: "Yoga Personalizado",
-    price: "$190,000 COP / $50 USD",
-    duration: "60 min",
-  },
-  {
-    name: "Video Connection",
-    nameEs: "Video Conexión",
-    price: "$170,000 COP / $45 USD",
-    duration: "60 min",
-  },
-  {
-    name: "Quantum Surgery",
-    nameEs: "Cirugía Cuántica",
-    price: "$360,000 COP / $95 USD",
-    duration: "60 min",
-  },
-  {
-    name: "Superior Connection",
-    nameEs: "Conexión Superior",
-    price: "$730,000 COP / $193 USD",
-    duration: "75 min",
-  },
-  {
-    name: "Energy Cleansing",
-    nameEs: "Limpiezas Energéticas",
-    price: "$485,000 COP / $128 USD",
-    duration: "75 min",
-  },
-  {
-    name: "Sacred Ceremonies",
-    nameEs: "Ceremonias Simbólicas",
-    price: "$3,500,000 COP / $924 USD",
-    duration: "Custom",
-  },
-  {
-    name: "Leadership Integration",
-    nameEs: "Integración Grupal de Liderazgo",
-    price: "$1,220,000 COP / $322 USD",
-    duration: "Per hour",
-  },
-  {
-    name: "TUISYOU Program",
-    nameEs: "Programa TUISYOU Personalizado",
-    price: "$7,750,000 COP / $2,046 USD",
-    duration: "3 months",
-  },
+interface ServiceData {
+  name: string;
+  nameEs: string;
+  price: string;
+  duration: string;
+}
+
+const FALLBACK_SERVICES: ServiceData[] = [
+  { name: "Discovery Session", nameEs: "Consulta de Descubrimiento", price: "$85,000 COP / $22 USD", duration: "30 min" },
+  { name: "Personalized Yoga", nameEs: "Yoga Personalizado", price: "$190,000 COP / $50 USD", duration: "60 min" },
+  { name: "Video Connection", nameEs: "Video Conexión", price: "$170,000 COP / $45 USD", duration: "60 min" },
+  { name: "Quantum Surgery", nameEs: "Cirugía Cuántica", price: "$360,000 COP / $95 USD", duration: "60 min" },
+  { name: "Superior Connection", nameEs: "Conexión Superior", price: "$730,000 COP / $193 USD", duration: "75 min" },
+  { name: "Energy Cleansing", nameEs: "Limpiezas Energéticas", price: "$485,000 COP / $128 USD", duration: "75 min" },
+  { name: "Sacred Ceremonies", nameEs: "Ceremonias Simbólicas", price: "$3,500,000 COP / $924 USD", duration: "Custom" },
+  { name: "Leadership Integration", nameEs: "Integración Grupal de Liderazgo", price: "$1,220,000 COP / $322 USD", duration: "Per hour" },
+  { name: "TUISYOU Program", nameEs: "Programa TUISYOU Personalizado", price: "$7,750,000 COP / $2,046 USD", duration: "3 months" },
 ];
+
+function formatPrice(cop: number, usd: number): string {
+  const copStr = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(cop);
+  return `${copStr} / $${usd} USD`;
+}
 
 const descriptionKeys = [
   "discovery", "yoga", "video", "quantum", "superior",
@@ -71,6 +39,23 @@ const descriptionKeys = [
 ] as const;
 
 export default function ServicesSection({ lang, L, openBooking }: ServicesSectionProps) {
+  const [services, setServices] = useState<ServiceData[]>(FALLBACK_SERVICES);
+
+  useEffect(() => {
+    fetch("/api/public/services")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.data?.length) {
+          setServices(d.data.map((s: { name_en: string; name_es: string; price_cop: number; price_usd: number; duration: string }) => ({
+            name: s.name_en,
+            nameEs: s.name_es,
+            price: formatPrice(s.price_cop, s.price_usd),
+            duration: s.duration,
+          })));
+        }
+      })
+      .catch(() => {});
+  }, []);
   return (
     <section id="services" className="py-24 md:py-32 bg-cream">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -171,4 +156,4 @@ export default function ServicesSection({ lang, L, openBooking }: ServicesSectio
   );
 }
 
-export { services };
+export { FALLBACK_SERVICES as services };

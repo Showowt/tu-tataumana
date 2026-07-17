@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { t, type Lang } from "@/lib/translations";
 
 export interface RetreatsSectionProps {
@@ -7,8 +8,23 @@ export interface RetreatsSectionProps {
   L: (key: Record<Lang, string | readonly string[]>) => string | readonly string[];
 }
 
+interface RetreatDisplay {
+  title: string;
+  subtitle: string;
+  description: string;
+  price: string;
+  capacity: string;
+  includes: string;
+}
+
+function formatRetreatPrice(cop: number, usd: number, unit: string): string {
+  const copM = cop >= 1000000 ? `$${(cop / 1000000).toFixed(cop % 1000000 === 0 ? 0 : 2)}M COP` : `$${cop.toLocaleString("es-CO")} COP`;
+  const suffix = unit === "per hour" ? "/hr" : "";
+  return `$${usd.toLocaleString()} USD${suffix} · ${copM}${suffix}`;
+}
+
 export default function RetreatsSection({ lang, L }: RetreatsSectionProps) {
-  const retreats = [
+  const fallbackRetreats: RetreatDisplay[] = [
     {
       title: L(t.retreatTuisyouTitle) as string,
       subtitle: L(t.retreatTuisyouSub) as string,
@@ -26,6 +42,26 @@ export default function RetreatsSection({ lang, L }: RetreatsSectionProps) {
       includes: L(t.retreatLeadershipIncludes) as string,
     },
   ];
+
+  const [retreats, setRetreats] = useState<RetreatDisplay[]>(fallbackRetreats);
+
+  useEffect(() => {
+    fetch("/api/public/retreats")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.data?.length) {
+          setRetreats(d.data.map((r: { title_en: string; title_es: string; subtitle_en: string | null; subtitle_es: string | null; description_en: string | null; description_es: string | null; price_cop: number; price_usd: number; price_unit: string; capacity_en: string | null; capacity_es: string | null; includes_en: string | null; includes_es: string | null }) => ({
+            title: lang === "en" ? r.title_en : r.title_es,
+            subtitle: lang === "en" ? (r.subtitle_en || "") : (r.subtitle_es || ""),
+            description: lang === "en" ? (r.description_en || "") : (r.description_es || ""),
+            price: formatRetreatPrice(r.price_cop, r.price_usd, r.price_unit),
+            capacity: lang === "en" ? (r.capacity_en || "") : (r.capacity_es || ""),
+            includes: lang === "en" ? (r.includes_en || "") : (r.includes_es || ""),
+          })));
+        }
+      })
+      .catch(() => {});
+  }, [lang]);
 
   return (
     <section id="retreats" className="py-32 md:py-44">
