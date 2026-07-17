@@ -132,17 +132,24 @@ export async function POST(request: NextRequest) {
         if (booking.pack_id) {
           const { data: pack } = await supabase
             .from("tu_packs")
-            .select("classes_used, status")
+            .select("classes_used, status, pack_type")
             .eq("id", booking.pack_id)
             .single();
 
           if (pack) {
+            const newUsed = Math.max((pack.classes_used || 0) - 1, 0);
+            const packUpdate: Record<string, unknown> = {
+              classes_used: newUsed,
+              status: pack.status === "exhausted" ? "active" : pack.status,
+            };
+            // Clear locked_session_id for 2x1 packs when no credits remain used
+            if (pack.pack_type?.toUpperCase().includes("2X1") && newUsed === 0) {
+              packUpdate.locked_session_id = null;
+            }
+
             const { error: refundErr } = await supabase
               .from("tu_packs")
-              .update({
-                classes_used: Math.max((pack.classes_used || 0) - 1, 0),
-                status: pack.status === "exhausted" ? "active" : pack.status,
-              })
+              .update(packUpdate)
               .eq("id", booking.pack_id)
               .eq("classes_used", pack.classes_used);
 

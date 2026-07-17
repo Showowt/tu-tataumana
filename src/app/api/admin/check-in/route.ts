@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
       if (booking.pack_id) {
         const { data: pack } = await supabase
           .from("tu_packs")
-          .select("id, classes_used, total_classes, status")
+          .select("id, classes_used, total_classes, status, pack_type, locked_session_id")
           .eq("id", booking.pack_id)
           .single();
 
@@ -219,9 +219,15 @@ export async function POST(request: NextRequest) {
                 ? "active"
                 : "exhausted";
 
+          // Clear locked_session_id for 2x1 packs when no credits are used
+          const packUpdate: Record<string, unknown> = { classes_used: newUsed, status: newStatus };
+          if (pack.pack_type?.toUpperCase().includes("2X1") && newUsed === 0) {
+            packUpdate.locked_session_id = null;
+          }
+
           const { data: updatedPack } = await supabase
             .from("tu_packs")
-            .update({ classes_used: newUsed, status: newStatus })
+            .update(packUpdate)
             .eq("id", pack.id)
             .eq("classes_used", pack.classes_used || 0)
             .select("id")
@@ -370,6 +376,22 @@ export async function POST(request: NextRequest) {
         .update({ enrolled: (newSession.enrolled || 0) + 1 })
         .eq("id", newSessionId)
         .eq("enrolled", newSession.enrolled || 0);
+
+      // 3b. Update locked_session_id for 2x1 packs
+      if (booking.pack_id) {
+        const { data: reschPack } = await supabase
+          .from("tu_packs")
+          .select("pack_type, locked_session_id")
+          .eq("id", booking.pack_id)
+          .single();
+
+        if (reschPack?.pack_type?.toUpperCase().includes("2X1") && reschPack.locked_session_id === booking.session_id) {
+          await supabase
+            .from("tu_packs")
+            .update({ locked_session_id: newSessionId })
+            .eq("id", booking.pack_id);
+        }
+      }
 
       // 4. Telegram notification
       try {
