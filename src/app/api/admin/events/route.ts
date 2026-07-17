@@ -242,11 +242,61 @@ export async function POST(request: NextRequest) {
     }
 
     // -----------------------------------------------------------------
+    // DELETE
+    // -----------------------------------------------------------------
+    case "delete": {
+      const { event_id: deleteId } = body;
+
+      if (!deleteId) {
+        return NextResponse.json(
+          { error: "event_id is required" },
+          { status: 400 },
+        );
+      }
+
+      // Verify event exists and has no enrolled students
+      const { data: eventToDelete } = await supabase
+        .from("tu_events")
+        .select("id, enrolled, status")
+        .eq("id", deleteId)
+        .single();
+
+      if (!eventToDelete) {
+        return NextResponse.json(
+          { error: "Event not found" },
+          { status: 404 },
+        );
+      }
+
+      if ((eventToDelete.enrolled || 0) > 0 && eventToDelete.status !== "cancelled") {
+        return NextResponse.json(
+          { error: "No se puede eliminar un evento con inscritos. Cancela primero." },
+          { status: 400 },
+        );
+      }
+
+      const { error } = await supabase
+        .from("tu_events")
+        .delete()
+        .eq("id", deleteId);
+
+      if (error) {
+        console.error("[admin/events delete]", error.message);
+        return NextResponse.json(
+          { error: "Failed to delete event" },
+          { status: 500 },
+        );
+      }
+
+      return NextResponse.json({ message: "Event deleted" });
+    }
+
+    // -----------------------------------------------------------------
     // DEFAULT
     // -----------------------------------------------------------------
     default:
       return NextResponse.json(
-        { error: "Invalid action. Use: create, update, cancel, activate" },
+        { error: "Invalid action. Use: create, update, cancel, activate, delete" },
         { status: 400 },
       );
   }

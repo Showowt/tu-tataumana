@@ -5,7 +5,9 @@ import { z } from "zod";
 
 const CheckInSchema = z.object({
   booking_id: z.string().uuid(),
-  action: z.enum(["check_in", "no_show", "undo_check_in", "cancel_refund"]),
+  action: z.enum(["check_in", "no_show", "undo_check_in", "cancel_refund", "reschedule", "transfer"]),
+  new_session_id: z.string().uuid().optional(),
+  new_student_id: z.string().uuid().optional(),
 });
 
 /**
@@ -258,6 +260,252 @@ export async function POST(request: NextRequest) {
           : "Reserva cancelada (sin pack para reembolsar)",
         credit_refunded: creditRefunded,
       });
+    }
+
+    case "reschedule": {
+      const newSessionId = (body as { new_session_id?: string }).new_session_id;
+      if (!newSessionId) {
+        return NextResponse.json(
+          { error: "new_session_id es requerido para reagendar" },
+          { status: 400 },
+        );
+      }
+
+      // Only confirmed, non-checked-in bookings can be rescheduled
+      if (booking.status !== "confirmed") {
+        return NextResponse.json(
+          { error: "Solo se pueden reagendar reservas confirmadas" },
+          { status: 400 },
+        );
+      }
+      if (booking.checked_in) {
+        return NextResponse.json(
+          { error: "No se puede reagendar una reserva con check-in" },
+          { status: 400 },
+        );
+      }
+
+      // Can't reschedule to the same session
+      if (newSessionId === booking.session_id) {
+        return NextResponse.json(
+          { error: "La reserva ya esta en esta sesion" },
+          { status: 400 },
+        );
+      }
+
+      // Verify new session exists, is scheduled, and has capacity
+      const { data: newSession, error: newSessionErr } = await supabase
+        .from("tu_class_sessions")
+        .select("id, session_date, start_time, teacher, capacity, enrolled, status, definition_id")
+        .eq("id", newSessionId)
+        .single();
+
+      if (newSessionErr || !newSession) {
+        return NextResponse.json(
+          { error: "Sesion destino no encontrada" },
+          { status: 404 },
+        );
+      }
+
+      if (newSession.status !== "scheduled") {
+        return NextResponse.json(
+          { error: "La sesion destino no esta disponible (estado: " + newSession.status + ")" },
+          { status: 400 },
+        );
+      }
+
+      if ((newSession.enrolled || 0) >= newSession.capacity) {
+        return NextResponse.json(
+          { error: "La sesion destino esta llena (" + newSession.enrolled + "/" + newSession.capacity + ")" },
+          { status: 400 },
+        );
+      }
+
+      // Check for duplicate booking (same student, same new session)
+      const { data: existingBooking } = await supabase
+        .from("tu_class_bookings")
+        .select("id")
+        .eq("student_id", booking.student_id)
+        .eq("session_id", newSessionId)
+        .neq("status", "cancelled")
+        .maybeSingle();
+
+      if (existingBooking) {
+        return NextResponse.json(
+          { error: "El alumno ya tiene una reserva en esa sesion" },
+          { status: 409 },
+        );
+      }
+
+      // 1. Update booking's session_id
+      const { error: updateErr } = await supabase
+        .from("tu_class_bookings")
+        .update({ session_id: newSessionId })
+        .eq("id", booking_id)
+        .eq("status", "confirmed"); // atomic guard
+
+      if (updateErr) {
+        console.error("[admin/check-in reschedule] update booking:", updateErr.message);
+        return NextResponse.json({ error: "Error al reagendar" }, { status: 500 });
+      }
+
+      // 2. Decrement old session enrolled (with optimistic lock)
+      const { data: oldSession } = await supabase
+        .from("tu_class_sessions")
+        .select("enrolled")
+        .eq("id", booking.session_id)
+        .single();
+
+      if (oldSession && (oldSession.enrolled || 0) > 0) {
+        await supabase
+          .from("tu_class_sessions")
+          .update({ enrolled: (oldSession.enrolled || 1) - 1 })
+          .eq("id", booking.session_id)
+          .eq("enrolled", oldSession.enrolled || 0);
+      }
+
+      // 3. Increment new session enrolled (with optimistic lock)
+      await supabase
+        .from("tu_class_sessions")
+        .update({ enrolled: (newSession.enrolled || 0) + 1 })
+        .eq("id", newSessionId)
+        .eq("enrolled", newSession.enrolled || 0);
+
+      // 4. Telegram notification
+      try {
+        const { data: studentInfo } = await supabase
+          .from("tu_students")
+          .select("full_name")
+          .eq("id", booking.student_id)
+          .single();
+
+        const { data: oldSessionInfo } = await supabase
+          .from("tu_class_sessions")
+          .select("session_date, start_time, definition:definition_id(name)")
+          .eq("id", booking.session_id)
+          .single();
+
+        const oldDef = oldSessionInfo?.definition as unknown as { name: string } | { name: string }[] | null;
+        const oldClassName = (Array.isArray(oldDef) ? oldDef[0]?.name : oldDef?.name) || "Clase";
+
+        const { data: newDef } = await supabase
+          .from("tu_class_definitions")
+          .select("name")
+          .eq("id", newSession.definition_id)
+          .single();
+
+        const newClassName = newDef?.name || "Clase";
+
+        await sendTelegramMessage(
+          `🔄 <b>RESERVA REAGENDADA</b>\n\n` +
+          `<b>Alumno:</b> ${studentInfo?.full_name || "Desconocido"}\n` +
+          `<b>De:</b> ${oldClassName} — ${oldSessionInfo?.session_date || "?"} ${oldSessionInfo?.start_time?.slice(0, 5) || ""}\n` +
+          `<b>A:</b> ${newClassName} — ${newSession.session_date} ${newSession.start_time?.slice(0, 5) || ""}`,
+        );
+      } catch {}
+
+      return NextResponse.json({ message: "Reserva reagendada exitosamente" });
+    }
+
+    case "transfer": {
+      const newStudentId = (body as { new_student_id?: string }).new_student_id;
+      if (!newStudentId) {
+        return NextResponse.json(
+          { error: "new_student_id es requerido para transferir" },
+          { status: 400 },
+        );
+      }
+
+      // Only confirmed, non-checked-in bookings can be transferred
+      if (booking.status !== "confirmed") {
+        return NextResponse.json(
+          { error: "Solo se pueden transferir reservas confirmadas" },
+          { status: 400 },
+        );
+      }
+      if (booking.checked_in) {
+        return NextResponse.json(
+          { error: "No se puede transferir una reserva con check-in" },
+          { status: 400 },
+        );
+      }
+
+      // Can't transfer to the same student
+      if (newStudentId === booking.student_id) {
+        return NextResponse.json(
+          { error: "La reserva ya pertenece a este alumno" },
+          { status: 400 },
+        );
+      }
+
+      // Verify new student exists
+      const { data: newStudent, error: newStudentErr } = await supabase
+        .from("tu_students")
+        .select("id, full_name")
+        .eq("id", newStudentId)
+        .single();
+
+      if (newStudentErr || !newStudent) {
+        return NextResponse.json(
+          { error: "Alumno destino no encontrado" },
+          { status: 404 },
+        );
+      }
+
+      // Check for duplicate booking (new student already in same session)
+      const { data: duplicateBooking } = await supabase
+        .from("tu_class_bookings")
+        .select("id")
+        .eq("student_id", newStudentId)
+        .eq("session_id", booking.session_id)
+        .neq("status", "cancelled")
+        .maybeSingle();
+
+      if (duplicateBooking) {
+        return NextResponse.json(
+          { error: "El alumno destino ya tiene una reserva en esta sesion" },
+          { status: 409 },
+        );
+      }
+
+      // Update booking's student_id
+      const { error: updateErr } = await supabase
+        .from("tu_class_bookings")
+        .update({ student_id: newStudentId })
+        .eq("id", booking_id)
+        .eq("status", "confirmed"); // atomic guard
+
+      if (updateErr) {
+        console.error("[admin/check-in transfer] update booking:", updateErr.message);
+        return NextResponse.json({ error: "Error al transferir" }, { status: 500 });
+      }
+
+      // Telegram notification
+      try {
+        const { data: oldStudent } = await supabase
+          .from("tu_students")
+          .select("full_name")
+          .eq("id", booking.student_id)
+          .single();
+
+        const { data: sessionInfo } = await supabase
+          .from("tu_class_sessions")
+          .select("session_date, start_time, definition:definition_id(name)")
+          .eq("id", booking.session_id)
+          .single();
+
+        const def = sessionInfo?.definition as unknown as { name: string } | { name: string }[] | null;
+        const className = (Array.isArray(def) ? def[0]?.name : def?.name) || "Clase";
+
+        await sendTelegramMessage(
+          `🔀 <b>RESERVA TRANSFERIDA</b>\n\n` +
+          `<b>De:</b> ${oldStudent?.full_name || "Desconocido"}\n` +
+          `<b>A:</b> ${newStudent.full_name}\n` +
+          `<b>Clase:</b> ${className} — ${sessionInfo?.session_date || "?"} ${sessionInfo?.start_time?.slice(0, 5) || ""}`,
+        );
+      } catch {}
+
+      return NextResponse.json({ message: "Reserva transferida exitosamente" });
     }
   }
 }

@@ -48,6 +48,12 @@ export default function AdminPacksPage() {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [creating, setCreating] = useState(false);
 
+  // Transfer modal
+  const [transferPack, setTransferPack] = useState<PackData | null>(null);
+  const [packTransferSearch, setPackTransferSearch] = useState("");
+  const [packTransferResults, setPackTransferResults] = useState<StudentSearchResult[]>([]);
+  const [transferLoading, setTransferLoading] = useState(false);
+
   const loadPacks = useCallback(async () => {
     setLoading(true);
     try {
@@ -125,6 +131,60 @@ export default function AdminPacksPage() {
       showMessage("Error de conexión");
     }
     setCreating(false);
+  }
+
+  // Pack transfer student search
+  useEffect(() => {
+    if (!transferPack || packTransferSearch.trim().length < 2) {
+      setPackTransferResults([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/admin/students?search=${encodeURIComponent(packTransferSearch.trim())}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setPackTransferResults(
+            (data.data || [])
+              .filter((s: StudentSearchResult) => s.id !== transferPack.student_id)
+              .map((s: StudentSearchResult) => ({
+                id: s.id,
+                full_name: s.full_name,
+                email: s.email,
+              }))
+          );
+        }
+      } catch {}
+    }, 300);
+    return () => clearTimeout(t);
+  }, [packTransferSearch, transferPack]);
+
+  async function handlePackTransfer(newStudentId: string) {
+    if (!transferPack) return;
+    setTransferLoading(true);
+    try {
+      const res = await fetch("/api/admin/pack", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: transferPack.id,
+          transfer_to_student: newStudentId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage(data.error || "Error al transferir pack");
+      } else {
+        showMessage("Pack transferido");
+        setTransferPack(null);
+        await loadPacks();
+      }
+    } catch {
+      showMessage("Error de conexion");
+    }
+    setTransferLoading(false);
   }
 
   function showMessage(msg: string) {
@@ -353,7 +413,7 @@ export default function AdminPacksPage() {
                         : "expirado"}
                     </p>
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="text-right shrink-0 space-y-1">
                     <p
                       className="text-2xl text-[#B87777]"
                       style={{ fontFamily: "Cormorant Garamond, serif" }}
@@ -365,11 +425,87 @@ export default function AdminPacksPage() {
                         ? "ilimitado"
                         : `${p.classes_used}/${p.total_classes}`}
                     </p>
+                    {p.status === "active" && (
+                      <button
+                        onClick={() => {
+                          setTransferPack(p);
+                          setPackTransferSearch("");
+                          setPackTransferResults([]);
+                        }}
+                        className="text-[9px] text-purple-400 hover:text-purple-600 transition-colors"
+                      >
+                        transferir
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Transfer Modal */}
+      {transferPack && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setTransferPack(null)}
+          />
+          <div className="relative bg-white w-full max-w-md max-h-[60vh] flex flex-col sm:rounded-none shadow-xl">
+            <div className="p-4 border-b border-[#2C2C2C]/5">
+              <div className="flex items-center justify-between">
+                <h2
+                  className="text-lg text-[#2C2C2C]"
+                  style={{ fontFamily: "Cormorant Garamond, serif" }}
+                >
+                  Transferir Pack
+                </h2>
+                <button
+                  onClick={() => setTransferPack(null)}
+                  className="text-[#2C2C2C]/30 hover:text-[#2C2C2C] text-lg"
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="text-[10px] text-[#2C2C2C]/40 mt-1">
+                De: {transferPack.student?.full_name || "Alumno"} —{" "}
+                {transferPack.pack_type.replace(/_/g, " ")} (
+                {transferPack.total_classes === -1
+                  ? "ilimitado"
+                  : `${transferPack.classes_remaining} restantes`}
+                )
+              </p>
+            </div>
+            <div className="p-4 space-y-3">
+              <input
+                type="text"
+                placeholder="Buscar alumno destino..."
+                value={packTransferSearch}
+                onChange={(e) => setPackTransferSearch(e.target.value)}
+                className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/20 focus:outline-none focus:border-[#B87777]"
+                autoFocus
+              />
+              <div className="max-h-48 overflow-y-auto space-y-1">
+                {packTransferResults.length === 0 && packTransferSearch.length >= 2 && (
+                  <p className="text-[10px] text-[#2C2C2C]/30 text-center py-4">
+                    No se encontraron alumnos
+                  </p>
+                )}
+                {packTransferResults.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => handlePackTransfer(s.id)}
+                    disabled={transferLoading}
+                    className="w-full text-left p-3 border border-[#2C2C2C]/5 hover:border-[#B87777]/40 hover:bg-[#B87777]/3 transition-colors disabled:opacity-30"
+                  >
+                    <p className="text-sm text-[#2C2C2C]">{s.full_name}</p>
+                    <p className="text-[10px] text-[#2C2C2C]/30">{s.email}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

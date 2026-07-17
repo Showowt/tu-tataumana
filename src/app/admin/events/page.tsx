@@ -115,6 +115,10 @@ export default function AdminEventsPage() {
   // Action loading
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // Edit modal
+  const [editEvent, setEditEvent] = useState<EventData | null>(null);
+  const [editForm, setEditForm] = useState<CreateForm>({ ...EMPTY_FORM });
+
   // ------------------------------------------------------------------
   // Data loading
   // ------------------------------------------------------------------
@@ -310,6 +314,96 @@ export default function AdminEventsPage() {
       } else {
         const data = await res.json();
         showMessage(data.error || "Error reactivando evento", "error");
+      }
+    } catch {
+      showMessage("Error de conexion", "error");
+    }
+    setActionLoading(null);
+  }
+
+  // ------------------------------------------------------------------
+  // Edit event
+  // ------------------------------------------------------------------
+
+  function openEditModal(ev: EventData) {
+    setEditEvent(ev);
+    setEditForm({
+      title: ev.title,
+      title_es: ev.title_es,
+      event_date: ev.event_date,
+      start_time: ev.start_time?.slice(0, 5) || "",
+      end_time: ev.end_time?.slice(0, 5) || "",
+      price_cop: String(ev.price_cop || 0),
+      price_usd: String(ev.price_usd || 0),
+      capacity: ev.capacity ? String(ev.capacity) : "",
+      location: ev.location || "TU. Studio",
+      description: ev.description || "",
+      description_es: ev.description_es || "",
+    });
+  }
+
+  function updateEditForm(field: keyof CreateForm, value: string) {
+    setEditForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function handleEditSave() {
+    if (!editEvent) return;
+    setActionLoading(editEvent.id);
+    try {
+      const payload: Record<string, unknown> = {
+        action: "update",
+        event_id: editEvent.id,
+        title: editForm.title.trim(),
+        title_es: editForm.title_es.trim(),
+        event_date: editForm.event_date,
+        location: editForm.location.trim() || "TU. Studio",
+        description: editForm.description.trim() || null,
+        description_es: editForm.description_es.trim() || null,
+        start_time: editForm.start_time || null,
+        end_time: editForm.end_time || null,
+        price_cop: parseInt(editForm.price_cop, 10) || 0,
+        price_usd: parseInt(editForm.price_usd, 10) || 0,
+        capacity: editForm.capacity ? parseInt(editForm.capacity, 10) : null,
+      };
+
+      const res = await fetch("/api/admin/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage(data.error || "Error actualizando evento", "error");
+      } else {
+        showMessage("Evento actualizado");
+        setEditEvent(null);
+        await loadEvents();
+      }
+    } catch {
+      showMessage("Error de conexion", "error");
+    }
+    setActionLoading(null);
+  }
+
+  // ------------------------------------------------------------------
+  // Delete event
+  // ------------------------------------------------------------------
+
+  async function handleDelete(eventId: string) {
+    if (!confirm("¿Eliminar este evento permanentemente?")) return;
+    setActionLoading(eventId);
+    try {
+      const res = await fetch("/api/admin/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", event_id: eventId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage(data.error || "Error eliminando evento", "error");
+      } else {
+        showMessage("Evento eliminado");
+        await loadEvents();
       }
     } catch {
       showMessage("Error de conexion", "error");
@@ -653,30 +747,149 @@ export default function AdminEventsPage() {
                     </div>
 
                     {/* Actions */}
-                    {!isCancelled && !isCompleted && !isPast && (
-                      <button
-                        onClick={() => handleCancel(ev.id)}
-                        disabled={actionLoading === ev.id}
-                        className="text-[9px] text-red-300 hover:text-red-500 transition-colors disabled:opacity-30"
-                      >
-                        {actionLoading === ev.id ? "..." : "cancelar"}
-                      </button>
+                    {!isCancelled && !isCompleted && (
+                      <div className="flex flex-col gap-1.5 items-end">
+                        <button
+                          onClick={() => openEditModal(ev)}
+                          disabled={actionLoading === ev.id}
+                          className="text-[9px] text-blue-400 hover:text-blue-600 transition-colors disabled:opacity-30"
+                        >
+                          editar
+                        </button>
+                        {!isPast && (
+                          <button
+                            onClick={() => handleCancel(ev.id)}
+                            disabled={actionLoading === ev.id}
+                            className="text-[9px] text-red-300 hover:text-red-500 transition-colors disabled:opacity-30"
+                          >
+                            {actionLoading === ev.id ? "..." : "cancelar"}
+                          </button>
+                        )}
+                      </div>
                     )}
 
                     {isCancelled && (
-                      <button
-                        onClick={() => handleActivate(ev.id)}
-                        disabled={actionLoading === ev.id}
-                        className="text-[9px] tracking-[0.1em] uppercase px-3 py-1.5 bg-[#C9A96E] text-white hover:bg-[#B87777] transition-colors disabled:opacity-40"
-                      >
-                        {actionLoading === ev.id ? "..." : "reactivar"}
-                      </button>
+                      <div className="flex flex-col gap-1.5 items-end">
+                        <button
+                          onClick={() => handleActivate(ev.id)}
+                          disabled={actionLoading === ev.id}
+                          className="text-[9px] tracking-[0.1em] uppercase px-3 py-1.5 bg-[#C9A96E] text-white hover:bg-[#B87777] transition-colors disabled:opacity-40"
+                        >
+                          {actionLoading === ev.id ? "..." : "reactivar"}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(ev.id)}
+                          disabled={actionLoading === ev.id}
+                          className="text-[9px] text-red-300 hover:text-red-500 transition-colors disabled:opacity-30"
+                        >
+                          eliminar
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editEvent && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setEditEvent(null)}
+          />
+          <div className="relative bg-white w-full max-w-md max-h-[85vh] flex flex-col sm:rounded-none shadow-xl">
+            <div className="p-4 border-b border-[#2C2C2C]/5 flex items-center justify-between">
+              <h2
+                className="text-lg text-[#2C2C2C]"
+                style={{ fontFamily: "Cormorant Garamond, serif" }}
+              >
+                Editar Evento
+              </h2>
+              <button
+                onClick={() => setEditEvent(null)}
+                className="text-[#2C2C2C]/30 hover:text-[#2C2C2C] text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div>
+                <label className="block text-[10px] text-[#2C2C2C]/40 mb-1">Title (English)</label>
+                <input type="text" value={editForm.title} onChange={(e) => updateEditForm("title", e.target.value)}
+                  className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]" />
+              </div>
+              <div>
+                <label className="block text-[10px] text-[#2C2C2C]/40 mb-1">Titulo (Espanol)</label>
+                <input type="text" value={editForm.title_es} onChange={(e) => updateEditForm("title_es", e.target.value)}
+                  className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]" />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] text-[#2C2C2C]/40 mb-1">Fecha</label>
+                  <input type="date" value={editForm.event_date} onChange={(e) => updateEditForm("event_date", e.target.value)}
+                    className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-[#2C2C2C]/40 mb-1">Inicio</label>
+                  <input type="time" value={editForm.start_time} onChange={(e) => updateEditForm("start_time", e.target.value)}
+                    className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-[#2C2C2C]/40 mb-1">Fin</label>
+                  <input type="time" value={editForm.end_time} onChange={(e) => updateEditForm("end_time", e.target.value)}
+                    className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] text-[#2C2C2C]/40 mb-1">Precio COP</label>
+                  <input type="number" value={editForm.price_cop} onChange={(e) => updateEditForm("price_cop", e.target.value)}
+                    className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-[#2C2C2C]/40 mb-1">Precio USD</label>
+                  <input type="number" value={editForm.price_usd} onChange={(e) => updateEditForm("price_usd", e.target.value)}
+                    className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-[#2C2C2C]/40 mb-1">Capacidad</label>
+                  <input type="number" value={editForm.capacity} onChange={(e) => updateEditForm("capacity", e.target.value)}
+                    placeholder="Sin limite"
+                    className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/20 focus:outline-none focus:border-[#C9A96E]" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] text-[#2C2C2C]/40 mb-1">Ubicacion</label>
+                <input type="text" value={editForm.location} onChange={(e) => updateEditForm("location", e.target.value)}
+                  className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]" />
+              </div>
+              <div>
+                <label className="block text-[10px] text-[#2C2C2C]/40 mb-1">Description (English)</label>
+                <textarea value={editForm.description} onChange={(e) => updateEditForm("description", e.target.value)}
+                  rows={2} className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E] resize-none" />
+              </div>
+              <div>
+                <label className="block text-[10px] text-[#2C2C2C]/40 mb-1">Descripcion (Espanol)</label>
+                <textarea value={editForm.description_es} onChange={(e) => updateEditForm("description_es", e.target.value)}
+                  rows={2} className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E] resize-none" />
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-[#2C2C2C]/5">
+              <button
+                onClick={handleEditSave}
+                disabled={!editForm.title.trim() || !editForm.title_es.trim() || !editForm.event_date || actionLoading === editEvent.id}
+                className="w-full py-2 bg-[#C9A96E] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-30"
+              >
+                {actionLoading === editEvent.id ? "Guardando..." : "Guardar Cambios"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

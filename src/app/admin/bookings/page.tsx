@@ -53,6 +53,21 @@ interface BookingStats {
   cancelled: number;
 }
 
+interface AvailableSession {
+  id: string;
+  session_date: string;
+  start_time: string;
+  teacher: string;
+  capacity: number;
+  enrolled: number;
+  status: string;
+  definition: {
+    name: string;
+    name_es: string;
+    style: string;
+  } | null;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -109,6 +124,16 @@ export default function AdminBookingsPage() {
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Reschedule modal state
+  const [rescheduleBooking, setRescheduleBooking] = useState<BookingData | null>(null);
+  const [availableSessions, setAvailableSessions] = useState<AvailableSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+
+  // Transfer modal state
+  const [transferBooking, setTransferBooking] = useState<BookingData | null>(null);
+  const [transferSearch, setTransferSearch] = useState("");
+  const [transferResults, setTransferResults] = useState<{ id: string; full_name: string; email: string }[]>([]);
 
   function showMessage(msg: string) {
     setMessage(msg);
@@ -247,6 +272,131 @@ export default function AdminBookingsPage() {
         showMessage(data.error || "Error");
       } else {
         showMessage(data.message || "Reserva cancelada");
+        await loadBookings();
+      }
+    } catch {
+      showMessage("Error de conexion");
+    }
+    setActionLoading(null);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Reschedule: open modal + fetch available sessions
+  // ---------------------------------------------------------------------------
+
+  async function openRescheduleModal(booking: BookingData) {
+    setRescheduleBooking(booking);
+    setSessionsLoading(true);
+    try {
+      // Fetch next 21 days of scheduled sessions
+      const today = getToday();
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 21);
+      const to = futureDate.toLocaleDateString("en-CA");
+
+      const res = await fetch(
+        `/api/admin/sessions?from=${today}&to=${to}&status=scheduled`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        // Filter out full sessions and the current session
+        const sessions = (data.data || []).filter(
+          (s: AvailableSession) =>
+            s.id !== booking.session?.id &&
+            (s.enrolled || 0) < s.capacity
+        );
+        setAvailableSessions(sessions);
+      }
+    } catch {
+      showMessage("Error cargando sesiones");
+    }
+    setSessionsLoading(false);
+  }
+
+  async function handleReschedule(newSessionId: string) {
+    if (!rescheduleBooking) return;
+    setActionLoading(rescheduleBooking.id);
+    try {
+      const res = await fetch("/api/admin/check-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          booking_id: rescheduleBooking.id,
+          action: "reschedule",
+          new_session_id: newSessionId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage(data.error || "Error al reagendar");
+      } else {
+        showMessage("Reserva reagendada");
+        setRescheduleBooking(null);
+        await loadBookings();
+      }
+    } catch {
+      showMessage("Error de conexion");
+    }
+    setActionLoading(null);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Transfer: open modal + search students
+  // ---------------------------------------------------------------------------
+
+  function openTransferModal(booking: BookingData) {
+    setTransferBooking(booking);
+    setTransferSearch("");
+    setTransferResults([]);
+  }
+
+  useEffect(() => {
+    if (!transferBooking || transferSearch.trim().length < 2) {
+      setTransferResults([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/admin/students?search=${encodeURIComponent(transferSearch.trim())}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          // Filter out the current booking's student
+          setTransferResults(
+            (data.data || [])
+              .filter((s: { id: string }) => s.id !== transferBooking.student?.id)
+              .map((s: { id: string; full_name: string; email: string }) => ({
+                id: s.id,
+                full_name: s.full_name,
+                email: s.email,
+              }))
+          );
+        }
+      } catch {}
+    }, 300);
+    return () => clearTimeout(t);
+  }, [transferSearch, transferBooking]);
+
+  async function handleTransfer(newStudentId: string) {
+    if (!transferBooking) return;
+    setActionLoading(transferBooking.id);
+    try {
+      const res = await fetch("/api/admin/check-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          booking_id: transferBooking.id,
+          action: "transfer",
+          new_student_id: newStudentId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage(data.error || "Error al transferir");
+      } else {
+        showMessage("Reserva transferida");
+        setTransferBooking(null);
         await loadBookings();
       }
     } catch {
@@ -495,6 +645,20 @@ export default function AdminBookingsPage() {
                           {actionLoading === b.id ? "..." : "Check-in"}
                         </button>
                         <button
+                          onClick={() => openRescheduleModal(b)}
+                          disabled={actionLoading === b.id}
+                          className="text-[9px] text-blue-500 hover:text-blue-700 transition-colors disabled:opacity-30 text-center"
+                        >
+                          Cambiar sesion
+                        </button>
+                        <button
+                          onClick={() => openTransferModal(b)}
+                          disabled={actionLoading === b.id}
+                          className="text-[9px] text-purple-400 hover:text-purple-600 transition-colors disabled:opacity-30 text-center"
+                        >
+                          Transferir
+                        </button>
+                        <button
                           onClick={() => handleCancelRefund(b.id)}
                           disabled={actionLoading === b.id}
                           className="text-[9px] text-amber-500 hover:text-amber-700 transition-colors disabled:opacity-30 text-center"
@@ -528,6 +692,156 @@ export default function AdminBookingsPage() {
               </div>
             );
           })}
+        </div>
+      )}
+      {/* Transfer Modal */}
+      {transferBooking && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setTransferBooking(null)}
+          />
+          <div className="relative bg-white w-full max-w-md max-h-[60vh] flex flex-col sm:rounded-none shadow-xl">
+            <div className="p-4 border-b border-[#2C2C2C]/5">
+              <div className="flex items-center justify-between">
+                <h2
+                  className="text-lg text-[#2C2C2C]"
+                  style={{ fontFamily: "Cormorant Garamond, serif" }}
+                >
+                  Transferir Reserva
+                </h2>
+                <button
+                  onClick={() => setTransferBooking(null)}
+                  className="text-[#2C2C2C]/30 hover:text-[#2C2C2C] text-lg"
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="text-[10px] text-[#2C2C2C]/40 mt-1">
+                De: {transferBooking.student?.full_name || "Alumno"} —{" "}
+                {transferBooking.session?.definition?.name_es || "Clase"}
+              </p>
+            </div>
+            <div className="p-4 space-y-3">
+              <input
+                type="text"
+                placeholder="Buscar alumno destino..."
+                value={transferSearch}
+                onChange={(e) => setTransferSearch(e.target.value)}
+                className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/20 focus:outline-none focus:border-[#B87777]"
+                autoFocus
+              />
+              <div className="max-h-48 overflow-y-auto space-y-1">
+                {transferResults.length === 0 && transferSearch.length >= 2 && (
+                  <p className="text-[10px] text-[#2C2C2C]/30 text-center py-4">
+                    No se encontraron alumnos
+                  </p>
+                )}
+                {transferResults.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => handleTransfer(s.id)}
+                    disabled={actionLoading === transferBooking.id}
+                    className="w-full text-left p-3 border border-[#2C2C2C]/5 hover:border-[#B87777]/40 hover:bg-[#B87777]/3 transition-colors disabled:opacity-30"
+                  >
+                    <p className="text-sm text-[#2C2C2C]">{s.full_name}</p>
+                    <p className="text-[10px] text-[#2C2C2C]/30">{s.email}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reschedule Modal */}
+      {rescheduleBooking && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setRescheduleBooking(null)}
+          />
+          {/* Modal */}
+          <div className="relative bg-white w-full max-w-md max-h-[80vh] flex flex-col sm:rounded-none shadow-xl">
+            {/* Header */}
+            <div className="p-4 border-b border-[#2C2C2C]/5">
+              <div className="flex items-center justify-between">
+                <h2
+                  className="text-lg text-[#2C2C2C]"
+                  style={{ fontFamily: "Cormorant Garamond, serif" }}
+                >
+                  Reagendar Reserva
+                </h2>
+                <button
+                  onClick={() => setRescheduleBooking(null)}
+                  className="text-[#2C2C2C]/30 hover:text-[#2C2C2C] text-lg"
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="text-[10px] text-[#2C2C2C]/40 mt-1">
+                {rescheduleBooking.student?.full_name || "Alumno"} —{" "}
+                {rescheduleBooking.session?.definition?.name_es ||
+                  rescheduleBooking.session?.definition?.name ||
+                  "Clase"}{" "}
+                ({rescheduleBooking.session?.session_date
+                  ? formatSessionDate(rescheduleBooking.session.session_date)
+                  : ""}{" "}
+                {rescheduleBooking.session?.start_time
+                  ? formatTime(rescheduleBooking.session.start_time)
+                  : ""})
+              </p>
+            </div>
+
+            {/* Session list */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {sessionsLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="w-5 h-5 border-2 border-[#B87777] border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : availableSessions.length === 0 ? (
+                <p className="text-sm text-[#2C2C2C]/40 text-center py-8">
+                  No hay sesiones disponibles en las proximas 3 semanas
+                </p>
+              ) : (
+                availableSessions.map((s) => {
+                  const def = s.definition;
+                  const spotsLeft = s.capacity - (s.enrolled || 0);
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => handleReschedule(s.id)}
+                      disabled={actionLoading === rescheduleBooking.id}
+                      className="w-full text-left p-3 border border-[#2C2C2C]/5 hover:border-[#B87777]/40 hover:bg-[#B87777]/3 transition-colors disabled:opacity-30"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-[#2C2C2C]">
+                            {def?.name_es || def?.name || "Clase"}
+                            {def?.style && (
+                              <span className="text-[9px] text-[#C9A96E] ml-1.5">
+                                {def.style}
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-[10px] text-[#2C2C2C]/40 mt-0.5">
+                            {formatSessionDate(s.session_date)}{" "}
+                            {formatTime(s.start_time)} — {s.teacher}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0 ml-3">
+                          <p className={`text-[10px] ${spotsLeft <= 2 ? "text-amber-500" : "text-[#2C2C2C]/30"}`}>
+                            {spotsLeft} {spotsLeft === 1 ? "cupo" : "cupos"}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

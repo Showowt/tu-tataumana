@@ -166,6 +166,7 @@ export async function PATCH(request: NextRequest) {
     set_classes_used: z.number().int().min(0).optional(),
     extend_days: z.number().int().positive().optional(),
     notes: z.string().nullable().optional(),
+    transfer_to_student: z.string().uuid().optional(),
   });
 
   const body = await request.json();
@@ -178,10 +179,41 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  const { id, add_credits, remove_credits, set_classes_used, extend_days, status, notes } = parsed.data;
+  const { id, add_credits, remove_credits, set_classes_used, extend_days, status, notes, transfer_to_student } = parsed.data;
   const updates: Record<string, unknown> = {};
   if (status !== undefined) updates.status = status;
   if (notes !== undefined) updates.notes = notes;
+
+  // Handle pack transfer to different student
+  if (transfer_to_student) {
+    // Verify the pack exists and get current student
+    const { data: packData } = await supabase
+      .from("tu_packs")
+      .select("student_id, status")
+      .eq("id", id)
+      .single();
+
+    if (!packData) {
+      return NextResponse.json({ error: "Pack no encontrado" }, { status: 404 });
+    }
+
+    if (packData.student_id === transfer_to_student) {
+      return NextResponse.json({ error: "El pack ya pertenece a este alumno" }, { status: 400 });
+    }
+
+    // Verify new student exists
+    const { data: newStudent } = await supabase
+      .from("tu_students")
+      .select("id, full_name")
+      .eq("id", transfer_to_student)
+      .single();
+
+    if (!newStudent) {
+      return NextResponse.json({ error: "Alumno destino no encontrado" }, { status: 404 });
+    }
+
+    updates.student_id = transfer_to_student;
+  }
 
   // Handle direct credit setting (set classes_used to exact value)
   if (typeof set_classes_used === "number" && set_classes_used >= 0) {
