@@ -157,7 +157,41 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 1. Cancel the booking with ATOMIC status guard (prevents double-refund race)
+      // Check if this is a 2x1 pack — if so, cancel ALL bookings from this pack on this session
+      let is2x1 = false;
+      let siblingBookingIds: string[] = [];
+
+      if (booking.pack_id) {
+        const { data: packCheck } = await supabase
+          .from("tu_packs")
+          .select("pack_type")
+          .eq("id", booking.pack_id)
+          .single();
+
+        is2x1 = !!packCheck?.pack_type?.toUpperCase().includes("2X1");
+
+        if (is2x1) {
+          // Find ALL other non-cancelled bookings from this same pack on the same session
+          const { data: siblings } = await supabase
+            .from("tu_class_bookings")
+            .select("id, checked_in")
+            .eq("pack_id", booking.pack_id)
+            .eq("session_id", booking.session_id)
+            .neq("status", "cancelled")
+            .neq("id", booking_id);
+
+          siblingBookingIds = (siblings || []).map((s: { id: string }) => s.id);
+
+          // Remove attendance for checked-in siblings
+          for (const sib of (siblings || []) as { id: string; checked_in: boolean }[]) {
+            if (sib.checked_in) {
+              await supabase.from("tu_attendance").delete().eq("booking_id", sib.id);
+            }
+          }
+        }
+      }
+
+      // 1. Cancel the main booking with ATOMIC status guard
       const { data: cancelData, error: cancelErr } = await supabase
         .from("tu_class_bookings")
         .update({
@@ -165,7 +199,9 @@ export async function POST(request: NextRequest) {
           checked_in: false,
           checked_in_at: null,
           cancelled_at: new Date().toISOString(),
-          cancel_reason: "Cancelada por admin (credito devuelto)",
+          cancel_reason: is2x1
+            ? "Cancelada por admin (pack 2x1 — ambos creditos devueltos)"
+            : "Cancelada por admin (credito devuelto)",
         })
         .eq("id", booking_id)
         .neq("status", "cancelled")
@@ -176,6 +212,23 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "La reserva ya fue cancelada (posible doble-click)" }, { status: 409 });
       }
 
+      // 1b. For 2x1: also cancel all sibling bookings from the same pack+session
+      if (siblingBookingIds.length > 0) {
+        await supabase
+          .from("tu_class_bookings")
+          .update({
+            status: "cancelled",
+            checked_in: false,
+            checked_in_at: null,
+            cancelled_at: new Date().toISOString(),
+            cancel_reason: "Cancelada automaticamente (pack 2x1 — ambos creditos devueltos)",
+          })
+          .in("id", siblingBookingIds)
+          .neq("status", "cancelled");
+      }
+
+      const totalCancelled = 1 + siblingBookingIds.length;
+
       // 2. Remove attendance record if checked in
       if (booking.checked_in) {
         await supabase
@@ -184,7 +237,7 @@ export async function POST(request: NextRequest) {
           .eq("booking_id", booking_id);
       }
 
-      // 3. Decrement session enrolled count with optimistic lock
+      // 3. Decrement session enrolled count (by total cancelled bookings)
       const { data: session } = await supabase
         .from("tu_class_sessions")
         .select("enrolled")
@@ -192,14 +245,15 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (session && (session.enrolled || 0) > 0) {
+        const newEnrolled = Math.max((session.enrolled || 0) - totalCancelled, 0);
         await supabase
           .from("tu_class_sessions")
-          .update({ enrolled: (session.enrolled || 1) - 1 })
+          .update({ enrolled: newEnrolled })
           .eq("id", booking.session_id)
           .eq("enrolled", session.enrolled || 0);
       }
 
-      // 4. Refund pack credit with optimistic lock (prevents double-refund)
+      // 4. Refund pack credits
       let creditRefunded = false;
       if (booking.pack_id) {
         const { data: pack } = await supabase
@@ -211,7 +265,9 @@ export async function POST(request: NextRequest) {
         if (!pack) {
           console.error("[admin/check-in] cancel_refund: pack not found:", booking.pack_id);
         } else if ((pack.classes_used || 0) > 0) {
-          const newUsed = (pack.classes_used || 1) - 1;
+          // 2x1: refund ALL credits used on this session. Non-2x1: refund 1.
+          const creditsToRefund = is2x1 ? totalCancelled : 1;
+          const newUsed = Math.max((pack.classes_used || 0) - creditsToRefund, 0);
           const newStatus =
             pack.total_classes === -1
               ? "active"
@@ -219,9 +275,9 @@ export async function POST(request: NextRequest) {
                 ? "active"
                 : "exhausted";
 
-          // Clear locked_session_id for 2x1 packs when no credits are used
           const packUpdate: Record<string, unknown> = { classes_used: newUsed, status: newStatus };
-          if (pack.pack_type?.toUpperCase().includes("2X1") && newUsed === 0) {
+          // Clear locked_session_id for 2x1 packs when all credits are refunded
+          if (is2x1 && newUsed === 0) {
             packUpdate.locked_session_id = null;
           }
 
@@ -237,7 +293,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 5. Get student info for Telegram notification
+      // 5. Telegram notification
       try {
         const { data: studentInfo } = await supabase
           .from("tu_students")
@@ -255,16 +311,21 @@ export async function POST(request: NextRequest) {
         const className = (Array.isArray(def) ? def[0]?.name : def?.name) || "Clase";
         const sessionDate = sessionInfo?.session_date || "";
 
-        await sendTelegramMessage(
-          `🔄 <b>RESERVA CANCELADA + CREDITO DEVUELTO</b>\n\n<b>Alumno:</b> ${studentInfo?.full_name || "Desconocido"}\n<b>Clase:</b> ${className}\n<b>Fecha:</b> ${sessionDate}\n<b>Credito:</b> ${creditRefunded ? "Devuelto ✅" : "Sin pack asociado"}`,
-        );
+        const cancelMsg = is2x1
+          ? `🔄 <b>PACK 2X1 CANCELADO — ${totalCancelled} CREDITOS DEVUELTOS</b>\n\n<b>Alumno:</b> ${studentInfo?.full_name || "Desconocido"}\n<b>Clase:</b> ${className}\n<b>Fecha:</b> ${sessionDate}\n<b>Reservas canceladas:</b> ${totalCancelled}\n<b>Creditos:</b> ${creditRefunded ? "Todos devueltos ✅" : "Error en devolucion"}`
+          : `🔄 <b>RESERVA CANCELADA + CREDITO DEVUELTO</b>\n\n<b>Alumno:</b> ${studentInfo?.full_name || "Desconocido"}\n<b>Clase:</b> ${className}\n<b>Fecha:</b> ${sessionDate}\n<b>Credito:</b> ${creditRefunded ? "Devuelto ✅" : "Sin pack asociado"}`;
+
+        await sendTelegramMessage(cancelMsg);
       } catch {}
 
       return NextResponse.json({
-        message: creditRefunded
-          ? "Reserva cancelada y credito devuelto"
-          : "Reserva cancelada (sin pack para reembolsar)",
+        message: is2x1
+          ? `Pack 2x1 cancelado: ${totalCancelled} reservas canceladas, creditos devueltos`
+          : creditRefunded
+            ? "Reserva cancelada y credito devuelto"
+            : "Reserva cancelada (sin pack para reembolsar)",
         credit_refunded: creditRefunded,
+        bookings_cancelled: totalCancelled,
       });
     }
 
