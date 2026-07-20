@@ -173,6 +173,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Datos invalidos", details: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
 
+    // Check for existing active definition at same day/time slot
+    const { data: existing } = await admin.supabase
+      .from("tu_class_definitions")
+      .select("id, name, teacher")
+      .eq("day_of_week", parsed.data.day_of_week)
+      .eq("start_time", parsed.data.start_time)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (existing) {
+      const dayName = DAY_NAMES[parsed.data.day_of_week];
+      return NextResponse.json({
+        error: `Ya existe una clase activa en ${dayName} a las ${parsed.data.start_time}: "${existing.name}" con ${existing.teacher}. Edita esa clase o desactívala primero.`,
+      }, { status: 409 });
+    }
+
     const { data: created, error: insertErr } = await admin.supabase
       .from("tu_class_definitions")
       .insert({
@@ -187,7 +203,12 @@ export async function POST(request: NextRequest) {
 
     if (insertErr || !created) {
       console.error("[admin/class-definitions POST]", insertErr?.message);
-      return NextResponse.json({ error: "Error al crear clase" }, { status: 500 });
+      const isDuplicate = insertErr?.message?.includes("uq_active_definition_per_slot");
+      return NextResponse.json({
+        error: isDuplicate
+          ? "Ya existe una clase activa en ese horario. Desactiva la existente primero."
+          : "Error al crear clase",
+      }, { status: isDuplicate ? 409 : 500 });
     }
 
     // Auto-generate sessions for the next 4 weeks
@@ -249,6 +270,29 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Clase no encontrada" }, { status: 404 });
     }
 
+    // If reactivating or changing time slot, check for conflicts
+    const willBeActive = updates.is_active === true || (updates.is_active === undefined && existing.is_active);
+    const newDay = updates.day_of_week ?? existing.day_of_week;
+    const newTime = updates.start_time ?? existing.start_time;
+
+    if (willBeActive && (updates.is_active === true || updates.day_of_week !== undefined || updates.start_time !== undefined)) {
+      const { data: conflict } = await admin.supabase
+        .from("tu_class_definitions")
+        .select("id, name, teacher")
+        .eq("day_of_week", newDay)
+        .eq("start_time", newTime)
+        .eq("is_active", true)
+        .neq("id", id)
+        .maybeSingle();
+
+      if (conflict) {
+        const dayName = DAY_NAMES[newDay];
+        return NextResponse.json({
+          error: `Ya existe una clase activa en ${dayName} a las ${newTime}: "${conflict.name}" con ${conflict.teacher}. Desactiva esa clase primero.`,
+        }, { status: 409 });
+      }
+    }
+
     // Build safe update object
     const safeUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     for (const [key, value] of Object.entries(updates)) {
@@ -262,7 +306,12 @@ export async function PATCH(request: NextRequest) {
 
     if (updateErr) {
       console.error("[admin/class-definitions PATCH]", updateErr.message);
-      return NextResponse.json({ error: "Error al actualizar" }, { status: 500 });
+      const isDuplicate = updateErr.message?.includes("uq_active_definition_per_slot");
+      return NextResponse.json({
+        error: isDuplicate
+          ? "Ya existe una clase activa en ese horario."
+          : "Error al actualizar",
+      }, { status: isDuplicate ? 409 : 500 });
     }
 
     // Propagate teacher change to future sessions
