@@ -16,7 +16,7 @@ const GOOGLE_MAPS_URL = "https://maps.google.com/?cid=14299144872994951781";
 const DIRECTIONS_URL =
   "https://www.google.com/maps/dir/?api=1&destination=JustB+Yoga+by+TUISYOU,+Cartagena+de+Indias";
 const MAP_EMBED_URL =
-  "https://maps.google.com/maps?q=JustB%20Yoga%20by%20TUISYOU%2C%20Calle%20del%20Arzobispado%2C%20Cartagena%20de%20Indias&t=&z=17&ie=UTF8&iwloc=&output=embed";
+  "https://www.google.com/maps/embed?origin=mfe&pb=!1m3!2m1!1sJustB+Yoga+by+TUISYOU,+Calle+del+Arzobispado,+Cartagena+de+Indias!6i17";
 
 const reviews = [
   {

@@ -104,7 +104,7 @@ export default function FooterSection({ lang, L, openBooking, showStickyBar }: F
                   JUSTBYOGA BY TUISYOU
                 </p>
                 <iframe
-                  src="https://maps.google.com/maps?q=JustB%20Yoga%20by%20TUISYOU%2C%20Calle%20del%20Arzobispado%2C%20Cartagena%20de%20Indias&t=&z=17&ie=UTF8&iwloc=&output=embed"
+                  src="https://www.google.com/maps/embed?origin=mfe&pb=!1m3!2m1!1sJustB+Yoga+by+TUISYOU,+Calle+del+Arzobispado,+Cartagena+de+Indias!6i17"
                   width="100%"
                   height="160"
                   style={{ border: 0, borderRadius: "8px", opacity: 0.9 }}
