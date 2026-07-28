@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   // Fetch all students
   const { data: students, error: studErr } = await supabase
     .from("tu_students")
-    .select("id, full_name, email, phone, created_at")
+    .select("id, full_name, email, phone, birthday, created_at")
     .order("full_name", { ascending: true });
 
   if (studErr || !students) {
@@ -57,6 +57,7 @@ export async function GET(request: NextRequest) {
     "Nombre",
     "Email",
     "Telefono",
+    "Cumpleanos",
     "Fecha Registro",
     "Creditos Activos",
     "Total Clases Tomadas",
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
 
   const rows: string[][] = [];
 
-  for (const s of students as Array<{ id: string; full_name: string; email: string | null; phone: string | null; created_at: string }>) {
+  for (const s of students as Array<{ id: string; full_name: string; email: string | null; phone: string | null; birthday: string | null; created_at: string }>) {
     const studentPacks = packsByStudent.get(s.id) || [];
     const studentBookings = bookingsByStudent.get(s.id) || [];
 
@@ -96,6 +97,7 @@ export async function GET(request: NextRequest) {
       escapeCsv(s.full_name || ""),
       escapeCsv(s.email || ""),
       escapeCsv(s.phone || ""),
+      escapeCsv(s.birthday || ""),
       new Date(s.created_at).toLocaleDateString("es-CO"),
       activeCredits === -1 ? "Ilimitado" : String(activeCredits),
       String(totalClasses),

@@ -30,6 +30,10 @@ export async function GET() {
       );
     }
 
+    // Never expose login-capable invite tokens in API responses
+    delete student.invite_token;
+    delete student.invite_expires_at;
+
     return NextResponse.json({ data: student });
   } catch (error) {
     console.error("[student/profile GET]", error);
