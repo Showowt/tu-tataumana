@@ -34,6 +34,17 @@ async function checkAdminAccess(email: string): Promise<boolean> {
 }
 
 export async function middleware(request: NextRequest) {
+  // Server-to-server admin API calls (Telegram bot, health checks) carry
+  // x-admin-key instead of a session cookie. Let them through — the route
+  // handler re-validates the key in verifyAdmin.
+  if (request.nextUrl.pathname.startsWith("/api/admin")) {
+    const adminKey = request.headers.get("x-admin-key");
+    const expectedKey = process.env.TU_ADMIN_KEY?.trim();
+    if (adminKey && expectedKey && adminKey === expectedKey) {
+      return NextResponse.next({ request });
+    }
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(

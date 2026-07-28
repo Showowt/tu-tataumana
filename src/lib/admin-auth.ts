@@ -27,7 +27,9 @@ export async function verifyAdmin(
     // Check x-admin-key header for internal server-to-server calls (e.g. Telegram bot)
     if (request) {
       const adminKey = request.headers.get("x-admin-key");
-      const expectedKey = process.env.TU_ADMIN_KEY;
+      // trim(): env values set via `echo | vercel env add` carry a trailing
+      // newline that can never match an HTTP header value
+      const expectedKey = process.env.TU_ADMIN_KEY?.trim();
       if (adminKey && expectedKey && adminKey === expectedKey) {
         const serviceClient = getServiceClient();
         return {
