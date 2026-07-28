@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { z } from "zod";
 import { ADMIN_EMAILS } from "@/lib/constants/business-rules";
+import { createInviteLink } from "@/lib/invite";
 
 /**
  * GET /api/admin/students
@@ -45,10 +46,18 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ data: data || [], total: (data || []).length });
 }
 
+const BirthdaySchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha invalida (YYYY-MM-DD)")
+  .refine((d) => !Number.isNaN(Date.parse(d)) && d >= "1900-01-01", {
+    message: "Fecha invalida",
+  });
+
 const CreateStudentSchema = z.object({
   email: z.string().email(),
   full_name: z.string().min(2).max(100),
   phone: z.string().optional().nullable(),
+  birthday: BirthdaySchema.optional().nullable(),
   preferred_lang: z.enum(["en", "es"]).optional(),
   notes: z.string().optional().nullable(),
   create_account: z.boolean().optional().default(true),
@@ -87,6 +96,7 @@ export async function POST(request: NextRequest) {
       email,
       full_name: parsed.data.full_name,
       phone: parsed.data.phone || null,
+      birthday: parsed.data.birthday || null,
       preferred_lang: parsed.data.preferred_lang || "es",
       notes: parsed.data.notes || null,
       role: isAdmin ? "admin" : "student",
@@ -137,18 +147,11 @@ export async function POST(request: NextRequest) {
 
         accountCreated = true;
 
-        // Generate a magic link URL for Tata to send via WhatsApp
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
-        const { data: linkData } = await adminClient.auth.admin.generateLink({
-          type: "magiclink",
-          email,
-          options: {
-            redirectTo: `${baseUrl}/auth/callback?redirect=/portal`,
-          },
-        });
-
-        if (linkData?.properties?.action_link) {
-          loginLink = linkData.properties.action_link;
+        // Durable invite link for Tata to send via WhatsApp (7 days, reusable)
+        try {
+          loginLink = await createInviteLink(supabase, data.id);
+        } catch (linkErr) {
+          console.error("[admin/students] Invite link failed:", linkErr);
         }
       } else if (authError) {
         console.error("[admin/students] Auth creation failed:", authError.message);
@@ -177,6 +180,7 @@ const PatchStudentSchema = z.object({
   full_name: z.string().min(2).max(100).optional(),
   email: z.string().email().optional(),
   phone: z.string().nullable().optional(),
+  birthday: BirthdaySchema.nullable().optional(),
   notes: z.string().nullable().optional(),
   emergency_contact: z.string().nullable().optional(),
   preferred_lang: z.enum(["en", "es"]).optional(),

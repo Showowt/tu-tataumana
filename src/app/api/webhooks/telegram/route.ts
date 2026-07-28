@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createInviteLink } from "@/lib/invite";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1770,27 +1771,19 @@ async function handleGenerateStudentLink(
     }
   }
 
-  // Generate magic link
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
-  const { data: linkData, error: linkErr } = await adminClient.auth.admin.generateLink({
-    type: "magiclink",
-    email: student.email,
-    options: {
-      redirectTo: `${baseUrl}/auth/callback?redirect=/portal`,
-    },
-  });
-
-  if (linkErr || !linkData?.properties?.action_link) {
-    return `Error generando enlace: ${linkErr?.message || "intenta de nuevo"}`;
+  // Durable invite link (7 days, reusable, safe for WhatsApp previews)
+  let link: string;
+  try {
+    link = await createInviteLink(adminClient, student.id);
+  } catch (linkErr) {
+    return `Error generando enlace: ${linkErr instanceof Error ? linkErr.message : "intenta de nuevo"}`;
   }
-
-  const link = linkData.properties.action_link;
 
   return (
     `<b>Enlace generado para ${student.full_name}</b>\n\n` +
     `<code>${link}</code>\n\n` +
     `Copialo y envialo por WhatsApp.\n` +
-    `Es de un solo uso — expira en 24 horas.`
+    `Valido por 7 dias — puede usarse mas de una vez.`
   );
 }
 

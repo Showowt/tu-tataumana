@@ -20,7 +20,7 @@ import TeachersSection from "@/components/sections/TeachersSection";
 import PaymentMethodsSection from "@/components/sections/PaymentMethodsSection";
 import BookingHighlightSection from "@/components/sections/BookingHighlightSection";
 import RetreatsSection from "@/components/sections/RetreatsSection";
-import TestimonialsSection from "@/components/sections/TestimonialsSection";
+import GoogleReviewsLocationSection from "@/components/sections/GoogleReviewsLocationSection";
 import InstagramSection from "@/components/sections/InstagramSection";
 import FooterSection from "@/components/sections/FooterSection";
 
@@ -72,7 +72,6 @@ export default function Home() {
   const [heroLoaded, setHeroLoaded] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [preselectedService, setPreselectedService] = useState("");
   const [preselectedDate, setPreselectedDate] = useState("");
@@ -117,14 +116,6 @@ export default function Home() {
     };
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
-  }, []);
-
-  // Auto-rotate testimonials
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveTestimonial((prev) => (prev + 1) % 3);
-    }, 6000);
-    return () => clearInterval(interval);
   }, []);
 
   // Hero parallax on scroll
@@ -230,12 +221,7 @@ export default function Home() {
 
       <RetreatsSection lang={lang} L={L} />
 
-      <TestimonialsSection
-        lang={lang}
-        L={L}
-        activeTestimonial={activeTestimonial}
-        setActiveTestimonial={setActiveTestimonial}
-      />
+      <GoogleReviewsLocationSection lang={lang} />
 
       {/* ━━━ FINAL CTA ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="py-12 md:py-16 bg-white">

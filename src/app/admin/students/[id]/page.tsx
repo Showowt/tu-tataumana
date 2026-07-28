@@ -15,6 +15,7 @@ interface StudentDetail {
   email: string;
   full_name: string;
   phone: string | null;
+  birthday: string | null;
   preferred_lang: "en" | "es";
   role: string;
   notes: string | null;
@@ -112,6 +113,7 @@ export default function AdminStudentDetailPage() {
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editBirthday, setEditBirthday] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -271,6 +273,7 @@ export default function AdminStudentDetailPage() {
     setEditName(student.full_name);
     setEditEmail(student.email);
     setEditPhone(student.phone || "");
+    setEditBirthday(student.birthday || "");
     setEditNotes(student.notes || "");
     setEditing(true);
   }
@@ -288,6 +291,7 @@ export default function AdminStudentDetailPage() {
           full_name: editName.trim(),
           email: editEmail.trim().toLowerCase(),
           phone: editPhone.trim() || null,
+          birthday: editBirthday || null,
           notes: editNotes.trim() || null,
         }),
       });
@@ -317,7 +321,7 @@ export default function AdminStudentDetailPage() {
   function sendViaWhatsApp(link: string) {
     const name = student?.full_name || "";
     const msg = encodeURIComponent(
-      `Hola ${name}! Tu cuenta en TU. by Tata Umana esta lista. Haz clic en este enlace para acceder a tu portal:\n\n${link}\n\nEste enlace es de un solo uso.`
+      `Hola ${name}! Tu cuenta en TU. by Tata Umana esta lista. Haz clic en este enlace para acceder a tu portal:\n\n${link}\n\nEl enlace es valido por 7 dias.`
     );
     const phone = student?.phone?.replace(/[\s\-\+]/g, "") || "";
     const waUrl = phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`;
@@ -669,6 +673,18 @@ export default function AdminStudentDetailPage() {
                 placeholder="WhatsApp (opcional)"
                 className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
               />
+              <div>
+                <label className="block text-[9px] tracking-[0.15em] text-[#2C2C2C]/40 uppercase mb-1">
+                  Cumpleaños (opcional)
+                </label>
+                <input
+                  type="date"
+                  value={editBirthday}
+                  onChange={(e) => setEditBirthday(e.target.value)}
+                  max={new Date().toISOString().slice(0, 10)}
+                  className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
+                />
+              </div>
               <textarea
                 value={editNotes}
                 onChange={(e) => setEditNotes(e.target.value)}
@@ -698,6 +714,17 @@ export default function AdminStudentDetailPage() {
               <InfoRow label="Nombre" value={student.full_name} />
               <InfoRow label="Email" value={student.email} />
               <InfoRow label="Telefono" value={student.phone || "---"} />
+              <InfoRow
+                label="Cumpleaños"
+                value={
+                  student.birthday
+                    ? new Date(student.birthday + "T12:00:00").toLocaleDateString("es-CO", {
+                        day: "numeric",
+                        month: "long",
+                      })
+                    : "---"
+                }
+              />
               <InfoRow label="Rol" value={student.role} />
               <InfoRow label="Idioma" value={student.preferred_lang === "es" ? "Espanol" : "English"} />
               <InfoRow label="Registrado" value={formatDate(student.created_at)} />

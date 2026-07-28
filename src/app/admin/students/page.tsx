@@ -25,6 +25,7 @@ export default function AdminStudentsPage() {
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
+  const [newBirthday, setNewBirthday] = useState("");
   const [creating, setCreating] = useState(false);
   const [loginLink, setLoginLink] = useState("");
   const [createdName, setCreatedName] = useState("");
@@ -139,6 +140,7 @@ export default function AdminStudentsPage() {
           email: newEmail.trim().toLowerCase(),
           full_name: newName.trim(),
           phone: newPhone.trim() || null,
+          birthday: newBirthday || null,
           create_account: true,
         }),
       });
@@ -157,6 +159,7 @@ export default function AdminStudentsPage() {
         setNewEmail("");
         setNewName("");
         setNewPhone("");
+        setNewBirthday("");
         await loadStudents();
       }
     } catch {
@@ -176,7 +179,7 @@ export default function AdminStudentsPage() {
 
   function sendViaWhatsApp(link: string, studentName: string) {
     const msg = encodeURIComponent(
-      `Hola ${studentName}! Tu cuenta en TU. by Tata Umana esta lista. Haz clic en este enlace para acceder a tu portal:\n\n${link}\n\nEste enlace es de un solo uso. Una vez dentro, podras ver tus clases, packs y reservas.`
+      `Hola ${studentName}! Tu cuenta en TU. by Tata Umana esta lista. Haz clic en este enlace para acceder a tu portal:\n\n${link}\n\nEl enlace es valido por 7 dias. Una vez dentro, podras ver tus clases, packs y reservas.`
     );
     window.open(`https://wa.me/?text=${msg}`, "_blank");
   }
@@ -315,6 +318,18 @@ export default function AdminStudentsPage() {
             onChange={(e) => setNewPhone(e.target.value)}
             className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] placeholder:text-[#2C2C2C]/20 focus:outline-none focus:border-[#C9A96E]"
           />
+          <div>
+            <label className="block text-[9px] tracking-[0.15em] text-[#2C2C2C]/40 uppercase mb-1">
+              Cumpleaños (opcional)
+            </label>
+            <input
+              type="date"
+              value={newBirthday}
+              onChange={(e) => setNewBirthday(e.target.value)}
+              max={new Date().toISOString().slice(0, 10)}
+              className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
+            />
+          </div>
           <button
             type="submit"
             disabled={creating}

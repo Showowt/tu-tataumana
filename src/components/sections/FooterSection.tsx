@@ -93,6 +93,8 @@ export default function FooterSection({ lang, L, openBooking, showStickyBar }: F
               <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 leading-relaxed">
                 {L(t.casaCarolina) as string}
                 <br />
+                Calle del Arzobispado, Cra. 5 #34-14
+                <br />
                 {L(t.centroHistorico) as string}
                 <br />
                 {L(t.cartagena) as string}
@@ -102,7 +104,7 @@ export default function FooterSection({ lang, L, openBooking, showStickyBar }: F
                   JUSTBYOGA BY TUISYOU
                 </p>
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3924.0!2d-75.5506!3d10.4236!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTDCsDI1JzI1LjAiTiA3NcKwMzMnMDIuMiJX!5e0!3m2!1sen!2sco!4v1"
+                  src="https://maps.google.com/maps?q=JustB%20Yoga%20by%20TUISYOU%2C%20Calle%20del%20Arzobispado%2C%20Cartagena%20de%20Indias&t=&z=17&ie=UTF8&iwloc=&output=embed"
                   width="100%"
                   height="160"
                   style={{ border: 0, borderRadius: "8px", opacity: 0.9 }}

@@ -45,16 +45,17 @@ export default function StructuredData() {
     },
     address: {
       "@type": "PostalAddress",
-      streetAddress: "Centro Historico, Walled City",
+      streetAddress: "Calle del Arzobispado, Cra. 5 #34-14, Casa Carolina Hotel",
       addressLocality: "Cartagena de Indias",
       addressRegion: "Bolivar",
       addressCountry: "CO",
     },
     geo: {
       "@type": "GeoCoordinates",
-      latitude: 10.4236,
-      longitude: -75.5506,
+      latitude: 10.4236473,
+      longitude: -75.5502361,
     },
+    hasMap: "https://maps.google.com/?cid=14299144872994951781",
     areaServed: [
       {
         "@type": "City",

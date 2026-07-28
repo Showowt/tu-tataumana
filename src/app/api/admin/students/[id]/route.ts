@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { createInviteLink } from "@/lib/invite";
 
 /**
  * GET /api/admin/students/[id]
@@ -148,7 +149,6 @@ export async function POST(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     serviceKey,
   );
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
 
   try {
     // If student doesn't have an auth account, create one
@@ -187,26 +187,11 @@ export async function POST(
       }
     }
 
-    // Generate magic link
-    const { data: linkData, error: linkError } =
-      await adminClient.auth.admin.generateLink({
-        type: "magiclink",
-        email: student.email,
-        options: {
-          redirectTo: `${baseUrl}/auth/callback?redirect=/portal`,
-        },
-      });
-
-    if (linkError || !linkData?.properties?.action_link) {
-      console.error("[admin/students/invite] Link generation failed:", linkError?.message);
-      return NextResponse.json(
-        { error: "No se pudo generar el enlace de acceso" },
-        { status: 500 },
-      );
-    }
+    // Durable invite link (7 days, reusable, safe for WhatsApp previews)
+    const loginLink = await createInviteLink(supabase, student.id);
 
     return NextResponse.json({
-      loginLink: linkData.properties.action_link,
+      loginLink,
       message: `Enlace de acceso generado para ${student.full_name}`,
     });
   } catch (err) {
