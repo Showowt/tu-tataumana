@@ -1,6 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { DAY_NAMES, TIMEZONE } from "@/lib/constants/business-rules";
+import {
+  getPendingWebBookings,
+  splitBySessionTimes,
+  nameKey,
+} from "@/lib/web-pending-bookings";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -110,6 +115,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Pending web pre-registrations (booked on the website, not yet confirmed)
+    const pendingWeb = await getPendingWebBookings(supabase, dateStr);
+    const { bySession: pendingByTime, unmatched: pendingUnmatched } =
+      splitBySessionTimes(pendingWeb, sessions.map((s) => s.start_time as string));
+
     // Build the digest message
     let totalStudents = 0;
     const classLines: string[] = [];
@@ -137,12 +147,36 @@ export async function GET(request: NextRequest) {
       }
 
       // List student names
-      const names = bookingsBySession[session.id];
-      if (names && names.length > 0) {
+      const names = bookingsBySession[session.id] || [];
+      if (names.length > 0) {
         line += `\n${names.map((n) => `  · ${n}`).join("\n")}`;
       }
 
+      // Pending web pre-registrations for this slot (skip already-confirmed names)
+      const confirmedKeys = new Set(names.map((n) => nameKey(n)));
+      const pendings = (pendingByTime.get(session.start_time as string) || []).filter(
+        (p) => !confirmedKeys.has(nameKey(p.name))
+      );
+      if (pendings.length > 0) {
+        line += `\n${pendings
+          .map((p) => `  · ${p.name} ⏳ (${p.paymentLabel} - pendiente)`)
+          .join("\n")}`;
+      }
+
       classLines.push(line);
+    }
+
+    // Web bookings whose time doesn't match any session — still surface them
+    if (pendingUnmatched.length > 0) {
+      classLines.push(
+        `\n<b>🌐 Reservas web sin clase asignada</b>\n` +
+          pendingUnmatched
+            .map(
+              (p) =>
+                `  · ${p.name} — ${p.service}${p.time24 ? ` ${p.time24}` : ""} ⏳ (${p.paymentLabel} - pendiente)`
+            )
+            .join("\n")
+      );
     }
 
     const header = `📋 <b>MANANA: ${dayName}, ${dateStr}</b>\n<b>${sessions.length} clases · ${totalStudents} alumnos reservados</b>`;

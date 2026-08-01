@@ -242,6 +242,7 @@ export default function BookingModal({
   const [rulesAccepted, setRulesAccepted] = useState(false);
   const [closedDates, setClosedDates] = useState<string[]>([]);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>(null);
+  const [bookingId, setBookingId] = useState<number | null>(null);
   const [wompiState, setWompiState] = useState<WompiState>("idle");
   const [wompiError, setWompiError] = useState("");
   const [activePass, setActivePass] = useState<{ pass_type: string; classes_remaining: number | string; is_unlimited: boolean } | null>(null);
@@ -380,6 +381,7 @@ export default function BookingModal({
         setSubmitting(false);
         setRulesAccepted(false);
         setSelectedPayment(null);
+        setBookingId(null);
         setWompiState("idle");
         setWompiError("");
       }, 300);
@@ -420,6 +422,9 @@ export default function BookingModal({
         setSubmitting(false);
         return;
       }
+      if (typeof bookData.data?.id === "number") {
+        setBookingId(bookData.data.id);
+      }
       if (!bookRes.ok && bookRes.status >= 500) {
         alert("No pudimos confirmar tu reserva. Por favor contacta a Tata por WhatsApp antes de pagar. / We couldn't confirm your booking. Please contact Tata via WhatsApp before paying.");
         setSubmitting(false);
@@ -451,8 +456,22 @@ export default function BookingModal({
     setStep("payment");
   };
 
+  // Record which payment method the student chose — powers the pending
+  // pre-registration list in Tata's Telegram /reservas view.
+  // keepalive so the request survives the Wompi redirect.
+  const recordPaymentMethod = (method: string) => {
+    if (bookingId === null) return;
+    fetch("/api/bookings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: bookingId, payment_method: method }),
+      keepalive: true,
+    }).catch(() => {});
+  };
+
   const handlePaymentSelect = async (method: PaymentMethod) => {
     setSelectedPayment(method);
+    if (method) recordPaymentMethod(method);
 
     if (method === "wompi") {
       setWompiState("loading");
@@ -990,6 +1009,7 @@ export default function BookingModal({
                 <button
                   onClick={() => {
                     setSelectedPayment(null);
+                    recordPaymentMethod("cash");
                     setStep("confirmed");
                   }}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl border border-charcoal/8 bg-white hover:border-charcoal/20 hover:shadow-md transition-all group text-left"

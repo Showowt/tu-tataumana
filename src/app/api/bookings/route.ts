@@ -190,4 +190,46 @@ export async function POST(request: Request) {
   }
 }
 
+// PATCH /api/bookings — record the payment method the student selected in the
+// booking modal. The booking row is created before the payment step, so the
+// method arrives in a second call. Public endpoint: only allows setting
+// payment_method on a recent, still-new booking.
+const ALLOWED_PAYMENT_METHODS = ["cash", "nequi", "bancolombia", "zelle", "wompi"];
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, payment_method } = body;
+
+    if (typeof id !== "number" || !ALLOWED_PAYMENT_METHODS.includes(payment_method)) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    }
+
+    let supabase;
+    try {
+      supabase = getAdminClient();
+    } catch {
+      return NextResponse.json({ error: "Not configured" }, { status: 503 });
+    }
+
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+    const { error } = await supabase
+      .from("tu_bookings")
+      .update({ payment_method, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("status", "new")
+      .gte("created_at", sixHoursAgo);
+
+    if (error) {
+      console.error("[API/bookings] PATCH", error);
+      return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: "Payment method recorded" });
+  } catch (err) {
+    console.error("[API/bookings] PATCH", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
 // GET removed — use /api/admin/dashboard or portal endpoints instead

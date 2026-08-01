@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { createInviteLink } from "@/lib/invite";
+import {
+  getPendingWebBookings,
+  splitBySessionTimes,
+  nameKey,
+} from "@/lib/web-pending-bookings";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1594,6 +1599,11 @@ async function handleBookingsToday(
 
   const typedSessions = (sessions || []) as unknown as SessionWithDef[];
 
+  // Pending web pre-registrations (booked on the website, not yet confirmed)
+  const pendingWeb = await getPendingWebBookings(supabase, dateStr);
+  const { bySession: pendingBySession, unmatched: pendingUnmatched } =
+    splitBySessionTimes(pendingWeb, typedSessions.map((s) => s.start_time));
+
   const blocks: string[] = [];
 
   for (const s of typedSessions) {
@@ -1610,18 +1620,34 @@ async function handleBookingsToday(
       student: { full_name: string; phone: string | null } | null;
     }>;
 
-    const studentList = students.length > 0
-      ? students
-          .map((b, i) => `  ${i + 1}. ${b.student?.full_name || "Sin nombre"}`)
-          .join("\n")
-      : "  Sin reservas";
+    // Web pendings for this slot, minus anyone already confirmed by name
+    const confirmedNames = new Set(
+      students.map((b) => nameKey(b.student?.full_name || ""))
+    );
+    const pendings = (pendingBySession.get(s.start_time) || []).filter(
+      (p) => !confirmedNames.has(nameKey(p.name))
+    );
+
+    const lines = students.map(
+      (b, i) => `  ${i + 1}. ${b.student?.full_name || "Sin nombre"}`
+    );
+    pendings.forEach((p, i) => {
+      lines.push(
+        `  ${students.length + i + 1}. ${p.name} ⏳ (${p.paymentLabel} - pendiente)`
+      );
+    });
+
+    const studentList = lines.length > 0 ? lines.join("\n") : "  Sin reservas";
 
     const spots = s.capacity - (s.enrolled || 0);
     const spotsText = spots <= 0 ? "LLENA" : `${spots} cupos libres`;
+    const pendingText = pendings.length > 0
+      ? ` · ${pendings.length} web sin confirmar`
+      : "";
 
     blocks.push(
       `<b>${s.start_time} — ${className}</b> (${s.teacher})\n` +
-      `${s.enrolled || 0}/${s.capacity} — ${spotsText}\n` +
+      `${s.enrolled || 0}/${s.capacity} — ${spotsText}${pendingText}\n` +
       studentList
     );
   }
@@ -1647,19 +1673,29 @@ async function handleBookingsToday(
     }
   }
 
-  if (blocks.length === 0 && privateBlocks.length === 0) {
+  // Web bookings whose time doesn't match any session (or with no time) —
+  // still show them so nothing booked on the website goes invisible.
+  const webBlocks = pendingUnmatched.map(
+    (p) =>
+      `  · ${p.name} — ${p.service}${p.time24 ? ` ${p.time24}` : ""} ⏳ (${p.paymentLabel} - pendiente)`
+  );
+
+  if (blocks.length === 0 && privateBlocks.length === 0 && webBlocks.length === 0) {
     return `<b>Reservas ${label} — ${spanishDate(dateStr)}</b>\n\nNo hay clases ni sesiones privadas programadas.`;
   }
 
-  const classSection = blocks.length > 0
-    ? `<b>📋 Clases Grupales</b>\n\n${blocks.join("\n\n")}`
-    : "";
+  const sections: string[] = [];
+  if (blocks.length > 0) {
+    sections.push(`<b>📋 Clases Grupales</b>\n\n${blocks.join("\n\n")}`);
+  }
+  if (privateBlocks.length > 0) {
+    sections.push(`<b>🧘 Sesiones Privadas</b>\n\n${privateBlocks.join("\n\n")}`);
+  }
+  if (webBlocks.length > 0) {
+    sections.push(`<b>🌐 Reservas web sin clase asignada</b>\n\n${webBlocks.join("\n")}`);
+  }
 
-  const privateSection = privateBlocks.length > 0
-    ? `${blocks.length > 0 ? "\n\n" : ""}<b>🧘 Sesiones Privadas</b>\n\n${privateBlocks.join("\n\n")}`
-    : "";
-
-  return `<b>Reservas ${label} — ${spanishDate(dateStr)}</b>\n\n${classSection}${privateSection}`;
+  return `<b>Reservas ${label} — ${spanishDate(dateStr)}</b>\n\n${sections.join("\n\n")}`;
 }
 
 async function handleHealthCheck(): Promise<string> {
