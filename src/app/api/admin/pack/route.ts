@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { z } from "zod";
 import { getPackDefinition, calculateExpiration } from "@/lib/constants/packs";
-import { notifyNewMembership } from "@/lib/telegram";
+import { notifyNewMembership, sendTelegramMessage } from "@/lib/telegram";
 
 /**
  * GET /api/admin/pack
@@ -165,6 +165,7 @@ export async function PATCH(request: NextRequest) {
     remove_credits: z.number().int().positive().optional(),
     set_classes_used: z.number().int().min(0).optional(),
     extend_days: z.number().int().positive().optional(),
+    reactivate_days: z.number().int().positive().max(365).optional(),
     notes: z.string().nullable().optional(),
     transfer_to_student: z.string().uuid().optional(),
   });
@@ -179,10 +180,70 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  const { id, add_credits, remove_credits, set_classes_used, extend_days, status, notes, transfer_to_student } = parsed.data;
+  const { id, add_credits, remove_credits, set_classes_used, extend_days, reactivate_days, status, notes, transfer_to_student } = parsed.data;
   const updates: Record<string, unknown> = {};
   if (status !== undefined) updates.status = status;
   if (notes !== undefined) updates.notes = notes;
+
+  // Reactivate a paused/expired pack: fresh expiry window counted from TODAY
+  // (extend_days counts from the old expiry, which for a long-dead pack can
+  // still land in the past — the nightly cron would immediately re-expire it).
+  if (reactivate_days) {
+    const { data: pack } = await supabase
+      .from("tu_packs")
+      .select("status, classes_used, total_classes, pack_type, student_id")
+      .eq("id", id)
+      .single();
+
+    if (!pack) {
+      return NextResponse.json({ error: "Pack no encontrado" }, { status: 404 });
+    }
+    if (pack.status === "active") {
+      return NextResponse.json(
+        { error: "El pack ya esta activo. Usa 'extender' para darle mas dias." },
+        { status: 400 },
+      );
+    }
+    if (pack.total_classes !== -1 && pack.classes_used >= pack.total_classes) {
+      return NextResponse.json(
+        { error: "El pack no tiene creditos restantes. Crea un pack nuevo o agrega creditos." },
+        { status: 400 },
+      );
+    }
+
+    const newExpiry = new Date();
+    newExpiry.setDate(newExpiry.getDate() + reactivate_days);
+    updates.status = "active";
+    updates.expires_at = newExpiry.toISOString();
+    // Clear any stale 2x1 session lock — the locked session is long past
+    updates.locked_session_id = null;
+
+    const { data: reactivated, error: reactErr } = await supabase
+      .from("tu_packs")
+      .update(updates)
+      .eq("id", id)
+      .select("*, student:tu_students (full_name, email)")
+      .single();
+
+    if (reactErr) {
+      console.error("[admin/pack PATCH] reactivate:", reactErr.message);
+      return NextResponse.json({ error: "No se pudo reactivar el pack" }, { status: 500 });
+    }
+
+    const remaining =
+      reactivated.total_classes === -1
+        ? "ilimitados"
+        : String(reactivated.total_classes - reactivated.classes_used);
+    sendTelegramMessage(
+      `🔄 <b>Pack reactivado</b>\n\n` +
+        `<b>Alumna:</b> ${reactivated.student?.full_name || "—"}\n` +
+        `<b>Pack:</b> ${reactivated.pack_type.replace(/_/g, " ")}\n` +
+        `<b>Creditos disponibles:</b> ${remaining}\n` +
+        `<b>Nueva vigencia:</b> ${reactivate_days} dias (vence ${newExpiry.toLocaleDateString("es-CO", { day: "numeric", month: "long" })})`,
+    ).catch(() => {});
+
+    return NextResponse.json({ data: reactivated });
+  }
 
   // Handle pack transfer to different student
   if (transfer_to_student) {

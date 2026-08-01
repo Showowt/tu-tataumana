@@ -54,6 +54,11 @@ export default function AdminPacksPage() {
   const [packTransferResults, setPackTransferResults] = useState<StudentSearchResult[]>([]);
   const [transferLoading, setTransferLoading] = useState(false);
 
+  // Reactivate modal
+  const [reactivatePack, setReactivatePack] = useState<PackData | null>(null);
+  const [reactivateDays, setReactivateDays] = useState(30);
+  const [reactivating, setReactivating] = useState(false);
+
   const loadPacks = useCallback(async () => {
     setLoading(true);
     try {
@@ -185,6 +190,36 @@ export default function AdminPacksPage() {
       showMessage("Error de conexion");
     }
     setTransferLoading(false);
+  }
+
+  async function handleReactivate() {
+    if (!reactivatePack) return;
+    setReactivating(true);
+    try {
+      const res = await fetch("/api/admin/pack", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: reactivatePack.id,
+          reactivate_days: reactivateDays,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage(data.error || "Error al reactivar pack");
+      } else {
+        const remaining =
+          data.data?.total_classes === -1
+            ? "ilimitados"
+            : data.data.total_classes - data.data.classes_used;
+        showMessage(`Pack reactivado — ${remaining} créditos por ${reactivateDays} días`);
+        setReactivatePack(null);
+        await loadPacks();
+      }
+    } catch {
+      showMessage("Error de conexión");
+    }
+    setReactivating(false);
   }
 
   function showMessage(msg: string) {
@@ -437,11 +472,107 @@ export default function AdminPacksPage() {
                         transferir
                       </button>
                     )}
+                    {(p.status === "expired" || p.status === "cancelled") &&
+                      (isUnlimited || p.classes_used < p.total_classes) && (
+                        <button
+                          onClick={() => {
+                            setReactivatePack(p);
+                            setReactivateDays(30);
+                          }}
+                          className="text-[9px] text-[#C9A96E] hover:text-[#B87777] transition-colors font-medium"
+                        >
+                          reactivar
+                        </button>
+                      )}
                   </div>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Reactivate Modal */}
+      {reactivatePack && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setReactivatePack(null)}
+          />
+          <div className="relative bg-white w-full max-w-md flex flex-col sm:rounded-none shadow-xl">
+            <div className="p-4 border-b border-[#2C2C2C]/5">
+              <div className="flex items-center justify-between">
+                <h2
+                  className="text-lg text-[#2C2C2C]"
+                  style={{ fontFamily: "Cormorant Garamond, serif" }}
+                >
+                  Reactivar Pack
+                </h2>
+                <button
+                  onClick={() => setReactivatePack(null)}
+                  className="text-[#2C2C2C]/30 hover:text-[#2C2C2C] text-lg"
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="text-[10px] text-[#2C2C2C]/40 mt-1">
+                {reactivatePack.student?.full_name || "Alumno"} —{" "}
+                {reactivatePack.pack_type.replace(/_/g, " ")} (
+                {reactivatePack.total_classes === -1
+                  ? "ilimitado"
+                  : `${reactivatePack.total_classes - reactivatePack.classes_used} ${
+                      reactivatePack.total_classes - reactivatePack.classes_used === 1
+                        ? "crédito restante"
+                        : "créditos restantes"
+                    }`}
+                )
+              </p>
+            </div>
+            <div className="p-4 space-y-3">
+              <p className="text-[10px] tracking-[0.2em] text-[#C9A96E] uppercase">
+                Días de vigencia
+              </p>
+              <div className="flex gap-2">
+                {[15, 30, 60, 90].map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setReactivateDays(d)}
+                    className={`text-[10px] tracking-[0.15em] px-3 py-1.5 border transition-colors ${
+                      reactivateDays === d
+                        ? "bg-[#2C2C2C] text-white border-[#2C2C2C]"
+                        : "text-[#2C2C2C]/40 border-[#2C2C2C]/10 hover:border-[#2C2C2C]/30"
+                    }`}
+                  >
+                    {d}d
+                  </button>
+                ))}
+              </div>
+              <input
+                type="number"
+                min={1}
+                max={365}
+                value={reactivateDays}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value, 10);
+                  setReactivateDays(Number.isNaN(n) ? 0 : Math.min(365, n));
+                }}
+                className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
+              />
+              <p className="text-[10px] text-[#2C2C2C]/30">
+                El pack vuelve a estado activo con sus créditos actuales. La
+                nueva vigencia cuenta desde hoy.
+              </p>
+              <button
+                onClick={handleReactivate}
+                disabled={reactivating || reactivateDays < 1}
+                className="w-full py-2 bg-[#C9A96E] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-30"
+              >
+                {reactivating
+                  ? "Reactivando..."
+                  : `Reactivar por ${reactivateDays} días`}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
