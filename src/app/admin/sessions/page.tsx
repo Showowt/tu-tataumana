@@ -122,12 +122,17 @@ export default function AdminSessionsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "cancel", session_id: sessionId }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         showMessage("Sesión cancelada");
         await loadSessions();
+      } else if (res.status === 401) {
+        showMessage("Tu sesión expiró — recarga la página e inicia sesión de nuevo");
+      } else {
+        showMessage(data.error || "Error al cancelar la sesión");
       }
     } catch {
-      showMessage("Error");
+      showMessage("Error de conexión");
     }
     setActionLoading(null);
   }
@@ -155,20 +160,40 @@ export default function AdminSessionsPage() {
   }
 
   async function handleComplete(sessionId: string) {
-    if (!confirm("¿Completar esta sesión?")) return;
+    if (!confirm("¿Completar esta sesión? Los alumnos sin check-in se marcarán como no-show.")) return;
     setActionLoading(sessionId);
     try {
-      const res = await fetch("/api/admin/sessions", {
+      let res = await fetch("/api/admin/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "complete", session_id: sessionId }),
       });
+      let data = await res.json().catch(() => ({}));
+
+      // The class hasn't started yet — let the admin decide instead of failing
+      if (res.status === 400 && data.code === "future_session") {
+        if (!confirm("Esta clase aún no ha comenzado. ¿Completarla de todas formas?")) {
+          setActionLoading(null);
+          return;
+        }
+        res = await fetch("/api/admin/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "complete", session_id: sessionId, force: true }),
+        });
+        data = await res.json().catch(() => ({}));
+      }
+
       if (res.ok) {
         showMessage("Sesión completada");
         await loadSessions();
+      } else if (res.status === 401) {
+        showMessage("Tu sesión expiró — recarga la página e inicia sesión de nuevo");
+      } else {
+        showMessage(data.error || "Error al completar la sesión");
       }
     } catch {
-      showMessage("Error");
+      showMessage("Error de conexión");
     }
     setActionLoading(null);
   }

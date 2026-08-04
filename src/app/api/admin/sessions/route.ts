@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
           const sessionDT = new Date(`${sess.session_date}T${sess.start_time}-05:00`);
           if (sessionDT > new Date()) {
             return NextResponse.json(
-              { error: "No se puede completar una clase que aun no ha ocurrido. Usa force: true para forzar." },
+              { error: "Esta clase aún no ha comenzado.", code: "future_session" },
               { status: 400 },
             );
           }
