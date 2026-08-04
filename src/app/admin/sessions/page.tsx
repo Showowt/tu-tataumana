@@ -160,7 +160,7 @@ export default function AdminSessionsPage() {
   }
 
   async function handleComplete(sessionId: string) {
-    if (!confirm("¿Completar esta sesión? Los alumnos sin check-in se marcarán como no-show.")) return;
+    if (!confirm("¿Completar esta sesión? Los alumnos confirmados quedarán como asistieron (marca No-show antes de completar si alguien faltó).")) return;
     setActionLoading(sessionId);
     try {
       let res = await fetch("/api/admin/sessions", {

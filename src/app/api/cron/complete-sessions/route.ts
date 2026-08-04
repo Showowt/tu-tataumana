@@ -2,7 +2,7 @@
  * Cron: Auto-complete past sessions
  * Runs daily at 11 PM Colombia (4 AM UTC).
  * - Marks all past "scheduled" sessions as "completed"
- * - Marks unchecked bookings on completed sessions as "no_show"
+ * - Records attendance for still-confirmed bookings on those sessions
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -53,37 +53,59 @@ export async function GET(request: NextRequest) {
 
   const completedCount = completed?.length || 0;
 
-  // 2. Mark unchecked bookings on completed sessions as no-show
-  let noShowCount = 0;
+  // 2. Record attendance for still-confirmed bookings on completed sessions.
+  // The studio doesn't use per-student check-in — anyone not manually marked
+  // no-show before the sweep counts as attended.
+  let attendedCount = 0;
   if (completedCount > 0) {
     const sessionIds = completed!.map((s) => s.id);
+    const sweptAt = new Date().toISOString();
 
-    const { data: noShows } = await supabase
+    const { data: toAttend } = await supabase
       .from("tu_class_bookings")
-      .update({ status: "no_show" })
+      .select("id, student_id, session_id")
       .eq("status", "confirmed")
       .eq("checked_in", false)
-      .in("session_id", sessionIds)
-      .select("id");
+      .in("session_id", sessionIds);
 
-    noShowCount = noShows?.length || 0;
+    if (toAttend && toAttend.length > 0) {
+      const { error: attendErr } = await supabase
+        .from("tu_class_bookings")
+        .update({ checked_in: true, checked_in_at: sweptAt })
+        .in("id", toAttend.map((b) => b.id));
+
+      if (attendErr) {
+        console.error("[cron/complete-sessions] auto check-in failed:", attendErr.message);
+      } else {
+        await supabase.from("tu_attendance").insert(
+          toAttend.map((b) => ({
+            booking_id: b.id,
+            student_id: b.student_id,
+            session_id: b.session_id,
+            status: "attended",
+            checked_in_at: sweptAt,
+          })),
+        );
+        attendedCount = toAttend.length;
+      }
+    }
   }
 
   if (completedCount > 0) {
     try {
       await sendTelegramMessage(
-        `🔄 <b>CRON: Sesiones completadas</b>\n\n<b>Sesiones cerradas:</b> ${completedCount}\n<b>No-shows marcados:</b> ${noShowCount}`,
+        `🔄 <b>CRON: Sesiones completadas</b>\n\n<b>Sesiones cerradas:</b> ${completedCount}\n<b>Asistencias registradas:</b> ${attendedCount}`,
       );
     } catch {}
   }
 
   console.log(
-    `[cron/complete-sessions] Completed: ${completedCount}, No-shows: ${noShowCount}`,
+    `[cron/complete-sessions] Completed: ${completedCount}, Attended: ${attendedCount}`,
   );
 
   return NextResponse.json({
     completed: completedCount,
-    no_shows: noShowCount,
+    attended: attendedCount,
     date: today,
   });
 }

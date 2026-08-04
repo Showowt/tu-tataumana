@@ -53,7 +53,8 @@ export function nameKey(name: string): string {
 /**
  * Fetch pending website bookings for a date. Rows stay status "new" until an
  * admin flow touches them, so the date filter is what scopes this list.
- * Duplicate names (double-submits) are collapsed.
+ * Duplicate names (double-submits) are collapsed, keeping the most recent
+ * submission — a resubmit usually corrects the time or payment method.
  */
 export async function getPendingWebBookings(
   supabase: SupabaseClient,
@@ -65,7 +66,7 @@ export async function getPendingWebBookings(
     .eq("class_date", dateStr)
     .eq("source", "website")
     .eq("status", "new")
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("[web-pending-bookings]", error.message);
@@ -85,7 +86,8 @@ export async function getPendingWebBookings(
       service: row.class_name || row.service || "Clase",
     });
   }
-  return result;
+  // Rows were scanned newest-first for dedup; show oldest-first in lists
+  return result.reverse();
 }
 
 /**

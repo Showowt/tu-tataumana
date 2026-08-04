@@ -242,15 +242,42 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to complete session" }, { status: 500 });
       }
 
-      // Mark unchecked-in bookings as no-show
-      await supabase
+      // The studio doesn't use per-student check-in: completing a session
+      // records attendance for everyone still confirmed. Real absences must be
+      // marked individually with the No-show button BEFORE completing.
+      const completedAt = new Date().toISOString();
+      const { data: toAttend } = await supabase
         .from("tu_class_bookings")
-        .update({ status: "no_show" })
+        .select("id, student_id")
         .eq("session_id", sid)
         .eq("status", "confirmed")
         .eq("checked_in", false);
 
-      return NextResponse.json({ message: "Session completed" });
+      if (toAttend && toAttend.length > 0) {
+        const { error: attendErr } = await supabase
+          .from("tu_class_bookings")
+          .update({ checked_in: true, checked_in_at: completedAt })
+          .in("id", toAttend.map((b) => b.id));
+
+        if (attendErr) {
+          console.error("[admin/sessions complete] auto check-in failed:", attendErr.message);
+        } else {
+          await supabase.from("tu_attendance").insert(
+            toAttend.map((b) => ({
+              booking_id: b.id,
+              student_id: b.student_id,
+              session_id: sid,
+              status: "attended",
+              checked_in_at: completedAt,
+            })),
+          );
+        }
+      }
+
+      return NextResponse.json({
+        message: "Session completed",
+        attended: toAttend?.length || 0,
+      });
     }
 
     case "update_capacity": {
