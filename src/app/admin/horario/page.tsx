@@ -296,7 +296,7 @@ export default function AdminHorarioPage() {
 
       <div className="bg-[#FAF8F5] border border-[#2C2C2C]/5 p-4">
         <p className="text-[10px] text-[#2C2C2C]/40 leading-relaxed" style={{ fontFamily: "Outfit, sans-serif" }}>
-          Al cambiar el teacher o desactivar una clase, los cambios se aplican automaticamente a todas las sesiones futuras. Los cambios aparecen en la pagina web y el chatbot en maximo 5 minutos.
+          Al cambiar el teacher o desactivar una clase, los cambios se aplican automaticamente a todas las sesiones futuras. Los cambios aparecen en la pagina web y el chatbot en menos de 1 minuto.
         </p>
       </div>
     </div>

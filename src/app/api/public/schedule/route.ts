@@ -43,7 +43,7 @@ interface ScheduleDay {
 /**
  * GET /api/public/schedule
  * Returns active class definitions grouped by day.
- * No auth required — public data. Cached 5 minutes.
+ * No auth required — public data. Edge-cached ~30s so admin edits propagate fast.
  */
 export async function GET() {
   try {
@@ -87,10 +87,10 @@ export async function GET() {
 
     const response = NextResponse.json({ schedule });
 
-    // Cache for 5 minutes, serve stale for 10 minutes while revalidating
+    // Short edge cache so admin horario edits appear on the public site within ~30s
     response.headers.set(
       "Cache-Control",
-      "public, s-maxage=300, stale-while-revalidate=600",
+      "public, s-maxage=30, stale-while-revalidate=60",
     );
 
     return response;

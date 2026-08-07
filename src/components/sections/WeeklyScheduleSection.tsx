@@ -32,6 +32,7 @@ export interface WeeklyScheduleSectionProps {
 interface ScheduleClass {
   time: string;
   name: string;
+  nameEs?: string;
   note?: string;
   teacher?: string;
   desc?: { es: string; en: string };
@@ -110,6 +111,7 @@ function useScheduleData(): { schedule: ScheduleDay[]; loading: boolean } {
             classes: day.classes.map((cls) => ({
               time: formatTime12(cls.start_time),
               name: cls.name,
+              nameEs: cls.name_es || undefined,
               note: cls.note || undefined,
               teacher: cls.teacher || undefined,
               desc: cls.description || cls.description_es
@@ -386,7 +388,7 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
                             {/* Row 1: Class name + teacher */}
                             <span className="flex flex-wrap items-baseline gap-x-2">
                               <span className={`font-[family-name:var(--font-display)] text-[15px] md:text-base transition-colors duration-300 ${!bookable ? "text-white/25" : "text-white/80 group-hover:text-rose-soft"}`}>
-                                {cls.name}
+                                {lang === "es" && cls.nameEs ? cls.nameEs : cls.name}
                               </span>
                               {cls.note && <span className={`text-[11px] ${!bookable ? "text-white/10" : "text-gold/50"}`}>{cls.note}</span>}
                               {cls.teacher && (
