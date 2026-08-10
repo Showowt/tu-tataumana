@@ -1,5 +1,46 @@
 # CHANGELOG — TU. by Tata Umaña
 
+## 2026-08-10 — P2/P3 Closure Pass (deployed 27f4751)
+
+Closed NOTE-01 + a large batch of the accepted P2/P3 findings. Battery green
+(tsc 0, build ✓); deployed to www.tataumana.com; live-verified; no regressions.
+
+**CLOSED:**
+- **NOTE-01** (money) — `payments/create` now charges the admin-editable DB price
+  (`tu_pricing_cards.price_cop` by `pack_type`, fallback constant) with a **floor
+  (≥10,000 COP)** so a typo can't become a real charge. Decision: DB authoritative.
+  Live proof: services/pricing APIs serve edited values; floor blocks underpricing.
+- **SEC-05** — legacy client-`amount` branch of `yoga/payment` disabled → `400`.
+- **FAIL-10** — generic error messages (signup, student/book).
+- **HYG-01/02** — customer email/params + full payload removed from prod logs.
+- **HYG-04** — concierge no longer quotes a firm price for the unbuilt content platform.
+- **I18N-03** — `/portal/{packs,bookings}` honor `preferred_lang`.
+- **STATE-05** — portal dashboard/packs/bookings `load()` try/catch/finally.
+- **STATE-02** — ServicesSection renders DB `description_en/es` (proof: API exposes both).
+- **FAIL-05** — `AbortSignal.timeout(8000)` on 6 external fetches.
+- **FAIL-06** — check-in attendance writes merge-upsert (unique `booking_id`) + error capture.
+- **CORRECT-05** — session cancel resets `enrolled=0`.
+- **DEADEND-01** — ChatBot fallback uses business WhatsApp (573166333663).
+- **DEADEND-02 / HYG-05 / HYG-06** — deleted 7 orphan components (~2,970 lines).
+- **SEC-06** (partial) — live DB functions + integrity indexes dumped to
+  `supabase/migrations/20260810000000_asbuilt_functions_and_indexes.sql`.
+
+**⚠️ NOTE-01 data cleanup owed by Tata (surfaced, not silently changed):**
+- "Just B Membership" card priced **280 COP** (typo for 280,000) — floor now blocks
+  it from charging, but fix the card in /admin/precios.
+- Cards `VIERNES OPEN FLOW` (`pack_type: FRIDAY_OPEN`) + 2× `JUSTB MEMBERSHIP`
+  (`pack_type: ""`) have no matching pack definition → not purchasable. Set a valid
+  `pack_type` or mark display-only.
+
+**Still deferred to Round 2:** CORRECT-07 (discount consume timing), CORRECT-08 (2x1
+lock atomicity — RPC surgery), FAIL-07/CORRECT-06 (legacy `tu_class_slots` oversell),
+FAIL-09 (admin `request.json()` 500s), SEC-04 (phone-matched pass burn — mitigated),
+SEC-06 remainder (add `p_pack_id` ownership check inside `tu_book_class`), remaining
+check-in sibling-write error captures, HYG-03 (`console.log`→leveled), SEC-07/08 (P3),
+SPEC-04–12, CORRECT-09/10.
+
+---
+
 ## 2026-08-10 — Adversarial Audit + Gap Closure (Round 1)
 
 Six-pass fresh-eyes adversarial audit of the entire site + software (69 API routes,
