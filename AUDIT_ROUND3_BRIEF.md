@@ -51,7 +51,7 @@ touched the money paths; confirm no new siblings (esp. any table write that now 
 a definer RPC that could be called as anon, and any `.insert()` that could 23505 on the
 new unique indexes). Then declare SHIP or Round 4.
 
-## Owner (Tata) data cleanup — still open
-`tu_pricing_cards`: "Just B Membership" priced **280 COP** (typo for 280,000; floor blocks
-the charge but the card mis-displays); `FRIDAY_OPEN` + 2× empty-`pack_type` cards are
-active but non-purchasable. Fix the `pack_type` mapping or deactivate them in /admin/precios.
+## Owner (Tata) data cleanup — DONE (2026-08-10, handled on our end)
+Added FRIDAY_OPEN + JUSTB_MEMBERSHIP to PACK_DEFINITIONS; DB-mapped the $280,000 JUSTB
+MEMBERSHIP card and deactivated the $280 typo duplicate. Every active `tu_pricing_cards`
+row now maps to a valid pack definition (verified live). No open pricing-data items.
