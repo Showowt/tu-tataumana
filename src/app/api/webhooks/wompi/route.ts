@@ -88,7 +88,7 @@ async function handleApprovedPayment(
     .upsert(
       {
         wompi_reference: transaction.reference,
-        amount: transaction.amount_in_cents,
+        amount: Math.round(transaction.amount_in_cents / 100), // store COP pesos (R2B-03) — every other path stores pesos
         currency: transaction.currency,
         payment_method: transaction.payment_method_type || "card",
         status: "approved",
@@ -184,7 +184,7 @@ async function handleApprovedPayment(
         pack_type: packType,
         total_classes: packDef.totalClasses,
         classes_used: 0,
-        price_paid: transaction.amount_in_cents,
+        price_paid: Math.round(transaction.amount_in_cents / 100), // COP pesos (R2B-03)
         currency: transaction.currency,
         status: "active",
         expires_at: calculateExpiration(packDef.expirationDays).toISOString(),
@@ -282,7 +282,7 @@ export async function POST(
         try {
           await notifyPaymentReceived({
             reference: transaction.reference,
-            amount: transaction.amount_in_cents,
+            amount: Math.round(transaction.amount_in_cents / 100), // store COP pesos (R2B-03) — every other path stores pesos
             currency: transaction.currency,
             customerEmail: transaction.customer_email,
             customerName: transaction.customer_data?.full_name,

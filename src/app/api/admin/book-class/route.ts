@@ -217,7 +217,8 @@ export async function POST(request: NextRequest) {
 
   // 7. Increment enrolled count atomically (SQL enrolled = enrolled + 1 — no
   //    read-modify-write race that would silently drop the increment under contention).
-  await supabase.rpc("tu_adjust_enrolled", { p_session_id: session_id, p_delta: 1 });
+  const { error: adjErr } = await supabase.rpc("tu_adjust_enrolled", { p_session_id: session_id, p_delta: 1 });
+  if (adjErr) console.error("[admin/book-class] tu_adjust_enrolled failed:", adjErr.message);
 
   // 8. Fire-and-forget notification
   try {

@@ -68,12 +68,15 @@ async function getServicePriceCop(serviceName: string): Promise<number> {
   if (url && key) {
     try {
       const supabase = createClient(url, key);
-      const { data } = await supabase
+      // Strip PostgREST filter metacharacters (, ( ) % * \) from the client-supplied
+      // name before it enters the .or()/.ilike filter (R2E-04 injection).
+      const safeName = baseName.replace(/[,()%*\\]/g, " ").trim();
+      const { data } = safeName.length < 2 ? { data: null } : await supabase
         .from("tu_events")
         .select("price_cop")
         .eq("is_active", true)
         .or(
-          `title.ilike.%${baseName}%,title_es.ilike.%${baseName}%,booking_service.ilike.%${baseName}%`,
+          `title.ilike.%${safeName}%,title_es.ilike.%${safeName}%,booking_service.ilike.%${safeName}%`,
         )
         .gt("price_cop", 0)
         .limit(1)
@@ -85,6 +88,28 @@ async function getServicePriceCop(serviceName: string): Promise<number> {
       }
     } catch (err) {
       console.error("[Payment] Event price lookup failed for:", baseName, err);
+    }
+
+    // 3. Match the public pricing card by label — this is what BookingModal sends and
+    //    what the site DISPLAYS. Charge THAT, not a flat 80k that mispriced every
+    //    non-80k card (R2F-01). Matched in JS (no filter injection); floor-guarded so
+    //    a mis-typed sub-floor DB price can't undercharge (falls through to the flat rate).
+    try {
+      const supabase = createClient(url, key);
+      const { data: cards } = await supabase
+        .from("tu_pricing_cards")
+        .select("label, label_es, price_cop")
+        .eq("is_active", true);
+      const match = (cards || []).find(
+        (c) =>
+          c.label === baseName || c.label_es === baseName ||
+          c.label === serviceName || c.label_es === serviceName,
+      );
+      if (match && typeof match.price_cop === "number" && match.price_cop >= 10000) {
+        return match.price_cop;
+      }
+    } catch (err) {
+      console.error("[Payment] Pricing-card lookup failed for:", baseName, err);
     }
   }
 

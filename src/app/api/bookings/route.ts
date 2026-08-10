@@ -49,59 +49,42 @@ export async function POST(request: Request) {
       });
     }
 
-    // --- Capacity check ---
+    // --- Capacity check (atomic reserve on tu_class_slots) ---
+    // Replaces the old read-modify-write, which let concurrent public bookings
+    // overbook the soft slot count (and duplicate slot rows silently disabled the
+    // check). tu_slot_reserve does an atomic insert-or-increment guarded by capacity,
+    // backed by UNIQUE(class_date, class_time); returns spots-left, or -1 if full.
     let spotsLeft: number | null = null;
     if (preferred_date && class_time) {
       const dateObj = new Date(preferred_date + "T12:00:00");
       const dayOfWeek = dateObj.getDay();
-
-      // Get or create the class slot row
-      const { data: existing } = await supabase
-        .from("tu_class_slots")
-        .select("id, enrolled, capacity")
-        .eq("class_date", preferred_date)
-        .eq("class_time", class_time)
-        .single();
-
-      if (existing) {
-        if (existing.enrolled >= existing.capacity) {
-          return NextResponse.json(
-            {
-              error: "This class is full. Please choose another time or date.",
-              spots_left: 0,
-            },
-            { status: 409 }
-          );
-        }
-        // Increment enrollment
-        const { error: updateErr } = await supabase
-          .from("tu_class_slots")
-          .update({ enrolled: existing.enrolled + 1 })
-          .eq("id", existing.id);
-        if (updateErr) console.error("[Bookings] Slot update failed:", updateErr);
-        spotsLeft = existing.capacity - existing.enrolled - 1;
-      } else {
-        // First booking for this class on this date — create the slot
-        const { error: insertErr } = await supabase
-          .from("tu_class_slots")
-          .insert({
-            class_date: preferred_date,
-            class_name: class_name || service,
-            class_time,
-            day_of_week: dayOfWeek,
-            enrolled: 1,
-            capacity: CAPACITY,
-          });
-        if (insertErr) console.error("[Bookings] Slot insert failed:", insertErr);
-        spotsLeft = CAPACITY - 1;
+      const { data: reserved, error: reserveErr } = await supabase.rpc("tu_slot_reserve", {
+        p_date: preferred_date,
+        p_time: class_time,
+        p_name: class_name || service,
+        p_dow: dayOfWeek,
+        p_capacity: CAPACITY,
+      });
+      if (reserveErr) {
+        console.error("[Bookings] Slot reserve failed:", reserveErr.message);
+      } else if (reserved === -1) {
+        return NextResponse.json(
+          { error: "This class is full. Please choose another time or date.", spots_left: 0 },
+          { status: 409 },
+        );
+      } else if (typeof reserved === "number") {
+        spotsLeft = reserved;
       }
     }
 
     // --- Check for active class pass ---
     let passInfo = "";
-    const normalizedPhone = phone.replace(/[\s\-\+]/g, "");
+    // Strip to DIGITS ONLY before it enters the PostgREST .or() filter — a stray
+    // comma/paren in `phone` would otherwise inject extra OR terms and match another
+    // person's pass (R2E-01/R2C-06). Digits cannot break the filter grammar.
+    const normalizedPhone = phone.replace(/\D/g, "");
     try {
-      const { data: passes } = await supabase
+      const { data: passes } = normalizedPhone.length < 6 ? { data: [] } : await supabase
         .from("tu_passes")
         .select("*")
         .or(`phone.eq.${normalizedPhone},phone.eq.+${normalizedPhone}`)

@@ -2521,14 +2521,19 @@ async function handleWeekClassRoster(supabase: SupabaseClient): Promise<string> 
 export async function POST(request: NextRequest) {
   let replyChatId: string | undefined;
   try {
-    // Security: verify Telegram webhook secret token
+    // Security: verify Telegram webhook secret token — FAIL CLOSED (R2E-02).
+    // The chat_id allow-list alone is not a barrier: chat.id comes from the POST
+    // body and is attacker-forgeable. If the secret is unset, reject everything
+    // (like the Wompi/Square webhooks) rather than trusting a body-supplied id.
     const telegramSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-    if (telegramSecret) {
-      const incomingSecret = request.headers.get("x-telegram-bot-api-secret-token");
-      if (incomingSecret !== telegramSecret) {
-        console.warn("[Telegram] Invalid webhook secret token");
-        return NextResponse.json({ ok: true });
-      }
+    if (!telegramSecret) {
+      console.error("[Telegram] TELEGRAM_WEBHOOK_SECRET not set — rejecting webhook (fail-closed)");
+      return NextResponse.json({ ok: true });
+    }
+    const incomingSecret = request.headers.get("x-telegram-bot-api-secret-token");
+    if (incomingSecret !== telegramSecret) {
+      console.warn("[Telegram] Invalid webhook secret token");
+      return NextResponse.json({ ok: true });
     }
 
     const update: TelegramUpdate = await request.json();

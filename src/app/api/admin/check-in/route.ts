@@ -242,7 +242,8 @@ export async function POST(request: NextRequest) {
 
       // 3. Decrement session enrolled count atomically (clamps at 0 in SQL)
       if (totalCancelled > 0) {
-        await supabase.rpc("tu_adjust_enrolled", { p_session_id: booking.session_id, p_delta: -totalCancelled });
+        const { error: decErr } = await supabase.rpc("tu_adjust_enrolled", { p_session_id: booking.session_id, p_delta: -totalCancelled });
+        if (decErr) console.error("[admin/check-in cancel] tu_adjust_enrolled failed:", decErr.message);
       }
 
       // 4. Refund pack credits
@@ -410,8 +411,10 @@ export async function POST(request: NextRequest) {
 
       // 2. Move the enrolled count atomically: -1 from old session, +1 to new
       //    (SQL increments — no read-modify-write race that would drift the counts).
-      await supabase.rpc("tu_adjust_enrolled", { p_session_id: booking.session_id, p_delta: -1 });
-      await supabase.rpc("tu_adjust_enrolled", { p_session_id: newSessionId, p_delta: 1 });
+      const { error: decOldErr } = await supabase.rpc("tu_adjust_enrolled", { p_session_id: booking.session_id, p_delta: -1 });
+      if (decOldErr) console.error("[admin/check-in reschedule] tu_adjust_enrolled(old) failed:", decOldErr.message);
+      const { error: incNewErr } = await supabase.rpc("tu_adjust_enrolled", { p_session_id: newSessionId, p_delta: 1 });
+      if (incNewErr) console.error("[admin/check-in reschedule] tu_adjust_enrolled(new) failed:", incNewErr.message);
 
       // 3b. Update locked_session_id for 2x1 packs
       if (booking.pack_id) {

@@ -100,7 +100,7 @@ async function handleCompletedPayment(
     const { error: sqTxInsErr } = await supabase.from("tu_transactions").insert({
       wompi_reference: reference,
       wompi_id: pId,
-      amount,
+      amount: Math.round(amount / 100), // COP pesos (R2B-03) — Square amount_money is in the minor unit
       currency,
       payment_method: "square",
       status: "approved",
@@ -185,7 +185,7 @@ async function handleCompletedPayment(
         pack_type: packType,
         total_classes: packDef.totalClasses,
         classes_used: 0,
-        price_paid: amount,
+        price_paid: Math.round(amount / 100), // COP pesos (R2B-03)
         currency,
         status: "active",
         expires_at: calculateExpiration(packDef.expirationDays).toISOString(),
