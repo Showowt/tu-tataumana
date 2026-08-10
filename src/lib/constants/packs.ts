@@ -170,6 +170,36 @@ export const PACK_DEFINITIONS: PackDefinition[] = [
     isActive: true,
     sortOrder: 12,
   },
+  {
+    type: "FRIDAY_OPEN",
+    name: { en: "Friday Open Flow", es: "Viernes Open Flow" },
+    description: {
+      en: "Special open-flow rate — Fridays only",
+      es: "Tarifa especial open flow — solo viernes",
+    },
+    totalClasses: 1,
+    priceCop: 45000,
+    priceUsd: 12,
+    expirationDays: 7,
+    isPromo: true,
+    isActive: true,
+    sortOrder: 13,
+  },
+  {
+    type: "JUSTB_MEMBERSHIP",
+    name: { en: "JustB Membership", es: "Membresía JustB" },
+    description: {
+      en: "8 classes — your monthly membership",
+      es: "8 clases — tu membresía mensual",
+    },
+    totalClasses: 8,
+    priceCop: 280000,
+    priceUsd: 90,
+    expirationDays: 60,
+    isPromo: false,
+    isActive: true,
+    sortOrder: 14,
+  },
 ];
 
 /** Get a pack definition by type */
