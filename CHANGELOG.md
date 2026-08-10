@@ -1,5 +1,71 @@
 # CHANGELOG — TU. by Tata Umaña
 
+## 2026-08-10 — ADVERSARIAL AUDIT ROUND 2 (fresh-session, 6 passes) — deployed 2158930 + jvsi46jx8
+
+Six cold hostile passes (A–F) with **live rolled-back DB probes**. Round 2 caught what
+code-only review missed — including a P0 that Round 1 could not see.
+
+### 🔴 P0 — CLOSED (DB, proven live)
+- **R2A-01/02 + systemic RLS-grant hole:** every `tu_` table granted anon/`authenticated`
+  INSERT/UPDATE/DELETE, and several had `WITH CHECK(true)` policies. **Proven with a
+  live anon insert:** anyone with the public anon key could insert a `confirmed`
+  `tu_class_bookings` row (bypassing `tu_book_class` — free unlimited classes); a
+  logged-in user could mint a `tu_passes` row; anon could forge `tu_transactions` /
+  vandalize `tu_faq|services|teachers|retreats`. **Fix:** blanket `REVOKE INSERT/UPDATE/
+  DELETE/TRUNCATE` from anon+authenticated on all `tu_` tables (all legit writes go via
+  SECURITY DEFINER RPCs + service_role; browser never writes tables directly). Verified:
+  anon/authenticated writes now `permission denied`; service_role + RPCs intact.
+
+### 🔴 Ship-blocker — CLOSED (money)
+- **R2F-01:** the PUBLIC card path (`yoga/payment` → `getServicePriceCop`) charged a
+  flat **80,000 COP** for every card while the modal displayed the real DB price
+  (TU UNLIMITED displayed 1,050,000 → charged 80,000; industry rate overcharged). NOTE-01
+  had only fixed the *portal* path. **Fix:** read `tu_pricing_cards` by label (JS match,
+  floor-guarded) before the flat fallback.
+
+### P1/MEDIUM — CLOSED
+- **R2B-03:** Wompi/Square webhooks stored amount/price_paid in **centavos (100×)** vs
+  every other path — latent (no webhook pack minted yet) but the first card payment would
+  corrupt records. Normalized to COP pesos.
+- **R2B-01:** capped 100%-off codes over-redeemable across students — atomic
+  `tu_claim_discount_use` enforces `max_uses` + rollback on exhausted.
+- **R2B-05:** admin-verify vs webhook double-mint — admin no longer mints packs for
+  gateway (wompi/square) methods (they settle via the signed webhook).
+- **R2E-01/R2C-06 & R2E-04:** PostgREST `.or()` filter injection (bookings pass lookup,
+  yoga/payment price lookup) — strip phone to digits / sanitize name.
+- **R2E-02:** Telegram webhook now **fails closed** when secret unset (was fail-open;
+  chat_id is body-forgeable).
+- **R2C-01/02:** atomic `tu_slot_reserve` RPC + `UNIQUE(class_date,class_time)` for the
+  public website capacity soft-count.
+- **R2A-05:** pinned `search_path` on all definer/helper functions.
+- **R2D-03:** capture `tu_adjust_enrolled` RPC errors. **R2B-06/07/R2D-02:** free-path
+  `uses_count` release on rollback + manual-notification uses DB base price.
+- **R2D-01:** rate limiter fails open on unknown IP + signup 5→15/min (shared NAT).
+- **R2A-04:** 2x1 guest-booking failure surfaced (not swallowed). **R2F-06:** CMS reorder
+  returns 500 on failure. **R2C-05:** `/api/admin/book` is dead (retire — see Round 3).
+- Migrations `20260810000000` + `20260810010000` capture the as-built functions + R2 grants.
+
+### Verified SOLID by Round 2 (no change needed)
+`tu_book_class` enforces pack ownership (`id=p_pack_id AND student_id=p_student_id FOR
+UPDATE`) — student-pack IDOR closed; overbooking/double-spend/double-refund through the
+RPC are `FOR UPDATE`-serialized; webhooks fail-closed w/ HMAC; no unauth admin route; no
+secret/PII/redirect exposure; timezone + cron idempotency + capacity `>=` all correct.
+
+### Deferred to ROUND 3 (documented risk — see AUDIT_ROUND3_BRIEF.md)
+- **2x1 cluster (R2A-03/R2A-04/R2F-02):** the lock write is inert (packs UPDATE is
+  admin-only RLS) and reschedule splits a 2x1 — needs a dedicated `tu_book_2x1` definer
+  RPC (atomic book-primary + guest + lock). Highest Round-3 priority.
+- **R2B-02:** consume discount on payment APPROVAL (webhook/verify), not on the pending tx
+  (paid path burns a code on abandonment). **R2B-04:** portal catalog + PackPaymentModal +
+  discounts/validate still DISPLAY the constant, not the DB price.
+- **R2A-06:** revoke RPC EXECUTE from anon (keep authenticated). **R2A-07:** dump RLS
+  policies to VCS. **FAIL-09/R2F-05:** `request.json()` guards on ~11 admin routes (500→400).
+- LOW: R2E-03 (booking PATCH IDOR), R2E-05 (pass enum), R2E-06 (discount enum limit),
+  R2E-07 (chat-session PII), R2F-08 (dashboard week UTC), R2F-09 (modal subtitle es),
+  R2F-10 (session-gen Date), R2F-07 (attendance recovery sweep).
+
+---
+
 ## 2026-08-10 — P2/P3 Closure Pass (deployed 27f4751)
 
 Closed NOTE-01 + a large batch of the accepted P2/P3 findings. Battery green
