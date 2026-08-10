@@ -157,20 +157,24 @@ export async function POST(request: NextRequest) {
         }
 
         if (guestId) {
-          // Book the guest (deducts second credit from same pack)
-          await supabase.rpc("tu_book_class", {
+          // Book the guest (deducts second credit from same pack).
+          // R2A-04: tu_book_class enforces pack.student_id = p_student_id, so booking
+          // the guest against the PRIMARY's pack currently returns an error — capture
+          // it instead of silently dropping the guest's seat. (Proper 2x1 atomicity is
+          // a Round-3 item: a dedicated tu_book_2x1 definer RPC.)
+          const { data: guestRes, error: guestErr } = await supabase.rpc("tu_book_class", {
             p_student_id: guestId,
             p_session_id: parsed.data.session_id,
             p_pack_id: parsed.data.pack_id,
           });
-
+          const guestOk = !guestErr && !(guestRes as { error?: string })?.error;
           systemLog({
             category: "booking",
-            level: "info",
-            message: "2x1 guest booked",
+            level: guestOk ? "info" : "error",
+            message: guestOk ? "2x1 guest booked" : "2x1 guest booking FAILED — second seat not created",
             route: "student/book",
             student_id: student.id,
-            details: { guest_name, guest_id: guestId, session_id: parsed.data.session_id },
+            details: { guest_name, guest_id: guestId, session_id: parsed.data.session_id, error: guestErr?.message || (guestRes as { error?: string })?.error },
           });
         }
       } catch (guestErr) {

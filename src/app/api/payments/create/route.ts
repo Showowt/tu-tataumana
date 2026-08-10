@@ -499,13 +499,21 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
         return NextResponse.json({ data: null, error: "db_error", message: "Error activando pack gratuito" }, { status: 500 });
       }
 
-      // Best-effort uses_count increment (the usage row above is the real dedup guard)
-      const { data: freeCodeRow } = await serviceDb
-        .from("tu_discount_codes").select("uses_count").eq("id", discountApplication.code_id).single();
-      const freeCurCount = freeCodeRow?.uses_count ?? 0;
-      await serviceDb.from("tu_discount_codes")
-        .update({ uses_count: freeCurCount + 1 })
-        .eq("id", discountApplication.code_id).eq("uses_count", freeCurCount);
+      // Atomically enforce max_uses (R2B-01). The per-student UNIQUE row above blocks
+      // the SAME student twice; this closes the GLOBAL cap (two different students
+      // racing a max_uses=1 100%-off code). If the code is exhausted, roll back this
+      // student's usage claim and reject.
+      const { data: claimedUse } = await serviceDb.rpc("tu_claim_discount_use", { p_code_id: discountApplication.code_id });
+      if (claimedUse === false) {
+        await serviceDb.from("tu_discount_usage").delete()
+          .eq("discount_code_id", discountApplication.code_id)
+          .eq("student_id", student.id)
+          .eq("transaction_id", reference);
+        return NextResponse.json(
+          { data: null, error: "discount_exhausted", message: "Este codigo de descuento ya fue agotado" },
+          { status: 400 },
+        );
+      }
 
       // Create pack directly
       const { error: freePackErr } = await serviceDb.from("tu_packs").insert({
@@ -522,11 +530,18 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
       });
 
       if (freePackErr) {
-        // Roll back the idempotency claim so a legitimate retry can succeed
+        // Roll back the idempotency claim AND release the uses_count we claimed above,
+        // so a legitimate retry re-claims cleanly (R2B-06 counter drift).
         await serviceDb.from("tu_discount_usage").delete()
           .eq("discount_code_id", discountApplication.code_id)
           .eq("student_id", student.id)
           .eq("transaction_id", reference);
+        const { data: relRow } = await serviceDb
+          .from("tu_discount_codes").select("uses_count").eq("id", discountApplication.code_id).single();
+        if (relRow && typeof relRow.uses_count === "number" && relRow.uses_count > 0) {
+          await serviceDb.from("tu_discount_codes")
+            .update({ uses_count: relRow.uses_count - 1 }).eq("id", discountApplication.code_id);
+        }
         console.error("[payments/create] Free pack insert failed:", freePackErr.message);
         return NextResponse.json({ data: null, error: "db_error", message: "Error creando pack gratuito" }, { status: 500 });
       }
@@ -844,8 +859,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
         currency: "COP",
         paymentMethod: account.label,
         discountCode: discountApplication?.code,
-        discountAmount: discountApplication ? packDef.priceCop - discountApplication.discounted_price : undefined,
-        originalAmount: discountApplication ? packDef.priceCop : undefined,
+        discountAmount: discountApplication ? basePriceCop - discountApplication.discounted_price : undefined,
+        originalAmount: discountApplication ? basePriceCop : undefined,
       });
 
       if (discountApplication) {
@@ -855,7 +870,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
           discountType: discountApplication.discount_type,
           discountValue: discountApplication.discount_value,
           packName: packDef.name.en,
-          originalPrice: packDef.priceCop,
+          originalPrice: basePriceCop,
           finalPrice: discountApplication.discounted_price,
         });
       }

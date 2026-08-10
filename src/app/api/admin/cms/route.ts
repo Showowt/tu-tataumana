@@ -124,7 +124,11 @@ export async function POST(request: NextRequest) {
       if (!parsed.success) return NextResponse.json({ error: "items array requerido" }, { status: 400 });
 
       for (const item of parsed.data) {
-        await supabase.from(table).update({ sort_order: item.sort_order }).eq("id", item.id);
+        const { error: reErr } = await supabase.from(table).update({ sort_order: item.sort_order }).eq("id", item.id);
+        if (reErr) {
+          console.error("[admin/cms reorder] update failed:", item.id, reErr.message);
+          return NextResponse.json({ error: "No se pudo reordenar. Intenta de nuevo." }, { status: 500 });
+        }
       }
       return NextResponse.json({ message: "Reordenado" });
     }

@@ -69,8 +69,11 @@ export async function GET(request: NextRequest) {
       .in("session_id", sessionIds);
 
     if (toAttend && toAttend.length > 0) {
-      // Record attendance FIRST (idempotent via unique booking_id index) so a failure
-      // leaves checked_in=false and the next nightly run retries instead of losing it.
+      // Record attendance (idempotent via unique booking_id index). NOTE (R2F-07): the
+      // session status was already flipped to 'completed' in step 1, so a failure here
+      // is NOT auto-retried by the next run (which only sweeps status='scheduled') — it
+      // is logged for manual recovery. Attendance is a soft record (credits are deducted
+      // at booking), so this is acceptable; a proper recovery sweep is a Round-3 item.
       const { error: attErr } = await supabase.from("tu_attendance").upsert(
         toAttend.map((b) => ({
           booking_id: b.id,

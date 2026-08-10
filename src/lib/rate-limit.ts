@@ -15,6 +15,9 @@ interface Bucket {
 const buckets = new Map<string, Bucket>();
 
 export function rateLimit(key: string, limit = 10, windowMs = 60_000): boolean {
+  // Fail OPEN when the client IP couldn't be determined — otherwise every such
+  // caller shares one bucket and legitimate users get throttled together (R2D-01).
+  if (key.endsWith(":unknown")) return false;
   const now = Date.now();
   const entry = buckets.get(key);
 

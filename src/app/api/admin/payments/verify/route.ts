@@ -196,7 +196,14 @@ export async function POST(request: NextRequest) {
   // -----------------------------------------------------------------------
   const packType = (transaction.related_pack_type as string) || null;
 
-  if (packType && studentId) {
+  // R2B-05: gateway payments (Wompi/Square) settle via their signature-verified
+  // webhook, which mints the pack keyed on the gateway transaction id. If admin also
+  // minted here (keyed on the tx UUID) the two dedup keys wouldn't collide → two packs
+  // for one payment. Manual methods (nequi/bancolombia/zelle/cash) have no webhook, so
+  // admin verify owns their pack. Only create the pack for non-gateway methods.
+  const gatewaySettled = ["wompi", "square"].includes(String(transaction.payment_method || "").toLowerCase());
+
+  if (packType && studentId && !gatewaySettled) {
     const packDef = getPackDefinition(packType);
 
     if (packDef) {

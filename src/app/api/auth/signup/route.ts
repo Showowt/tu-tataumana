@@ -30,7 +30,8 @@ type ServiceClient = ReturnType<typeof createClient<any>>;
 export async function POST(request: NextRequest) {
   try {
     // Rate limit: public account creation — blunt mass auth.users pollution.
-    if (rateLimit(`signup:${clientIp(request)}`, 5, 60_000)) {
+    // 15/min tolerates a workshop signing up from one front-desk WiFi (shared NAT).
+    if (rateLimit(`signup:${clientIp(request)}`, 15, 60_000)) {
       return NextResponse.json(
         { error: "Demasiados intentos. Espera un momento. / Too many attempts, try again shortly." },
         { status: 429 },
