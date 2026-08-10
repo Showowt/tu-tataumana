@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 import { notifyNewBooking } from "@/lib/telegram";
 import { DEFAULT_CLASS_CAPACITY as CAPACITY } from "@/lib/constants/business-rules";
 import { getAdminClient } from "@/lib/admin-auth";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    if (rateLimit(`bookings:${clientIp(request)}`, 10, 60_000)) {
+      return NextResponse.json({ error: "Demasiadas solicitudes. / Too many requests." }, { status: 429 });
+    }
+
     const body = await request.json();
     const {
       name,
@@ -101,6 +106,7 @@ export async function POST(request: Request) {
         .select("*")
         .or(`phone.eq.${normalizedPhone},phone.eq.+${normalizedPhone}`)
         .eq("status", "active")
+        .eq("payment_confirmed", true) // never honor an unpaid pass (admin-created passes set this true)
         .order("created_at", { ascending: true })
         .limit(1);
 

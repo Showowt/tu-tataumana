@@ -18,6 +18,7 @@ import { createPaymentLink } from "@/lib/wompi";
 import { notifyPaymentReceived, notifyPackPurchase, notifyDiscountUsed } from "@/lib/telegram";
 import { captureApiError } from "@/lib/sentry-helpers";
 import { systemLog } from "@/lib/system-log";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 // -------------------------------------------------------------------
 // Types
@@ -345,6 +346,14 @@ async function consumeDiscountCode(
 
 export async function POST(request: NextRequest): Promise<NextResponse<CreatePaymentResponse>> {
   try {
+    // Rate limit: public payment-link / checkout creation (external gateway calls).
+    if (rateLimit(`payments-create:${clientIp(request)}`, 10, 60_000)) {
+      return NextResponse.json(
+        { data: null, error: "rate_limited", message: "Demasiadas solicitudes. Espera un momento. / Too many requests." },
+        { status: 429 },
+      );
+    }
+
     // Parse and validate body
     const body: unknown = await request.json();
 
@@ -448,6 +457,34 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
     if (effectivePrice <= 0 && discountApplication && student) {
       const reference = generateReference(pack_type);
 
+      // IDEMPOTENCY GUARD: claim the (code, student) usage row BEFORE minting anything.
+      // tu_discount_usage has UNIQUE(discount_code_id, student_id), so a double-submitted
+      // or retried free checkout fails here (23505) instead of creating a second free pack.
+      const { error: claimErr } = await serviceDb.from("tu_discount_usage").insert({
+        discount_code_id: discountApplication.code_id,
+        student_id: student.id,
+        transaction_id: reference,
+      });
+      if (claimErr) {
+        if (claimErr.code === "23505") {
+          return NextResponse.json({
+            data: { method: "free" as const, reference, already_processed: true },
+            error: null,
+            message: "Este pack gratuito ya fue activado",
+          });
+        }
+        console.error("[payments/create] Free-pack usage claim failed:", claimErr.message);
+        return NextResponse.json({ data: null, error: "db_error", message: "Error activando pack gratuito" }, { status: 500 });
+      }
+
+      // Best-effort uses_count increment (the usage row above is the real dedup guard)
+      const { data: freeCodeRow } = await serviceDb
+        .from("tu_discount_codes").select("uses_count").eq("id", discountApplication.code_id).single();
+      const freeCurCount = freeCodeRow?.uses_count ?? 0;
+      await serviceDb.from("tu_discount_codes")
+        .update({ uses_count: freeCurCount + 1 })
+        .eq("id", discountApplication.code_id).eq("uses_count", freeCurCount);
+
       // Create pack directly
       const { error: freePackErr } = await serviceDb.from("tu_packs").insert({
         student_id: student.id,
@@ -463,6 +500,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
       });
 
       if (freePackErr) {
+        // Roll back the idempotency claim so a legitimate retry can succeed
+        await serviceDb.from("tu_discount_usage").delete()
+          .eq("discount_code_id", discountApplication.code_id)
+          .eq("student_id", student.id)
+          .eq("transaction_id", reference);
         console.error("[payments/create] Free pack insert failed:", freePackErr.message);
         return NextResponse.json({ data: null, error: "db_error", message: "Error creando pack gratuito" }, { status: 500 });
       }
@@ -485,12 +527,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
         },
       });
 
-      // Consume the discount code
-      try {
-        await consumeDiscountCode(serviceDb, discountApplication, student.id, reference);
-      } catch (usageErr) {
-        console.error("[payments/create] Free discount consumption failed:", usageErr);
-      }
+      // Discount already consumed above (usage row claimed + uses_count incremented)
 
       // Notify
       try {

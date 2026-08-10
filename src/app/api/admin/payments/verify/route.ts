@@ -95,10 +95,15 @@ export async function POST(request: NextRequest) {
     updatePayload.wompi_reference = payment_reference;
   }
 
-  const { error: updateError } = await supabase
+  // Atomic guard: only transition pending→approved. If a concurrent verify (or a
+  // webhook retry) already approved it, 0 rows update and we bail — preventing the
+  // check-then-write race that would otherwise create a second pack below.
+  const { data: updatedTx, error: updateError } = await supabase
     .from("tu_transactions")
     .update(updatePayload)
-    .eq("id", transaction_id);
+    .eq("id", transaction_id)
+    .eq("status", "pending")
+    .select("id");
 
   if (updateError) {
     console.error("[admin/payments/verify] Update failed:", updateError.message);
@@ -106,6 +111,14 @@ export async function POST(request: NextRequest) {
       { error: "Failed to update transaction" },
       { status: 500 },
     );
+  }
+
+  if (!updatedTx || updatedTx.length === 0) {
+    return NextResponse.json({
+      data: { transaction_id, status: "approved" },
+      error: null,
+      message: "Transaction already verified",
+    });
   }
 
   // -----------------------------------------------------------------------

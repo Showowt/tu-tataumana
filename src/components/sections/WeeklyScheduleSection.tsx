@@ -443,7 +443,7 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
               <p className={`font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] mb-2 ${
                 card.highlight ? "text-rose-soft" : "text-gold/70"
               }`}>
-                {card.label}
+                {lang === "es" && card.label_es ? card.label_es : card.label}
               </p>
               <p className="font-[family-name:var(--font-display)] text-xl sm:text-2xl text-white">
                 {formatCOP(card.price_cop)}
@@ -471,7 +471,7 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
               className="btn-tactile schedule-promo-card rounded-2xl border border-gold/10 bg-white/[0.03] p-4 sm:p-5 text-center hover:border-gold/30 hover:bg-white/[0.06] transition-all duration-500 cursor-pointer"
             >
               <p className="font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] text-gold/70 mb-2">
-                {card.label}
+                {lang === "es" && card.label_es ? card.label_es : card.label}
               </p>
               <p className="font-[family-name:var(--font-display)] text-xl sm:text-2xl text-white">
                 {formatCOP(card.price_cop)}

@@ -97,7 +97,7 @@ async function handleCompletedPayment(
 
   if (!txRecord) {
     // Transaction not found by reference — insert new record
-    await supabase.from("tu_transactions").insert({
+    const { error: sqTxInsErr } = await supabase.from("tu_transactions").insert({
       wompi_reference: reference,
       wompi_id: pId,
       amount,
@@ -112,6 +112,13 @@ async function handleCompletedPayment(
         customer_email: email,
       },
     });
+    if (sqTxInsErr) {
+      console.error(
+        "[square-webhook] APPROVED payment tx insert FAILED — ledger row missing for ref",
+        reference,
+        sqTxInsErr.message,
+      );
+    }
   }
 
   if (!email) {

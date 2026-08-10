@@ -4,6 +4,24 @@
 
 ---
 
+> ## ⚠️ AS-BUILT DIVERGENCE (updated 2026-08-10)
+> **This document is the original build brief. The shipped product diverged from it. Where they conflict, THE SHIPPED CODE IS AUTHORITATIVE — do not "restore" anything below to match this brief.**
+>
+> **Actual production stack (as-built):**
+> - **Payments:** **Wompi (Colombia) + Square** — via `src/lib/wompi.ts`, `src/lib/square.ts`, `/api/webhooks/{wompi,square}`. **Stripe was never wired** (no `stripe` code exists) — ignore all `stripe_*` columns and Drop 003.
+> - **Concierge / messaging:** **Telegram bot** — `/api/webhooks/telegram` (admin command surface + AI concierge) + nightly `daily-digest`. **Twilio WhatsApp Business API was never wired**; the site's WhatsApp is a `wa.me` deep link only.
+> - **Currency:** **COP** (pesos), not USD.
+> - **Email:** **none** (no Resend / no Cal.com). All notifications go via Telegram.
+> - **Digital Content subscription platform:** **NOT BUILT.** No `/content` routes, no `subscriptions` table, no player. The concierge should not quote a price for it.
+> - **Retreat portal:** marketing section only (`RetreatsSection` + read-only `/api/public/retreats`); no `/retreats/[slug]`, deposits, or retreat registration flow.
+> - **Marketing pages** (`/about`, `/services/*`, `/contact`, `/blog`): folded into the one-page homepage — they do not exist as routes.
+>
+> **Shipped but NOT in this brief:** authenticated **student portal** (`/portal/*` + Supabase Auth), **multi-teacher** model (`tu_teachers`, `/admin/team`), **discounts/coupons**, class-pack **lifecycle crons** (generate/expire/complete sessions, cleanup), **site-copy CMS** (`/admin/contenido`), **Sentry**.
+>
+> DB schema, RLS, and the booking functions (`tu_book_class`, `tu_cancel_booking`, `tu_adjust_enrolled`) live in Supabase, not in `supabase/migrations/*` (those files are header stubs). Dump them to version control before the next build.
+
+---
+
 ## PROJECT OVERVIEW
 
 **Client:** Tata Umaña — Wellness Curator, Yoga Teacher (23+ years), Reiki Master, Ceremonial Guide

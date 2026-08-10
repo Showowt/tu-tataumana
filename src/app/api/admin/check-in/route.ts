@@ -237,20 +237,9 @@ export async function POST(request: NextRequest) {
           .eq("booking_id", booking_id);
       }
 
-      // 3. Decrement session enrolled count (by total cancelled bookings)
-      const { data: session } = await supabase
-        .from("tu_class_sessions")
-        .select("enrolled")
-        .eq("id", booking.session_id)
-        .single();
-
-      if (session && (session.enrolled || 0) > 0) {
-        const newEnrolled = Math.max((session.enrolled || 0) - totalCancelled, 0);
-        await supabase
-          .from("tu_class_sessions")
-          .update({ enrolled: newEnrolled })
-          .eq("id", booking.session_id)
-          .eq("enrolled", session.enrolled || 0);
+      // 3. Decrement session enrolled count atomically (clamps at 0 in SQL)
+      if (totalCancelled > 0) {
+        await supabase.rpc("tu_adjust_enrolled", { p_session_id: booking.session_id, p_delta: -totalCancelled });
       }
 
       // 4. Refund pack credits
@@ -416,27 +405,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Error al reagendar" }, { status: 500 });
       }
 
-      // 2. Decrement old session enrolled (with optimistic lock)
-      const { data: oldSession } = await supabase
-        .from("tu_class_sessions")
-        .select("enrolled")
-        .eq("id", booking.session_id)
-        .single();
-
-      if (oldSession && (oldSession.enrolled || 0) > 0) {
-        await supabase
-          .from("tu_class_sessions")
-          .update({ enrolled: (oldSession.enrolled || 1) - 1 })
-          .eq("id", booking.session_id)
-          .eq("enrolled", oldSession.enrolled || 0);
-      }
-
-      // 3. Increment new session enrolled (with optimistic lock)
-      await supabase
-        .from("tu_class_sessions")
-        .update({ enrolled: (newSession.enrolled || 0) + 1 })
-        .eq("id", newSessionId)
-        .eq("enrolled", newSession.enrolled || 0);
+      // 2. Move the enrolled count atomically: -1 from old session, +1 to new
+      //    (SQL increments — no read-modify-write race that would drift the counts).
+      await supabase.rpc("tu_adjust_enrolled", { p_session_id: booking.session_id, p_delta: -1 });
+      await supabase.rpc("tu_adjust_enrolled", { p_session_id: newSessionId, p_delta: 1 });
 
       // 3b. Update locked_session_id for 2x1 packs
       if (booking.pack_id) {

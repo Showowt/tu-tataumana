@@ -254,23 +254,27 @@ export async function POST(request: NextRequest) {
         .eq("checked_in", false);
 
       if (toAttend && toAttend.length > 0) {
-        const { error: attendErr } = await supabase
-          .from("tu_class_bookings")
-          .update({ checked_in: true, checked_in_at: completedAt })
-          .in("id", toAttend.map((b) => b.id));
+        // Record attendance FIRST (idempotent via unique booking_id index) so a failure
+        // here leaves checked_in=false and completion/cron re-runs instead of losing it.
+        const { error: attErr } = await supabase.from("tu_attendance").upsert(
+          toAttend.map((b) => ({
+            booking_id: b.id,
+            student_id: b.student_id,
+            session_id: sid,
+            status: "attended",
+            checked_in_at: completedAt,
+          })),
+          { onConflict: "booking_id", ignoreDuplicates: true },
+        );
 
-        if (attendErr) {
-          console.error("[admin/sessions complete] auto check-in failed:", attendErr.message);
+        if (attErr) {
+          console.error("[admin/sessions complete] attendance insert failed — NOT marking checked_in (will retry):", attErr.message);
         } else {
-          await supabase.from("tu_attendance").insert(
-            toAttend.map((b) => ({
-              booking_id: b.id,
-              student_id: b.student_id,
-              session_id: sid,
-              status: "attended",
-              checked_in_at: completedAt,
-            })),
-          );
+          const { error: flagErr } = await supabase
+            .from("tu_class_bookings")
+            .update({ checked_in: true, checked_in_at: completedAt })
+            .in("id", toAttend.map((b) => b.id));
+          if (flagErr) console.error("[admin/sessions complete] check-in flag update failed (attendance recorded):", flagErr.message);
         }
       }
 

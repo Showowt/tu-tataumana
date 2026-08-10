@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { notifyHotLead } from "@/lib/telegram";
 import { verifyAdmin, getAdminClient } from "@/lib/admin-auth";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 /**
  * POST /api/leads — Capture a lead from any source (public — lead capture)
  */
 export async function POST(request: NextRequest) {
   try {
+    if (rateLimit(`leads:${clientIp(request)}`, 10, 60_000)) {
+      return NextResponse.json({ error: "Demasiadas solicitudes. / Too many requests." }, { status: 429 });
+    }
+
     const body = await request.json();
     const {
       source,

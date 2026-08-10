@@ -215,12 +215,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 7. Increment enrolled count on session (optimistic lock)
-  await supabase
-    .from("tu_class_sessions")
-    .update({ enrolled: (session.enrolled || 0) + 1 })
-    .eq("id", session_id)
-    .eq("enrolled", session.enrolled || 0);
+  // 7. Increment enrolled count atomically (SQL enrolled = enrolled + 1 — no
+  //    read-modify-write race that would silently drop the increment under contention).
+  await supabase.rpc("tu_adjust_enrolled", { p_session_id: session_id, p_delta: 1 });
 
   // 8. Fire-and-forget notification
   try {

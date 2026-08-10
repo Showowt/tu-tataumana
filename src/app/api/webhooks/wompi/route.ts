@@ -83,7 +83,7 @@ async function handleApprovedPayment(
   const packType = parsePackType(transaction.reference);
 
   // 1. Record transaction (upsert by wompi_reference for idempotency)
-  const { data: txRecord } = await supabase
+  const { data: txRecord, error: txUpsertErr } = await supabase
     .from("tu_transactions")
     .upsert(
       {
@@ -107,6 +107,16 @@ async function handleApprovedPayment(
     )
     .select("id")
     .single();
+
+  if (txUpsertErr) {
+    // APPROVED payment whose ledger row failed to persist — pack may still be granted
+    // below, so surface loudly for revenue reconciliation instead of silently dropping.
+    console.error(
+      "[webhook] APPROVED payment tx upsert FAILED — ledger row missing for ref",
+      transaction.reference,
+      txUpsertErr.message,
+    );
+  }
 
   if (!email) {
     console.log("[webhook] No email on transaction — skipping student/pack creation");

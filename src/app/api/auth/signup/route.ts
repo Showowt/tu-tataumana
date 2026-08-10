@@ -15,6 +15,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { ADMIN_EMAILS } from "@/lib/constants/business-rules";
 import { sendTelegramMessage } from "@/lib/telegram";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 const SignupSchema = z.object({
   email: z.string().email(),
@@ -28,6 +29,14 @@ type ServiceClient = ReturnType<typeof createClient<any>>;
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: public account creation — blunt mass auth.users pollution.
+    if (rateLimit(`signup:${clientIp(request)}`, 5, 60_000)) {
+      return NextResponse.json(
+        { error: "Demasiados intentos. Espera un momento. / Too many attempts, try again shortly." },
+        { status: 429 },
+      );
+    }
+
     const body = await request.json();
     const parsed = SignupSchema.safeParse(body);
 
@@ -40,6 +49,16 @@ export async function POST(request: NextRequest) {
 
     const { email, password, full_name, phone } = parsed.data;
     const cleanEmail = email.trim().toLowerCase();
+
+    // Admin accounts must be provisioned out-of-band (tu_admin_users / seeded auth),
+    // NEVER self-served. A public signup with email_confirm:true + a client-chosen
+    // password for an admin email = privilege escalation (attacker logs in as admin).
+    if (ADMIN_EMAILS.includes(cleanEmail)) {
+      return NextResponse.json(
+        { error: "Este email no puede registrarse aqui. Contacta al administrador. / This email cannot self-register." },
+        { status: 403 },
+      );
+    }
 
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceKey) {
@@ -129,13 +148,14 @@ async function createStudentProfile(
   fullName: string,
   phone: string | undefined,
 ) {
-  const isAdmin = ADMIN_EMAILS.includes(email);
+  // Self-serve signup ALWAYS creates a plain student. Admin role is granted only
+  // via ADMIN_EMAILS / tu_admin_users, never from a public account-creation path.
   const { error: studentError } = await supabase.from("tu_students").insert({
     auth_id: userId,
     email,
     full_name: fullName,
     phone: phone || null,
-    role: isAdmin ? "admin" : "student",
+    role: "student",
     preferred_lang: "es",
   });
 

@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -15,6 +16,10 @@ function getSupabase() {
  */
 export async function POST(request: NextRequest) {
   try {
+    if (rateLimit(`chat-session:${clientIp(request)}`, 20, 60_000)) {
+      return NextResponse.json({ error: "Demasiadas solicitudes. / Too many requests." }, { status: 429 });
+    }
+
     const body = await request.json();
     const { session_id, messages, extracted } = body;
 

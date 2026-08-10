@@ -8,6 +8,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -91,6 +92,13 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Passes are monetizable product — creation is admin-only. An open POST let
+    // anyone mint an active unlimited pass (payment_confirmed:false) and book free.
+    const admin = await verifyAdmin(request);
+    if (!admin) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { phone, name, email, pass_type, payment_method } = body;
 
@@ -175,6 +183,13 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
+    // Decrementing a pass burns a paid class credit — admin/internal only.
+    // Open PATCH let anyone drain any pass by phone/pass_id (griefing).
+    const admin = await verifyAdmin(request);
+    if (!admin) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { pass_id, phone } = body;
 
