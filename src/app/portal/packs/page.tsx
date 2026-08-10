@@ -20,23 +20,37 @@ export default function PacksPage() {
   const [ownedPacks, setOwnedPacks] = useState<OwnedPack[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPack, setSelectedPack] = useState<PackDefinition | null>(null);
-  const lang = "es";
+  const [lang, setLang] = useState<"es" | "en">("es");
 
   useEffect(() => {
     async function load() {
-      const res = await fetch("/api/student/packs?status=all");
+      try {
+        const [res, profileRes] = await Promise.all([
+          fetch("/api/student/packs?status=all"),
+          fetch("/api/student/profile"),
+        ]);
 
-      // Session expired — force re-login
-      if (res.status === 401) {
-        window.location.href = "/login?redirect=/portal/packs";
-        return;
-      }
+        // Session expired — force re-login
+        if (res.status === 401 || profileRes.status === 401) {
+          window.location.href = "/login?redirect=/portal/packs";
+          return;
+        }
 
-      if (res.ok) {
-        const data = await res.json();
-        setOwnedPacks(data.data || []);
+        if (res.ok) {
+          const data = await res.json();
+          setOwnedPacks(data.data || []);
+        }
+        if (profileRes.ok) {
+          const p = await profileRes.json();
+          if (p?.data?.preferred_lang === "en" || p?.data?.preferred_lang === "es") {
+            setLang(p.data.preferred_lang);
+          }
+        }
+      } catch {
+        // Network failure — stop the spinner; render with owned/empty state.
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     load();
   }, []);

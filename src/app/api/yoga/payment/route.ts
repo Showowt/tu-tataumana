@@ -16,7 +16,6 @@ import { createClient } from "@supabase/supabase-js";
 import {
   createPaymentLink,
   generateBookingReference,
-  type WompiCurrency,
 } from "@/lib/wompi";
 import { captureApiError } from "@/lib/sentry-helpers";
 import { systemLog } from "@/lib/system-log";
@@ -212,30 +211,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const legacyData = legacyResult.data;
-    const reference = legacyData.reference || generateBookingReference();
-    const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
-    const redirectUrl = `${baseUrl}?payment=success&ref=${encodeURIComponent(reference)}`;
-
-    const paymentLink = await createPaymentLink({
-      amount: legacyData.amount,
-      currency: legacyData.currency as WompiCurrency,
-      reference,
-      customerEmail: legacyData.customerEmail,
-      customerName: legacyData.customerName,
-      redirectUrl,
-      description:
-        legacyData.description || "TU. Wellness - Yoga Booking",
-      expirationMinutes: 30,
-    });
-
-    return NextResponse.json({
-      success: true,
-      reference,
-      paymentUrl: paymentLink.payment_link_url,
-      expiresAt: paymentLink.expires_at,
-    });
+    // SEC-05: the legacy branch trusted a client-supplied `amount`, letting anyone
+    // mint arbitrary-value payment links on the merchant's Wompi account. Its only
+    // callers were the now-dead PaymentCheckout / JustbYogaAcademy components, so we
+    // reject it — the live BookingModal uses the secure serviceName flow above
+    // (server-side price via getServicePriceCop).
+    return NextResponse.json(
+      { error: "Formato de pago no soportado. Usa el flujo de reserva. / Unsupported payment format." },
+      { status: 400 },
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Payment creation failed";

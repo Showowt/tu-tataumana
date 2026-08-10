@@ -244,6 +244,7 @@ export async function getTransactionByReference(
       headers: {
         Authorization: `Bearer ${WOMPI_PRIVATE_KEY}`,
       },
+      signal: AbortSignal.timeout(8000),
     },
   );
 

@@ -47,31 +47,36 @@ export default function PortalDashboard() {
 
   useEffect(() => {
     async function load() {
-      const [profileRes, bookingsRes, packsRes] = await Promise.all([
-        fetch("/api/student/profile"),
-        fetch("/api/student/bookings?status=confirmed&upcoming=true"),
-        fetch("/api/student/packs?status=active"),
-      ]);
+      try {
+        const [profileRes, bookingsRes, packsRes] = await Promise.all([
+          fetch("/api/student/profile"),
+          fetch("/api/student/bookings?status=confirmed&upcoming=true"),
+          fetch("/api/student/packs?status=active"),
+        ]);
 
-      // If any API returns 401, session is invalid — force re-login
-      if (profileRes.status === 401 || bookingsRes.status === 401 || packsRes.status === 401) {
-        window.location.href = "/login?redirect=/portal";
-        return;
-      }
+        // If any API returns 401, session is invalid — force re-login
+        if (profileRes.status === 401 || bookingsRes.status === 401 || packsRes.status === 401) {
+          window.location.href = "/login?redirect=/portal";
+          return;
+        }
 
-      if (profileRes.ok) {
-        const p = await profileRes.json();
-        setProfile(p.data);
+        if (profileRes.ok) {
+          const p = await profileRes.json();
+          setProfile(p.data);
+        }
+        if (bookingsRes.ok) {
+          const b = await bookingsRes.json();
+          setBookings(b.data || []);
+        }
+        if (packsRes.ok) {
+          const pk = await packsRes.json();
+          setPacks(pk.data || []);
+        }
+      } catch {
+        // Network failure — stop the spinner and render with whatever loaded.
+      } finally {
+        setLoading(false);
       }
-      if (bookingsRes.ok) {
-        const b = await bookingsRes.json();
-        setBookings(b.data || []);
-      }
-      if (packsRes.ok) {
-        const pk = await packsRes.json();
-        setPacks(pk.data || []);
-      }
-      setLoading(false);
     }
     load();
   }, []);

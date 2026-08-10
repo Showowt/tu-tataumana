@@ -86,6 +86,7 @@ export async function createSquareCheckout(data: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!response.ok) {
@@ -154,6 +155,7 @@ export async function getSquarePayment(paymentId: string): Promise<{
       "Square-Version": "2024-12-18",
       Authorization: `Bearer ${SQUARE_ACCESS_TOKEN}`,
     },
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!response.ok) return null;

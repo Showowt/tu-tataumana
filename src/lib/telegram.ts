@@ -58,6 +58,7 @@ export async function sendTelegramMessage(text: string): Promise<boolean> {
             parse_mode: "HTML",
             disable_web_page_preview: true,
           }),
+          signal: AbortSignal.timeout(8000),
         }
       );
 
@@ -100,6 +101,7 @@ export async function sendTelegramReply(
           parse_mode: "HTML",
           disable_web_page_preview: true,
         }),
+        signal: AbortSignal.timeout(8000),
       },
     );
 
@@ -404,6 +406,7 @@ export async function setTelegramBotCommands(): Promise<boolean> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ commands }),
+      signal: AbortSignal.timeout(8000),
     });
     const data = await res.json();
     return data.ok === true;

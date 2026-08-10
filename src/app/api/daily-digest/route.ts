@@ -28,6 +28,7 @@ async function sendTelegram(text: string): Promise<boolean> {
       parse_mode: "HTML",
       disable_web_page_preview: true,
     }),
+    signal: AbortSignal.timeout(8000),
   });
   return res.ok;
 }

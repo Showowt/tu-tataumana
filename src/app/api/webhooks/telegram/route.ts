@@ -2903,7 +2903,8 @@ export async function POST(request: NextRequest) {
     const intent = await parseIntent(text);
     console.log(
       `[Telegram] Intent: ${intent.action}`,
-      JSON.stringify(intent.params)
+      // HYG-01: params can carry name/email/phone from NL parsing — log only the keys
+      JSON.stringify(Object.keys(intent.params || {}))
     );
 
     let response: string;

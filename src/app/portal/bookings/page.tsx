@@ -31,29 +31,45 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [filter, setFilter] = useState<"upcoming" | "all">("upcoming");
-  const lang = "es";
+  const [lang, setLang] = useState<"es" | "en">("es");
 
   async function loadBookings() {
-    const upcoming = filter === "upcoming" ? "true" : "false";
-    const res = await fetch(`/api/student/bookings?upcoming=${upcoming}`);
+    try {
+      const upcoming = filter === "upcoming" ? "true" : "false";
+      const res = await fetch(`/api/student/bookings?upcoming=${upcoming}`);
 
-    // Session expired — force re-login
-    if (res.status === 401) {
-      window.location.href = "/login?redirect=/portal/bookings";
-      return;
-    }
+      // Session expired — force re-login
+      if (res.status === 401) {
+        window.location.href = "/login?redirect=/portal/bookings";
+        return;
+      }
 
-    if (res.ok) {
-      const data = await res.json();
-      setBookings(data.data || []);
+      if (res.ok) {
+        const data = await res.json();
+        setBookings(data.data || []);
+      }
+    } catch {
+      // Network failure — stop the spinner; render with whatever loaded.
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
     setLoading(true);
     loadBookings();
   }, [filter]);
+
+  // Language preference (once) — respect the student's preferred_lang
+  useEffect(() => {
+    fetch("/api/student/profile")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => {
+        const pl = p?.data?.preferred_lang;
+        if (pl === "en" || pl === "es") setLang(pl);
+      })
+      .catch(() => {});
+  }, []);
 
   async function handleCancel(bookingId: string) {
     if (

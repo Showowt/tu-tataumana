@@ -615,10 +615,8 @@ I design custom retreats for private groups: bachelorette parties, corporate tea
 DIGITAL CONTENT — COMING SOON
 ═══════════════════════════════════════════════════════════════════════════════
 
-My online platform is launching soon:
-
-MONTHLY: $19 USD/month
-ANNUAL: $182 USD/year (save 20%)
+My online platform is launching soon. There is no public checkout yet — join the
+waitlist for early access and founding-member pricing (I'll share exact prices at launch).
 
 What it will include:
 - Guided meditation library (10+ hours of recorded meditations)

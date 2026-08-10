@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       systemLog({ category: "booking", level: "error", message: "Student booking RPC failed", route: "student/book", student_id: student.id, details: { error: error.message, session_id: parsed.data.session_id, pack_id: parsed.data.pack_id } });
       console.error("[student/book]", error.message);
       return NextResponse.json(
-        { error: "Booking failed: " + error.message },
+        { error: "No se pudo completar la reserva. Intenta de nuevo. / Could not complete the booking, please try again." },
         { status: 500 },
       );
     }

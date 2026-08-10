@@ -66,14 +66,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to check in" }, { status: 500 });
       }
 
-      // Create attendance record
-      await supabase.from("tu_attendance").insert({
+      // Create attendance record (merge-upsert on the unique booking_id so re-check-in
+      // updates rather than 23505-ing; capture the error instead of swallowing it).
+      const { error: attInErr } = await supabase.from("tu_attendance").upsert({
         booking_id: booking.id,
         student_id: booking.student_id,
         session_id: booking.session_id,
         status: "attended",
         checked_in_at: new Date().toISOString(),
-      });
+      }, { onConflict: "booking_id" });
+      if (attInErr) console.error("[admin/check-in] attendance insert failed:", attInErr.message);
 
       return NextResponse.json({ message: "Student checked in" });
     }
@@ -92,13 +94,14 @@ export async function POST(request: NextRequest) {
         .update({ status: "no_show" })
         .eq("id", booking_id);
 
-      // Create attendance record
-      await supabase.from("tu_attendance").insert({
+      // Create attendance record (merge-upsert on unique booking_id + capture error)
+      const { error: nsAttErr } = await supabase.from("tu_attendance").upsert({
         booking_id: booking.id,
         student_id: booking.student_id,
         session_id: booking.session_id,
         status: "no_show",
-      });
+      }, { onConflict: "booking_id" });
+      if (nsAttErr) console.error("[admin/check-in] no-show attendance insert failed:", nsAttErr.message);
 
       // No-shows don't get pack credit refund — the credit was already deducted at booking time
 

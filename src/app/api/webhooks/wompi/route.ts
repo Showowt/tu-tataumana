@@ -149,7 +149,7 @@ async function handleApprovedPayment(
       return;
     }
     student = newStudent;
-    console.log("[webhook] Auto-created student:", email);
+    console.log("[webhook] Auto-created student for transaction:", transaction.id);
   }
 
   if (!student) return;
@@ -195,7 +195,7 @@ async function handleApprovedPayment(
       if (packErr) {
         console.error("[webhook] Pack creation failed:", packErr.message);
       } else {
-        console.log("[webhook] Auto-created pack:", packType, "for", email);
+        console.log("[webhook] Auto-created pack:", packType, "for transaction:", transaction.id);
 
         // 4. Notify Tata of new membership activation
         try {
@@ -304,7 +304,7 @@ export async function POST(
       }
 
       case "payment_link.updated":
-        console.log("[webhook] Payment link updated:", JSON.stringify(payload.data));
+        console.log("[webhook] Payment link updated");
         break;
 
       case "nequi_token.updated":

@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
         .update({
           status: "cancelled",
           cancel_reason: reason || "Cancelled by admin",
+          enrolled: 0, // all bookings are cancelled below — reset so a later reactivate/generate doesn't revive a phantom-full count
         })
         .eq("id", session_id);
 

@@ -409,6 +409,28 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
     const reference = generateReference(pack_type);
     const serviceDb = getServiceSupabase();
 
+    // NOTE-01: charge the admin-editable DB price (tu_pricing_cards) by pack_type so
+    // /admin/precios edits actually take effect. Fall back to the code constant when
+    // there's no active card. A safety floor blocks a mis-typed DB price (e.g. 280
+    // instead of 280000) from ever becoming a real charge.
+    const PRICE_FLOOR_COP = 10000;
+    let basePriceCop = packDef.priceCop;
+    const { data: priceCard } = await serviceDb
+      .from("tu_pricing_cards")
+      .select("price_cop")
+      .eq("pack_type", pack_type)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (typeof priceCard?.price_cop === "number") {
+      if (priceCard.price_cop >= PRICE_FLOOR_COP) {
+        basePriceCop = priceCard.price_cop;
+      } else {
+        console.error(`[payments/create] DB price for ${pack_type} below floor (${priceCard.price_cop} COP) — charging trusted constant ${packDef.priceCop}`);
+      }
+    }
+
     // -------------------------------------------------------------------
     // DISCOUNT CODE (optional) — resolve and atomically claim before payment
     // -------------------------------------------------------------------
@@ -432,7 +454,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
           discount_code,
           pack_type,
           student.id,
-          packDef.priceCop,
+          basePriceCop,
         );
       } catch (discountError) {
         return NextResponse.json(
@@ -449,7 +471,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
     // Effective price after discount (falls back to full price)
     const effectivePrice = discountApplication
       ? discountApplication.discounted_price
-      : packDef.priceCop;
+      : basePriceCop;
 
     // -------------------------------------------------------------------
     // FREE CHECKOUT (100% discount — no payment gateway needed)

@@ -17,7 +17,7 @@ interface Message {
   content: string;
 }
 
-const TATA_WHATSAPP = "+19174538307";
+const TATA_WHATSAPP = "+573166333663";
 
 const CONVERSATION_STARTERS = [
   "I've never done yoga before",
@@ -99,7 +99,7 @@ export default function ChatBot() {
         ...prev,
         {
           role: "assistant",
-          content: `I apologize, I'm having trouble connecting right now. Please reach out to Tata directly via WhatsApp for immediate assistance: +1 (917) 453-8307`,
+          content: `I apologize, I'm having trouble connecting right now. Please reach out to Tata directly via WhatsApp for immediate assistance: +57 316 633 3663`,
         },
       ]);
     } finally {

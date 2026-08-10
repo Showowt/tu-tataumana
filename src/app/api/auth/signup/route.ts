@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       } else {
         console.error("[auth/signup]", authError.message, authError.status);
         return NextResponse.json(
-          { error: `Error al crear la cuenta: ${authError.message}` },
+          { error: "No se pudo crear la cuenta. Intenta de nuevo. / Could not create the account, please try again." },
           { status: 500 },
         );
       }

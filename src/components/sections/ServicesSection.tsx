@@ -14,6 +14,7 @@ interface ServiceData {
   nameEs: string;
   price: string;
   duration: string;
+  description?: { en: string; es: string };
 }
 
 const FALLBACK_SERVICES: ServiceData[] = [
@@ -46,11 +47,14 @@ export default function ServicesSection({ lang, L, openBooking }: ServicesSectio
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d?.data?.length) {
-          setServices(d.data.map((s: { name_en: string; name_es: string; price_cop: number; price_usd: number; duration: string }) => ({
+          setServices(d.data.map((s: { name_en: string; name_es: string; price_cop: number; price_usd: number; duration: string; description_en?: string; description_es?: string }) => ({
             name: s.name_en,
             nameEs: s.name_es,
             price: formatPrice(s.price_cop, s.price_usd),
             duration: s.duration,
+            description: (s.description_en || s.description_es)
+              ? { en: s.description_en || s.description_es || "", es: s.description_es || s.description_en || "" }
+              : undefined,
           })));
         }
       })
@@ -98,7 +102,7 @@ export default function ServicesSection({ lang, L, openBooking }: ServicesSectio
                 </p>
               )}
               <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/50 leading-relaxed mb-6">
-                {t.serviceDescriptions[lang][descriptionKeys[i]]}
+                {service.description ? service.description[lang] : t.serviceDescriptions[lang][descriptionKeys[i]]}
               </p>
               <div className="flex items-center justify-between pt-4 border-t border-charcoal/5">
                 <span className="font-[family-name:var(--font-body)] text-xs sm:text-sm text-charcoal/70 font-medium">
