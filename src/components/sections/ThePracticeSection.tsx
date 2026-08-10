@@ -27,23 +27,23 @@ export default function ThePracticeSection({ lang, L }: ThePracticeSectionProps)
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-          {/* Video — landscape, spans left side */}
-          <div className="fade-in fade-in-delay-1 md:col-span-7 md:row-span-2 glass-frame" style={{ minHeight: "400px" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Featured video — full width, centered */}
+          <div className="fade-in md:col-span-2 glass-frame mx-auto w-full" style={{ aspectRatio: "16 / 9", maxHeight: "620px" }}>
             <video
               autoPlay
               muted
               loop
               playsInline
               className="inline-video"
-              style={{ minHeight: "100%", transform: "scale(1.25)", transformOrigin: "center 25%" }}
+              style={{ transform: "scale(1.06)", transformOrigin: "center 30%" }}
             >
               <source src="/class-video.mp4" type="video/mp4" />
             </video>
           </div>
 
-          {/* Upper right — sound healing experience with headphones */}
-          <div className="clip-reveal md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto editorial-tilt-right">
+          {/* Sound healing experience with headphones */}
+          <div className="fade-in fade-in-delay-1 glass-frame aspect-[4/3]">
             <Image
               src="/practice-1.jpg"
               alt="Sound healing experience with headphones at TUISYOU wellness event in Cartagena Colombia"
@@ -54,8 +54,8 @@ export default function ThePracticeSection({ lang, L }: ThePracticeSectionProps)
             />
           </div>
 
-          {/* Lower right — Tata leading group yoga session */}
-          <div className="clip-reveal-left md:col-span-5 glass-frame aspect-[4/3] md:aspect-auto editorial-tilt-left">
+          {/* Tata leading group yoga session */}
+          <div className="fade-in fade-in-delay-2 glass-frame aspect-[4/3]">
             <Image
               src="/practice-2.jpg"
               alt="Tata Umana leading yoga and sound healing session at TUISYOU wellness event in Cartagena Colombia"
@@ -67,7 +67,7 @@ export default function ThePracticeSection({ lang, L }: ThePracticeSectionProps)
           </div>
 
           {/* Group photo — full width, tall to show all faces */}
-          <div className="fade-in fade-in-delay-4 md:col-span-12 glass-frame" style={{ height: "clamp(420px, 50vw, 700px)" }}>
+          <div className="fade-in fade-in-delay-3 md:col-span-2 glass-frame" style={{ height: "clamp(420px, 50vw, 700px)" }}>
             <Image
               src="/yoga-class.jpg"
               alt="Group yoga class at Casa Carolina Cartagena — JustbYoga by TUISYOU daily wellness classes with sound bowls and mats"
