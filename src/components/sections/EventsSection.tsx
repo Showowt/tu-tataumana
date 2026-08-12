@@ -27,6 +27,14 @@ interface EventsSectionProps {
   openBooking: (service?: string) => void;
 }
 
+/** Convert "20:30:00" or "20:30" to "8:30 PM" */
+function formatTime12(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const displayH = h % 12 || 12;
+  return `${displayH}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 /**
  * Renders event flyer image. Uses Next.js Image for local files (/public),
  * plain <img> for remote URLs (Supabase Storage) to avoid optimization failures.
@@ -141,15 +149,21 @@ export default function EventsSection({ lang, openBooking }: EventsSectionProps)
                     </p>
                   )}
                   {!event.image_url && event.start_time && (
-                    <p className="font-[family-name:var(--font-body)] text-[11px] text-white/40 mb-4">
+                    <p className="font-[family-name:var(--font-body)] text-[11px] text-white/40 mb-2">
                       {new Date(event.event_date + "T12:00:00").toLocaleDateString(
                         lang === "es" ? "es-CO" : "en-US",
                         { weekday: "long", month: "long", day: "numeric" },
                       )}{" "}
-                      · {event.start_time.slice(0, 5)}
-                      {event.end_time ? ` - ${event.end_time.slice(0, 5)}` : ""}
+                      · {formatTime12(event.start_time)}
+                      {event.end_time ? ` - ${formatTime12(event.end_time)}` : ""}
                     </p>
                   )}
+                  {!event.image_url &&
+                    (lang === "es" ? event.description_es : event.description) && (
+                      <p className="font-[family-name:var(--font-body)] text-[13px] text-white/50 leading-relaxed mb-4">
+                        {lang === "es" ? event.description_es : event.description}
+                      </p>
+                    )}
 
                   <div className="mt-auto">
                     {event.link_url ? (
