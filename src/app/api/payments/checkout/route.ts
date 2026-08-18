@@ -1,11 +1,13 @@
 /**
- * Yoga Booking Payment API
+ * Booking Checkout API
  * TU. by Tata Umana
  *
- * Creates Wompi checkout configs for yoga bookings.
+ * POST /api/payments/checkout — creates Wompi payment links for bookings.
  * Prices are validated server-side — never trusted from client.
  *
  * Flow (BookingModal): { serviceName, customerName, ... } → payment link
+ * The old /api/yoga/payment path rewrites here (next.config) so browser tabs
+ * opened before the rename can still complete a payment.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -195,9 +197,9 @@ export async function POST(request: NextRequest) {
       error instanceof Error ? error.message : "Payment creation failed";
     const isConfigError = message.includes("not configured");
 
-    captureApiError("yoga/payment", error, { route: "POST /api/yoga/payment", isConfigError });
-    systemLog({ category: "payment", level: "error", message: "Wompi payment link creation failed", route: "yoga/payment", details: { error: message, isConfigError } });
-    console.error("[yoga/payment] PAYMENT LINK CREATION FAILED:", {
+    captureApiError("payments/checkout", error, { route: "POST /api/payments/checkout", isConfigError });
+    systemLog({ category: "payment", level: "error", message: "Wompi payment link creation failed", route: "payments/checkout", details: { error: message, isConfigError } });
+    console.error("[payments/checkout] PAYMENT LINK CREATION FAILED:", {
       error: message,
       isConfigError,
       hasPrivateKey: !!process.env.WOMPI_PRIVATE_KEY,
