@@ -89,10 +89,52 @@ const FALLBACK_SCHEDULE: ScheduleDay[] = [
   ]},
 ];
 
-/** Fetch schedule from DB — falls back to hardcoded data if API fails */
-function useScheduleData(): { schedule: ScheduleDay[]; loading: boolean } {
+interface DatedClass {
+  start_time: string;
+  name: string;
+  name_es: string;
+  description: string | null;
+  description_es: string | null;
+  teacher: string;
+  note: string | null;
+}
+
+const DAY_META: Record<number, { day: string; dayEs: string; dayShort: string }> = {
+  0: { day: "Sunday", dayEs: "Domingo", dayShort: "SUN" },
+  1: { day: "Monday", dayEs: "Lunes", dayShort: "MON" },
+  2: { day: "Tuesday", dayEs: "Martes", dayShort: "TUE" },
+  3: { day: "Wednesday", dayEs: "Miercoles", dayShort: "WED" },
+  4: { day: "Thursday", dayEs: "Jueves", dayShort: "THU" },
+  5: { day: "Friday", dayEs: "Viernes", dayShort: "FRI" },
+  6: { day: "Saturday", dayEs: "Sabado", dayShort: "SAT" },
+};
+
+function toScheduleClass(cls: DatedClass): ScheduleClass {
+  return {
+    time: formatTime12(cls.start_time),
+    name: cls.name,
+    note: cls.note || undefined,
+    teacher: cls.teacher || undefined,
+    desc: cls.description || cls.description_es
+      ? { en: cls.description || "", es: cls.description_es || "" }
+      : undefined,
+  };
+}
+
+/**
+ * Fetch schedule from DB — falls back to hardcoded data if API fails.
+ * `dates` holds the ACTUAL per-date classes (from generated sessions), so
+ * week-specific changes made in the admin appear here; `schedule` is the
+ * recurring template used only beyond session coverage.
+ */
+function useScheduleData(): {
+  schedule: ScheduleDay[];
+  dates: Record<string, ScheduleClass[]>;
+  coverage: { from: string; to: string } | null;
+} {
   const [schedule, setSchedule] = useState<ScheduleDay[]>(FALLBACK_SCHEDULE);
-  const [loading, setLoading] = useState(false); // Start as NOT loading — show fallback immediately
+  const [dates, setDates] = useState<Record<string, ScheduleClass[]>>({});
+  const [coverage, setCoverage] = useState<{ from: string; to: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/public/schedule")
@@ -119,6 +161,15 @@ function useScheduleData(): { schedule: ScheduleDay[]; loading: boolean } {
           }),
         );
         if (days.length > 0) setSchedule(days);
+
+        if (data.coverage && data.dates) {
+          const mapped: Record<string, ScheduleClass[]> = {};
+          for (const [dateStr, classes] of Object.entries(data.dates as Record<string, DatedClass[]>)) {
+            mapped[dateStr] = classes.map(toScheduleClass);
+          }
+          setDates(mapped);
+          setCoverage(data.coverage);
+        }
       })
       .catch((err) => {
         console.error("[WeeklyScheduleSection] API failed, using fallback:", err);
@@ -126,7 +177,7 @@ function useScheduleData(): { schedule: ScheduleDay[]; loading: boolean } {
       });
   }, []);
 
-  return { schedule, loading };
+  return { schedule, dates, coverage };
 }
 
 // ─── Helper functions ─────────────────────────────────────────────────────────
@@ -196,10 +247,40 @@ function isClassBookable(dateStr: string, timeStr: string): boolean {
   return (classMinutes - nowMinutes) >= 120;
 }
 
+function formatDateShort(dateStr: string, lang: Lang): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d, 12, 0, 0).toLocaleDateString(
+    lang === "es" ? "es-CO" : "en-US",
+    { month: "short", day: "numeric" },
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
+const WEEK_DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
 export default function WeeklyScheduleSection({ lang, L, openBooking, closedDates }: WeeklyScheduleSectionProps) {
-  const { schedule: weeklySchedule } = useScheduleData();
+  const { schedule: weeklySchedule, dates, coverage } = useScheduleData();
+
+  // Build the display week: for each weekday, use the ACTUAL sessions on its
+  // next occurrence when covered; fall back to the recurring template beyond
+  // coverage. Covered days render even when empty (reality: no classes that day).
+  const displayDays = WEEK_DISPLAY_ORDER.map((dayIndex) => {
+    const nextDate = getNextDateForDay(dayIndex);
+    const covered = !!coverage && nextDate >= coverage.from && nextDate <= coverage.to;
+    const templateDay = weeklySchedule.find((d) => d.dayIndex === dayIndex);
+    const meta = DAY_META[dayIndex];
+    const classes = covered ? (dates[nextDate] || []) : (templateDay?.classes || []);
+    return {
+      day: templateDay?.day || meta.day,
+      dayEs: templateDay?.dayEs || meta.dayEs,
+      dayShort: templateDay?.dayShort || meta.dayShort,
+      dayIndex,
+      date: nextDate,
+      classes,
+      covered,
+    };
+  }).filter((d) => d.covered || d.classes.length > 0);
 
   // DB-driven pricing cards with hardcoded fallback
   const FALLBACK_GROUP: PricingCardData[] = [
@@ -338,12 +419,12 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
         {/* Schedule grid */}
         <div id="schedule-grid"></div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 stagger-reveal">
-          {weeklySchedule.map((day, dayIdx) => {
-            const nextDate = getNextDateForDay(day.dayIndex);
+          {displayDays.map((day, dayIdx) => {
+            const nextDate = day.date;
             const isClosed = closedDates.includes(nextDate);
             return (
               <div
-                key={day.day}
+                key={day.dayIndex}
                 className={`fade-in fade-in-delay-${Math.min(dayIdx + 1, 5)}`}
               >
                 <div className={`schedule-day-card rounded-2xl overflow-hidden border backdrop-blur-sm transition-all duration-500 ${isClosed ? "border-white/[0.04] bg-white/[0.02] opacity-50" : "border-white/[0.06] bg-white/[0.04] hover:border-rose/20"}`}>
@@ -354,6 +435,9 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
                     <span className="font-[family-name:var(--font-display)] text-lg text-white/90">
                       {lang === "en" ? day.day : day.dayEs}
                     </span>
+                    <span className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.15em] text-white/25">
+                      {formatDateShort(nextDate, lang)}
+                    </span>
                     {isClosed && (
                       <span className="ml-auto font-[family-name:var(--font-body)] text-[9px] tracking-[0.2em] text-rose/60 bg-rose/10 px-3 py-1 rounded-full">
                         {lang === "en" ? "CLOSED" : "CERRADO"}
@@ -361,6 +445,11 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
                     )}
                   </div>
                   <div className="divide-y divide-white/[0.04]">
+                    {day.classes.length === 0 && !isClosed && (
+                      <p className="px-5 py-4 font-[family-name:var(--font-body)] text-sm text-white/25 italic">
+                        {lang === "en" ? "No classes this day" : "Sin clases este día"}
+                      </p>
+                    )}
                     {day.classes.map((cls, clsIdx) => {
                       const bookable = !isClosed && isClassBookable(nextDate, cls.time);
                       return (
