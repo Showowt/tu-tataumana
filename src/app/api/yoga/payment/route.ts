@@ -5,9 +5,7 @@
  * Creates Wompi checkout configs for yoga bookings.
  * Prices are validated server-side — never trusted from client.
  *
- * Supports two flows:
- *   1. NEW (BookingModal): { serviceName, customerName, ... } → checkout config
- *   2. LEGACY (PaymentCheckout): { amount, customerEmail, ... } → payment link
+ * Flow (BookingModal): { serviceName, customerName, ... } → payment link
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -16,7 +14,6 @@ import { createClient } from "@supabase/supabase-js";
 import {
   createPaymentLink,
   generateBookingReference,
-  type WompiCurrency,
 } from "@/lib/wompi";
 import { captureApiError } from "@/lib/sentry-helpers";
 import { systemLog } from "@/lib/system-log";
@@ -116,7 +113,8 @@ function checkRateLimit(identifier: string): boolean {
 // Validation schemas
 // ──────────────────────────────────────────────────────────────────────────────
 
-// New format: BookingModal sends service name, server looks up price
+// BookingModal sends service name, server looks up price — the client can
+// never set the amount
 const CheckoutRequestSchema = z.object({
   serviceName: z.string().min(1, "Service name required"),
   customerEmail: z
@@ -127,18 +125,6 @@ const CheckoutRequestSchema = z.object({
   customerName: z.string().min(2, "Name must be at least 2 characters"),
   bookingDate: z.string().optional(),
   bookingTime: z.string().optional(),
-});
-
-// Legacy format: PaymentCheckout sends explicit amount
-const LegacyRequestSchema = z.object({
-  amount: z.number().positive("Amount must be positive"),
-  currency: z.enum(["COP", "USD"]).default("COP"),
-  reference: z.string().optional(),
-  customerEmail: z.string().email("Valid email required"),
-  customerName: z.string().min(2, "Name must be at least 2 characters"),
-  description: z.string().optional(),
-  classId: z.string().optional(),
-  bookingId: z.string().optional(),
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -162,71 +148,38 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    // ── NEW FLOW: BookingModal sends serviceName ──────────────────────────
-    const newResult = CheckoutRequestSchema.safeParse(body);
-
-    if (newResult.success) {
-      const data = newResult.data;
-      const priceCop = await getServicePriceCop(data.serviceName);
-      const reference = generateBookingReference();
-
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
-      const redirectUrl = `${baseUrl}/payment/success?ref=${encodeURIComponent(reference)}`;
-
-      const description = data.bookingDate
-        ? `TU. ${data.serviceName} — ${data.bookingDate}${data.bookingTime ? ` ${data.bookingTime}` : ""}`
-        : `TU. ${data.serviceName}`;
-
-      // Create a fresh Wompi payment link (unique per booking, auto-expires)
-      const paymentLink = await createPaymentLink({
-        amount: priceCop * 100, // Wompi expects centavos
-        currency: "COP",
-        reference,
-        customerEmail: data.customerEmail || "",
-        customerName: data.customerName,
-        redirectUrl,
-        description,
-        expirationMinutes: 30,
-      });
-
-      return NextResponse.json({
-        success: true,
-        reference,
-        paymentUrl: paymentLink.payment_link_url,
-        priceCop,
-        description,
-      });
-    }
-
-    // ── LEGACY FLOW: PaymentCheckout sends explicit amount ────────────────
-    const legacyResult = LegacyRequestSchema.safeParse(body);
-
-    if (!legacyResult.success) {
+    const parsed = CheckoutRequestSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
         {
           error: "Datos inválidos. Invalid request data.",
-          details: legacyResult.error.flatten().fieldErrors,
+          details: parsed.error.flatten().fieldErrors,
         },
         { status: 400 },
       );
     }
 
-    const legacyData = legacyResult.data;
-    const reference = legacyData.reference || generateBookingReference();
+    const data = parsed.data;
+    const priceCop = await getServicePriceCop(data.serviceName);
+    const reference = generateBookingReference();
+
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
-    const redirectUrl = `${baseUrl}?payment=success&ref=${encodeURIComponent(reference)}`;
+    const redirectUrl = `${baseUrl}/payment/success?ref=${encodeURIComponent(reference)}`;
 
+    const description = data.bookingDate
+      ? `TU. ${data.serviceName} — ${data.bookingDate}${data.bookingTime ? ` ${data.bookingTime}` : ""}`
+      : `TU. ${data.serviceName}`;
+
+    // Create a fresh Wompi payment link (unique per booking, auto-expires)
     const paymentLink = await createPaymentLink({
-      amount: legacyData.amount,
-      currency: legacyData.currency as WompiCurrency,
+      amount: priceCop * 100, // Wompi expects centavos
+      currency: "COP",
       reference,
-      customerEmail: legacyData.customerEmail,
-      customerName: legacyData.customerName,
+      customerEmail: data.customerEmail || "",
+      customerName: data.customerName,
       redirectUrl,
-      description:
-        legacyData.description || "TU. Wellness - Yoga Booking",
+      description,
       expirationMinutes: 30,
     });
 
@@ -234,7 +187,8 @@ export async function POST(request: NextRequest) {
       success: true,
       reference,
       paymentUrl: paymentLink.payment_link_url,
-      expiresAt: paymentLink.expires_at,
+      priceCop,
+      description,
     });
   } catch (error) {
     const message =
