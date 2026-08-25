@@ -28,6 +28,17 @@ interface ClosedDate {
   reason: string | null;
 }
 
+interface ClassDefinition {
+  id: string;
+  name: string;
+  name_es: string;
+  day_of_week: number;
+  start_time: string;
+  teacher: string;
+  capacity: number;
+  is_active: boolean;
+}
+
 export default function AdminSessionsPage() {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +52,20 @@ export default function AdminSessionsPage() {
   const [editingCapacity, setEditingCapacity] = useState<string | null>(null);
   const [capacityValue, setCapacityValue] = useState("");
   const capacityInputRef = useRef<HTMLInputElement>(null);
+
+  // Session editing (time/teacher — one week only)
+  const [editingSession, setEditingSession] = useState<string | null>(null);
+  const [editTime, setEditTime] = useState("");
+  const [editTeacher, setEditTeacher] = useState("");
+
+  // Add one-off class
+  const [definitions, setDefinitions] = useState<ClassDefinition[]>([]);
+  const [showAddClass, setShowAddClass] = useState(false);
+  const [addDefId, setAddDefId] = useState("");
+  const [addDate, setAddDate] = useState("");
+  const [addTime, setAddTime] = useState("");
+  const [addTeacher, setAddTeacher] = useState("");
+  const [addLoading, setAddLoading] = useState(false);
 
   // Closed dates
   const [closedDates, setClosedDates] = useState<ClosedDate[]>([]);
@@ -90,10 +115,23 @@ export default function AdminSessionsPage() {
     setClosedLoading(false);
   }, []);
 
+  const loadDefinitions = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/class-definitions");
+      if (res.ok) {
+        const data = await res.json();
+        setDefinitions((data.data || []).filter((d: ClassDefinition) => d.is_active));
+      }
+    } catch {
+      // fail silently
+    }
+  }, []);
+
   useEffect(() => {
     loadSessions();
     loadClosedDates();
-  }, [loadSessions, loadClosedDates]);
+    loadDefinitions();
+  }, [loadSessions, loadClosedDates, loadDefinitions]);
 
   async function handleGenerate() {
     if (!confirm(`¿Generar sesiones para ${genWeeks} semanas?`)) return;
@@ -196,6 +234,84 @@ export default function AdminSessionsPage() {
       showMessage("Error de conexión");
     }
     setActionLoading(null);
+  }
+
+  // --- Session editing (time/teacher — affects ONE week only) ---
+  function startEditSession(s: SessionData) {
+    setEditingSession(s.id);
+    setEditTime(s.start_time.slice(0, 5));
+    setEditTeacher(s.teacher);
+  }
+
+  async function saveSessionEdit(sessionId: string) {
+    if (!editTime) return;
+    setActionLoading(sessionId);
+    try {
+      const res = await fetch("/api/admin/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update",
+          session_id: sessionId,
+          start_time: editTime,
+          teacher: editTeacher.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showMessage(data.message || "Sesión actualizada");
+        setEditingSession(null);
+        await loadSessions();
+      } else {
+        showMessage(data.error || "Error actualizando sesión");
+      }
+    } catch {
+      showMessage("Error");
+    }
+    setActionLoading(null);
+  }
+
+  // --- Add one-off class (does NOT change the weekly template) ---
+  function handleAddDefChange(defId: string) {
+    setAddDefId(defId);
+    const def = definitions.find((d) => d.id === defId);
+    if (def) {
+      setAddTime(def.start_time.slice(0, 5));
+      setAddTeacher(def.teacher);
+    }
+  }
+
+  async function handleAddClass() {
+    if (!addDefId || !addDate) return;
+    setAddLoading(true);
+    try {
+      const res = await fetch("/api/admin/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "add",
+          definition_id: addDefId,
+          session_date: addDate,
+          start_time: addTime || undefined,
+          teacher: addTeacher.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showMessage(data.message || "Clase agregada");
+        setAddDefId("");
+        setAddDate("");
+        setAddTime("");
+        setAddTeacher("");
+        setShowAddClass(false);
+        await loadSessions();
+      } else {
+        showMessage(data.error || "Error agregando clase");
+      }
+    } catch {
+      showMessage("Error");
+    }
+    setAddLoading(false);
   }
 
   // --- Capacity editing ---
@@ -353,6 +469,73 @@ export default function AdminSessionsPage() {
             {generating ? "Generando..." : "Generar"}
           </button>
         </div>
+      </div>
+
+      {/* Add one-off class — for weeks that differ from the regular schedule */}
+      <div className="bg-white border border-[#C9A96E]/20 p-4">
+        <button
+          onClick={() => setShowAddClass(!showAddClass)}
+          className="w-full flex items-center justify-between"
+        >
+          <p className="text-[10px] tracking-[0.2em] text-[#C9A96E] uppercase">
+            Agregar Clase Extra
+          </p>
+          <span className="text-xs text-[#2C2C2C]/30">
+            {showAddClass ? "▲" : "▼"}
+          </span>
+        </button>
+
+        {showAddClass && (
+          <div className="mt-4 space-y-3">
+            <p className="text-[10px] text-[#2C2C2C]/40 leading-relaxed">
+              Agrega una clase solo para una fecha específica — no cambia el
+              horario semanal regular.
+            </p>
+            <select
+              value={addDefId}
+              onChange={(e) => handleAddDefChange(e.target.value)}
+              className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
+            >
+              <option value="">Selecciona la clase...</option>
+              {definitions.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name_es || d.name}
+                </option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={addDate}
+                onChange={(e) => setAddDate(e.target.value)}
+                min={new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())}
+                className="flex-1 px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
+              />
+              <input
+                type="time"
+                value={addTime}
+                onChange={(e) => setAddTime(e.target.value)}
+                className="w-28 px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
+              />
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={addTeacher}
+                onChange={(e) => setAddTeacher(e.target.value)}
+                placeholder="Profesor/a"
+                className="flex-1 px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E] placeholder:text-[#2C2C2C]/20"
+              />
+              <button
+                onClick={handleAddClass}
+                disabled={addLoading || !addDefId || !addDate}
+                className="px-6 py-2 bg-[#C9A96E] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-30"
+              >
+                {addLoading ? "Agregando..." : "Agregar"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Closed Dates Manager */}
@@ -628,6 +811,17 @@ export default function AdminSessionsPage() {
                             {!isCancelled && !isCompleted && (
                               <div className="flex gap-2">
                                 <button
+                                  onClick={() =>
+                                    editingSession === s.id
+                                      ? setEditingSession(null)
+                                      : startEditSession(s)
+                                  }
+                                  disabled={actionLoading === s.id}
+                                  className="text-[9px] text-[#C9A96E] hover:text-[#B87777] transition-colors disabled:opacity-30"
+                                >
+                                  editar
+                                </button>
+                                <button
                                   onClick={() => handleComplete(s.id)}
                                   disabled={actionLoading === s.id}
                                   className="text-[9px] text-green-600 hover:text-green-800 transition-colors disabled:opacity-30"
@@ -655,6 +849,38 @@ export default function AdminSessionsPage() {
                             )}
                           </div>
                         </div>
+
+                        {/* Edit panel — changes THIS session only, not the weekly template */}
+                        {editingSession === s.id && !isCancelled && !isCompleted && (
+                          <div className="mt-3 pt-3 border-t border-[#C9A96E]/20 space-y-2">
+                            <p className="text-[9px] text-[#2C2C2C]/40">
+                              Cambia hora o profesor/a solo para esta fecha — el
+                              horario semanal no se modifica.
+                            </p>
+                            <div className="flex gap-2">
+                              <input
+                                type="time"
+                                value={editTime}
+                                onChange={(e) => setEditTime(e.target.value)}
+                                className="w-28 px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
+                              />
+                              <input
+                                type="text"
+                                value={editTeacher}
+                                onChange={(e) => setEditTeacher(e.target.value)}
+                                placeholder="Profesor/a"
+                                className="flex-1 px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E] placeholder:text-[#2C2C2C]/20"
+                              />
+                              <button
+                                onClick={() => saveSessionEdit(s.id)}
+                                disabled={actionLoading === s.id || !editTime}
+                                className="px-4 py-2 bg-[#C9A96E] text-white text-[10px] tracking-[0.15em] uppercase hover:bg-[#B87777] transition-colors disabled:opacity-30"
+                              >
+                                Guardar
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

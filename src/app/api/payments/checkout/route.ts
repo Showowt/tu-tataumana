@@ -1,13 +1,13 @@
 /**
- * Yoga Booking Payment API
+ * Booking Checkout API
  * TU. by Tata Umana
  *
- * Creates Wompi checkout configs for yoga bookings.
+ * POST /api/payments/checkout — creates Wompi payment links for bookings.
  * Prices are validated server-side — never trusted from client.
  *
- * Supports two flows:
- *   1. NEW (BookingModal): { serviceName, customerName, ... } → checkout config
- *   2. LEGACY (PaymentCheckout): { amount, customerEmail, ... } → payment link
+ * Flow (BookingModal): { serviceName, customerName, ... } → payment link
+ * The old /api/yoga/payment path rewrites here (next.config) so browser tabs
+ * opened before the rename can still complete a payment.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -140,7 +140,8 @@ function checkRateLimit(identifier: string): boolean {
 // Validation schemas
 // ──────────────────────────────────────────────────────────────────────────────
 
-// New format: BookingModal sends service name, server looks up price
+// BookingModal sends service name, server looks up price — the client can
+// never set the amount
 const CheckoutRequestSchema = z.object({
   serviceName: z.string().min(1, "Service name required"),
   customerEmail: z
@@ -151,18 +152,6 @@ const CheckoutRequestSchema = z.object({
   customerName: z.string().min(2, "Name must be at least 2 characters"),
   bookingDate: z.string().optional(),
   bookingTime: z.string().optional(),
-});
-
-// Legacy format: PaymentCheckout sends explicit amount
-const LegacyRequestSchema = z.object({
-  amount: z.number().positive("Amount must be positive"),
-  currency: z.enum(["COP", "USD"]).default("COP"),
-  reference: z.string().optional(),
-  customerEmail: z.string().email("Valid email required"),
-  customerName: z.string().min(2, "Name must be at least 2 characters"),
-  description: z.string().optional(),
-  classId: z.string().optional(),
-  bookingId: z.string().optional(),
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -186,73 +175,59 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    // ── NEW FLOW: BookingModal sends serviceName ──────────────────────────
-    const newResult = CheckoutRequestSchema.safeParse(body);
-
-    if (newResult.success) {
-      const data = newResult.data;
-      const priceCop = await getServicePriceCop(data.serviceName);
-      const reference = generateBookingReference();
-
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
-      const redirectUrl = `${baseUrl}/payment/success?ref=${encodeURIComponent(reference)}`;
-
-      const description = data.bookingDate
-        ? `TU. ${data.serviceName} — ${data.bookingDate}${data.bookingTime ? ` ${data.bookingTime}` : ""}`
-        : `TU. ${data.serviceName}`;
-
-      // Create a fresh Wompi payment link (unique per booking, auto-expires)
-      const paymentLink = await createPaymentLink({
-        amount: priceCop * 100, // Wompi expects centavos
-        currency: "COP",
-        reference,
-        customerEmail: data.customerEmail || "",
-        customerName: data.customerName,
-        redirectUrl,
-        description,
-        expirationMinutes: 30,
-      });
-
-      return NextResponse.json({
-        success: true,
-        reference,
-        paymentUrl: paymentLink.payment_link_url,
-        priceCop,
-        description,
-      });
-    }
-
-    // ── LEGACY FLOW: PaymentCheckout sends explicit amount ────────────────
-    const legacyResult = LegacyRequestSchema.safeParse(body);
-
-    if (!legacyResult.success) {
+    const parsed = CheckoutRequestSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
         {
           error: "Datos inválidos. Invalid request data.",
-          details: legacyResult.error.flatten().fieldErrors,
+          details: parsed.error.flatten().fieldErrors,
         },
         { status: 400 },
       );
     }
 
-    // SEC-05: the legacy branch trusted a client-supplied `amount`, letting anyone
-    // mint arbitrary-value payment links on the merchant's Wompi account. Its only
-    // callers were the now-dead PaymentCheckout / JustbYogaAcademy components, so we
-    // reject it — the live BookingModal uses the secure serviceName flow above
-    // (server-side price via getServicePriceCop).
-    return NextResponse.json(
-      { error: "Formato de pago no soportado. Usa el flujo de reserva. / Unsupported payment format." },
-      { status: 400 },
-    );
+    // SEC-05: pricing is server-side only (getServicePriceCop). The schema
+    // accepts no client `amount`, so arbitrary-value payment links are
+    // structurally impossible — legacy client-priced requests fail validation.
+    const data = parsed.data;
+    const priceCop = await getServicePriceCop(data.serviceName);
+    const reference = generateBookingReference();
+
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL || "https://www.tataumana.com";
+    const redirectUrl = `${baseUrl}/payment/success?ref=${encodeURIComponent(reference)}`;
+
+    const description = data.bookingDate
+      ? `TU. ${data.serviceName} — ${data.bookingDate}${data.bookingTime ? ` ${data.bookingTime}` : ""}`
+      : `TU. ${data.serviceName}`;
+
+    // Create a fresh Wompi payment link (unique per booking, auto-expires)
+    const paymentLink = await createPaymentLink({
+      amount: priceCop * 100, // Wompi expects centavos
+      currency: "COP",
+      reference,
+      customerEmail: data.customerEmail || "",
+      customerName: data.customerName,
+      redirectUrl,
+      description,
+      expirationMinutes: 30,
+    });
+
+    return NextResponse.json({
+      success: true,
+      reference,
+      paymentUrl: paymentLink.payment_link_url,
+      priceCop,
+      description,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Payment creation failed";
     const isConfigError = message.includes("not configured");
 
-    captureApiError("yoga/payment", error, { route: "POST /api/yoga/payment", isConfigError });
-    systemLog({ category: "payment", level: "error", message: "Wompi payment link creation failed", route: "yoga/payment", details: { error: message, isConfigError } });
-    console.error("[yoga/payment] PAYMENT LINK CREATION FAILED:", {
+    captureApiError("payments/checkout", error, { route: "POST /api/payments/checkout", isConfigError });
+    systemLog({ category: "payment", level: "error", message: "Wompi payment link creation failed", route: "payments/checkout", details: { error: message, isConfigError } });
+    console.error("[payments/checkout] PAYMENT LINK CREATION FAILED:", {
       error: message,
       isConfigError,
       hasPrivateKey: !!process.env.WOMPI_PRIVATE_KEY,

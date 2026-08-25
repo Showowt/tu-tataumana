@@ -22,8 +22,18 @@ const BOOKING_RULES = [
   "Mats and props provided — just bring water",
 ];
 
-// Schedule loaded from database via API — no hardcoded data
-let _cachedSchedule: { data: Record<number, { time: string; name: string }[]>; ts: number } | null = null;
+// Schedule loaded from database via API — no hardcoded data.
+// `byDay` is the recurring template (fallback); `dates` holds the ACTUAL
+// classes per date from generated sessions, so week-specific changes apply.
+interface ScheduleData {
+  byDay: Record<number, { time: string; name: string }[]>;
+  dates: Record<string, { time: string; name: string }[]>;
+  coverage: { from: string; to: string } | null;
+}
+
+const EMPTY_SCHEDULE: ScheduleData = { byDay: {}, dates: {}, coverage: null };
+
+let _cachedSchedule: { data: ScheduleData; ts: number } | null = null;
 const SCHEDULE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 function formatTime12(time: string): string {
@@ -33,24 +43,34 @@ function formatTime12(time: string): string {
   return `${displayH}:${String(m).padStart(2, "0")} ${period}`;
 }
 
-async function getScheduleByDay(): Promise<Record<number, { time: string; name: string }[]>> {
+async function getScheduleData(): Promise<ScheduleData> {
   if (_cachedSchedule && Date.now() - _cachedSchedule.ts < SCHEDULE_CACHE_TTL) {
     return _cachedSchedule.data;
   }
   try {
     const res = await fetch("/api/public/schedule", { signal: AbortSignal.timeout(5000) });
     const data = await res.json();
-    const result: Record<number, { time: string; name: string }[]> = {};
+    const byDay: Record<number, { time: string; name: string }[]> = {};
     for (const day of data.schedule || []) {
-      result[day.day_of_week] = (day.classes || []).map((c: { start_time: string; name: string }) => ({
+      byDay[day.day_of_week] = (day.classes || []).map((c: { start_time: string; name: string }) => ({
         time: formatTime12(c.start_time),
         name: c.name,
       }));
     }
+    const dates: Record<string, { time: string; name: string }[]> = {};
+    for (const [dateStr, classes] of Object.entries(
+      (data.dates || {}) as Record<string, { start_time: string; name: string }[]>,
+    )) {
+      dates[dateStr] = classes.map((c) => ({
+        time: formatTime12(c.start_time),
+        name: c.name,
+      }));
+    }
+    const result: ScheduleData = { byDay, dates, coverage: data.coverage || null };
     _cachedSchedule = { data: result, ts: Date.now() };
     return result;
   } catch {
-    return _cachedSchedule?.data || {};
+    return _cachedSchedule?.data || EMPTY_SCHEDULE;
   }
 }
 
@@ -154,12 +174,17 @@ function isClassBookable(dateStr: string, timeStr: string): boolean {
   return (classTotalMinutes - nowTotalMinutes) >= 120;
 }
 
-function getClassesForDate(dateStr: string, scheduleByDay: Record<number, { time: string; name: string }[]>) {
+function getClassesForDate(dateStr: string, schedule: ScheduleData) {
   if (!dateStr) return [];
+  // Within session coverage, the dated data is authoritative — reflects
+  // week-specific cancellations, moved classes, and one-off additions.
+  if (schedule.coverage && dateStr >= schedule.coverage.from && dateStr <= schedule.coverage.to) {
+    return (schedule.dates[dateStr] || []).filter((cls) => isClassBookable(dateStr, cls.time));
+  }
   const [y, m, d] = dateStr.split("-").map(Number);
   const date = new Date(y, m - 1, d, 12, 0, 0);
   const day = date.getDay();
-  const classes = scheduleByDay[day] || [];
+  const classes = schedule.byDay[day] || [];
   return classes.filter((cls) => isClassBookable(dateStr, cls.time));
 }
 
@@ -179,7 +204,7 @@ function formatDateDisplay(dateStr: string) {
 function getNextAvailableClass(
   bookedDateStr: string,
   bookedClassName: string,
-  scheduleByDay: Record<number, { time: string; name: string }[]>,
+  schedule: ScheduleData,
 ): { date: string; dateDisplay: string; time: string; name: string } | null {
   const [y, m, d] = bookedDateStr.split("-").map(Number);
   const bookedDate = new Date(y, m - 1, d, 12, 0, 0);
@@ -193,7 +218,7 @@ function getNextAvailableClass(
   // First pass: find the next occurrence of the SAME class
   for (let offset = 1; offset <= 14; offset++) {
     const dateStr = offsetDateStr(bookedDate, offset);
-    const dayClasses = getClassesForDate(dateStr, scheduleByDay);
+    const dayClasses = getClassesForDate(dateStr, schedule);
     const sameClass = dayClasses.find((c) => c.name === bookedClassName);
     if (sameClass) {
       return {
@@ -208,7 +233,7 @@ function getNextAvailableClass(
   // Second pass: find ANY available class
   for (let offset = 1; offset <= 14; offset++) {
     const dateStr = offsetDateStr(bookedDate, offset);
-    const dayClasses = getClassesForDate(dateStr, scheduleByDay);
+    const dayClasses = getClassesForDate(dateStr, schedule);
     if (dayClasses.length > 0) {
       return {
         date: dateStr,
@@ -246,13 +271,13 @@ export default function BookingModal({
   const [wompiState, setWompiState] = useState<WompiState>("idle");
   const [wompiError, setWompiError] = useState("");
   const [activePass, setActivePass] = useState<{ pass_type: string; classes_remaining: number | string; is_unlimited: boolean } | null>(null);
-  const [scheduleByDay, setScheduleByDay] = useState<Record<number, { time: string; name: string }[]>>({});
+  const [schedule, setSchedule] = useState<ScheduleData>(EMPTY_SCHEDULE);
   const [pricingCards, setPricingCards] = useState<Array<{ label: string; price_cop: number; price_usd: number; subtitle_en: string | null; subtitle_es: string | null }>>([]);
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Load schedule + pricing from DB
   useEffect(() => {
-    getScheduleByDay().then(setScheduleByDay);
+    getScheduleData().then(setSchedule);
     getPricingCards().then(setPricingCards);
   }, []);
 
@@ -271,7 +296,7 @@ export default function BookingModal({
     }
   }, [isOpen, preselectedService, preselectedDate, preselectedTime]);
 
-  const availableClasses = getClassesForDate(date, scheduleByDay);
+  const availableClasses = getClassesForDate(date, schedule);
   const isDateClosed = date && closedDates.includes(date);
 
   const bookingService = selectedTime
@@ -478,7 +503,7 @@ export default function BookingModal({
       setWompiError("");
 
       try {
-        const res = await fetch("/api/yoga/payment", {
+        const res = await fetch("/api/payments/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1183,7 +1208,7 @@ export default function BookingModal({
               {/* ━━━ NEXT AVAILABLE CLASS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
               {(() => {
                 const nextClass = date && service
-                  ? getNextAvailableClass(date, service.split(" @ ")[0], scheduleByDay)
+                  ? getNextAvailableClass(date, service.split(" @ ")[0], schedule)
                   : null;
                 if (!nextClass) return null;
                 return (

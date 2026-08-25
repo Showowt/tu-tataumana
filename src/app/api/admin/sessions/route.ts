@@ -67,14 +67,19 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ data: data || [], from, to });
 }
 
+const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
+
 /**
  * POST /api/admin/sessions
- * Administrative session actions: cancel, complete, or generate.
+ * Administrative session actions: cancel, reactivate, complete, update,
+ * update_capacity, add, or generate.
  *
  * Body:
- *   action: "cancel" | "complete" | "generate"
- *   session_id: string (for cancel/complete)
+ *   action: "cancel" | "reactivate" | "complete" | "update" | "update_capacity" | "add" | "generate"
+ *   session_id: string (for cancel/reactivate/complete/update/update_capacity)
  *   reason: string (for cancel)
+ *   start_time / teacher / capacity / notes (for update — edit ONE week's session)
+ *   definition_id + session_date [+ start_time/teacher/capacity] (for add — one-off class)
  *   weeks: number (for generate, default 4)
  */
 export async function POST(request: NextRequest) {
@@ -313,6 +318,172 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    case "update": {
+      // Edit a single session (one week only) — time, teacher, capacity, notes.
+      // This is how a week-specific schedule change is made without touching
+      // the recurring template.
+      const { session_id: updSid, start_time, teacher, capacity, notes } = body;
+      if (!updSid) {
+        return NextResponse.json({ error: "session_id required" }, { status: 400 });
+      }
+
+      const { data: sess } = await supabase
+        .from("tu_class_sessions")
+        .select("id, status, start_time, teacher, capacity, session_date")
+        .eq("id", updSid)
+        .single();
+
+      if (!sess) {
+        return NextResponse.json({ error: "Sesion no encontrada" }, { status: 404 });
+      }
+      if (sess.status !== "scheduled") {
+        return NextResponse.json(
+          { error: "Solo se pueden editar sesiones programadas" },
+          { status: 400 },
+        );
+      }
+
+      const sessionUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (start_time !== undefined) {
+        if (typeof start_time !== "string" || !TIME_REGEX.test(start_time)) {
+          return NextResponse.json({ error: "start_time invalido (HH:MM)" }, { status: 400 });
+        }
+        sessionUpdates.start_time = start_time;
+      }
+      if (teacher !== undefined) {
+        if (typeof teacher !== "string" || !teacher.trim() || teacher.length > 100) {
+          return NextResponse.json({ error: "teacher invalido" }, { status: 400 });
+        }
+        sessionUpdates.teacher = teacher.trim();
+      }
+      if (capacity !== undefined) {
+        if (typeof capacity !== "number" || capacity < 1 || capacity > 50) {
+          return NextResponse.json({ error: "capacity invalida (1-50)" }, { status: 400 });
+        }
+        sessionUpdates.capacity = capacity;
+      }
+      if (notes !== undefined) {
+        sessionUpdates.notes = typeof notes === "string" && notes.trim() ? notes.trim().slice(0, 500) : null;
+      }
+
+      if (Object.keys(sessionUpdates).length === 1) {
+        return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
+      }
+
+      const { error: updErr } = await supabase
+        .from("tu_class_sessions")
+        .update(sessionUpdates)
+        .eq("id", updSid);
+
+      if (updErr) {
+        console.error("[admin/sessions update]", updErr.message);
+        return NextResponse.json({ error: "Failed to update session" }, { status: 500 });
+      }
+
+      // Warn about confirmed bookings if the time moved — Tata should notify them
+      let bookingsAffected = 0;
+      if (sessionUpdates.start_time && sessionUpdates.start_time !== sess.start_time) {
+        const { count } = await supabase
+          .from("tu_class_bookings")
+          .select("id", { count: "exact", head: true })
+          .eq("session_id", updSid)
+          .eq("status", "confirmed");
+        bookingsAffected = count || 0;
+      }
+
+      return NextResponse.json({
+        message: bookingsAffected > 0
+          ? `Sesion actualizada — ${bookingsAffected} reserva(s) confirmada(s) tienen el horario anterior, avisales del cambio`
+          : "Sesion actualizada",
+        bookings_affected: bookingsAffected,
+      });
+    }
+
+    case "add": {
+      // Add a one-off session for a specific date (e.g., an extra class this
+      // week) without changing the recurring weekly template.
+      const { definition_id, session_date, start_time: addTime, teacher: addTeacher, capacity: addCap } = body;
+      if (!definition_id || !session_date) {
+        return NextResponse.json(
+          { error: "definition_id y session_date requeridos" },
+          { status: 400 },
+        );
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(session_date)) {
+        return NextResponse.json({ error: "session_date invalida (YYYY-MM-DD)" }, { status: 400 });
+      }
+      if (addTime !== undefined && (typeof addTime !== "string" || !TIME_REGEX.test(addTime))) {
+        return NextResponse.json({ error: "start_time invalido (HH:MM)" }, { status: 400 });
+      }
+      if (addCap !== undefined && (typeof addCap !== "number" || addCap < 1 || addCap > 50)) {
+        return NextResponse.json({ error: "capacity invalida (1-50)" }, { status: 400 });
+      }
+
+      const { data: def } = await supabase
+        .from("tu_class_definitions")
+        .select("id, name, start_time, teacher, capacity")
+        .eq("id", definition_id)
+        .single();
+
+      if (!def) {
+        return NextResponse.json({ error: "Clase no encontrada" }, { status: 404 });
+      }
+
+      const { data: closed } = await supabase
+        .from("tu_closed_dates")
+        .select("date")
+        .eq("date", session_date)
+        .maybeSingle();
+
+      if (closed) {
+        return NextResponse.json(
+          { error: `${session_date} esta marcado como dia cerrado — reabrelo primero` },
+          { status: 400 },
+        );
+      }
+
+      const finalTime = addTime || def.start_time;
+
+      // Avoid exact duplicates (same class, date, and time still active)
+      const { data: dup } = await supabase
+        .from("tu_class_sessions")
+        .select("id, status")
+        .eq("definition_id", definition_id)
+        .eq("session_date", session_date)
+        .eq("start_time", finalTime)
+        .neq("status", "cancelled");
+
+      if (dup && dup.length > 0) {
+        return NextResponse.json(
+          { error: "Ya existe una sesion de esta clase en esa fecha y hora" },
+          { status: 409 },
+        );
+      }
+
+      const { data: created, error: addErr } = await supabase
+        .from("tu_class_sessions")
+        .insert({
+          definition_id,
+          session_date,
+          start_time: finalTime,
+          teacher: (typeof addTeacher === "string" && addTeacher.trim()) || def.teacher,
+          capacity: addCap || def.capacity,
+          status: "scheduled",
+        })
+        .select("id")
+        .single();
+
+      if (addErr || !created) {
+        console.error("[admin/sessions add]", addErr?.message);
+        return NextResponse.json({ error: "Failed to add session" }, { status: 500 });
+      }
+
+      return NextResponse.json(
+        { message: `Clase agregada: ${def.name} el ${session_date}`, session_id: created.id },
+        { status: 201 },
+      );
+    }
+
     case "generate": {
       const weeks = Math.min(Math.max(body.weeks || 4, 1), 12);
       const { data: definitions } = await supabase
@@ -340,37 +511,22 @@ export async function POST(request: NextRequest) {
 
       const closedSet = new Set((closedDates || []).map((d: { date: string }) => d.date));
 
-      // Get existing sessions (including cancelled ones so we can reactivate them)
+      // Get existing sessions — ANY existing session (including cancelled)
+      // occupies its slot. Generating must NEVER resurrect a session that was
+      // deliberately cancelled for that week; use the per-session "reactivar"
+      // button for that.
       const { data: existing } = await supabase
         .from("tu_class_sessions")
-        .select("id, definition_id, session_date, status")
+        .select("definition_id, session_date")
         .gte("session_date", nowDateStr)
         .lte("session_date", endDateStr);
 
-      // Slots with a live (non-cancelled) session — never touch these
-      const activeSet = new Set(
-        (existing || [])
-          .filter((s: { status: string }) => s.status !== "cancelled")
-          .map(
-            (s: { definition_id: string; session_date: string }) =>
-              `${s.definition_id}_${s.session_date}`,
-          ),
+      const existingSet = new Set(
+        (existing || []).map(
+          (s: { definition_id: string; session_date: string }) =>
+            `${s.definition_id}_${s.session_date}`,
+        ),
       );
-
-      // Slots whose only session is cancelled — reactivate instead of skipping.
-      // (Regenerating the schedule should bring back a class the schedule still calls for.)
-      const cancelledMap = new Map<string, string>();
-      for (const s of (existing || []) as Array<{
-        id: string;
-        definition_id: string;
-        session_date: string;
-        status: string;
-      }>) {
-        const key = `${s.definition_id}_${s.session_date}`;
-        if (s.status === "cancelled" && !activeSet.has(key)) {
-          cancelledMap.set(key, s.id);
-        }
-      }
 
       const toInsert: Array<{
         definition_id: string;
@@ -380,7 +536,6 @@ export async function POST(request: NextRequest) {
         capacity: number;
         status: string;
       }> = [];
-      const reactivateIds: string[] = [];
 
       const current = new Date(now);
       current.setHours(0, 0, 0, 0);
@@ -391,22 +546,15 @@ export async function POST(request: NextRequest) {
 
         if (!closedSet.has(dateStr)) {
           for (const def of definitions) {
-            if (def.day_of_week === dayOfWeek) {
-              const key = `${def.id}_${dateStr}`;
-              if (activeSet.has(key)) continue; // live session already exists
-              const cancelledId = cancelledMap.get(key);
-              if (cancelledId) {
-                reactivateIds.push(cancelledId); // bring back a cancelled slot
-              } else {
-                toInsert.push({
-                  definition_id: def.id,
-                  session_date: dateStr,
-                  start_time: def.start_time,
-                  teacher: def.teacher,
-                  capacity: def.capacity,
-                  status: "scheduled",
-                });
-              }
+            if (def.day_of_week === dayOfWeek && !existingSet.has(`${def.id}_${dateStr}`)) {
+              toInsert.push({
+                definition_id: def.id,
+                session_date: dateStr,
+                start_time: def.start_time,
+                teacher: def.teacher,
+                capacity: def.capacity,
+                status: "scheduled",
+              });
             }
           }
         }
@@ -421,32 +569,17 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      if (reactivateIds.length > 0) {
-        const { error: reactErr } = await supabase
-          .from("tu_class_sessions")
-          .update({ status: "scheduled", cancel_reason: null })
-          .in("id", reactivateIds);
-        if (reactErr) {
-          console.error("[admin/sessions generate reactivate]", reactErr.message);
-          return NextResponse.json({ error: "Failed to reactivate sessions" }, { status: 500 });
-        }
-      }
-
-      const parts: string[] = [];
-      if (toInsert.length > 0) parts.push(`${toInsert.length} nuevas`);
-      if (reactivateIds.length > 0) parts.push(`${reactivateIds.length} reactivadas`);
       return NextResponse.json({
-        message: parts.length
-          ? `Sesiones: ${parts.join(", ")} (${weeks} semanas)`
+        message: toInsert.length > 0
+          ? `Sesiones: ${toInsert.length} nuevas (${weeks} semanas)`
           : `Sin cambios — el horario ya esta completo (${weeks} semanas)`,
         count: toInsert.length,
-        reactivated: reactivateIds.length,
       });
     }
 
     default:
       return NextResponse.json(
-        { error: "Invalid action. Use: cancel, reactivate, complete, update_capacity, generate" },
+        { error: "Invalid action. Use: cancel, reactivate, complete, update, update_capacity, add, generate" },
         { status: 400 },
       );
   }

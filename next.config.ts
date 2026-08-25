@@ -12,6 +12,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      // Payment endpoint moved 2026-08-18 — keep the old path working for
+      // browser tabs still running the pre-rename JS bundle (money path).
+      {
+        source: "/api/yoga/payment",
+        destination: "/api/payments/checkout",
+      },
+    ];
+  },
   async headers() {
     return [
       {
