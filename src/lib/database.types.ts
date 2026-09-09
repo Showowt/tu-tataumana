@@ -815,6 +815,7 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string | null
+          expiration_days: number | null
           highlight: boolean | null
           id: string
           is_active: boolean | null
@@ -826,11 +827,13 @@ export type Database = {
           sort_order: number | null
           subtitle_en: string | null
           subtitle_es: string | null
+          total_classes: number | null
           updated_at: string | null
         }
         Insert: {
           category?: string | null
           created_at?: string | null
+          expiration_days?: number | null
           highlight?: boolean | null
           id?: string
           is_active?: boolean | null
@@ -842,11 +845,13 @@ export type Database = {
           sort_order?: number | null
           subtitle_en?: string | null
           subtitle_es?: string | null
+          total_classes?: number | null
           updated_at?: string | null
         }
         Update: {
           category?: string | null
           created_at?: string | null
+          expiration_days?: number | null
           highlight?: boolean | null
           id?: string
           is_active?: boolean | null
@@ -858,6 +863,7 @@ export type Database = {
           sort_order?: number | null
           subtitle_en?: string | null
           subtitle_es?: string | null
+          total_classes?: number | null
           updated_at?: string | null
         }
         Relationships: []

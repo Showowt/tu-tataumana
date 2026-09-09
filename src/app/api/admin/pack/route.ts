@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { z } from "zod";
-import { getPackDefinition, calculateExpiration } from "@/lib/constants/packs";
+import { calculateExpiration } from "@/lib/constants/packs";
+import { resolvePackDef } from "@/lib/pack-resolver";
 import { notifyNewMembership, sendTelegramMessage } from "@/lib/telegram";
 
 /**
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const packDef = getPackDefinition(parsed.data.pack_type);
+  const packDef = await resolvePackDef(parsed.data.pack_type);
   if (!packDef) {
     return NextResponse.json(
       { error: `Unknown pack type: ${parsed.data.pack_type}` },

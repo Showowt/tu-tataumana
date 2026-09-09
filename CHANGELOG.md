@@ -1,5 +1,39 @@
 # CHANGELOG — TU. by Tata Umaña
 
+## 2026-09-08 — Packs go DB-driven (Tata's "JUST B LOVE missing from pack dropdown")
+
+**Report (Tata, video):** created the JUST B LOVE card ($99,000 · 3 clases) in
+/admin/precios, but it never appeared in the student "+ PACK → Seleccionar pack"
+dropdown. Root cause: the dropdown and every pack-minting route resolved packs from
+hardcoded `PACK_DEFINITIONS` keyed by `pack_type`; her card had `pack_type=""` and no
+code entry, so it was invisible to admin pack creation AND unmintable by the payment
+webhooks. Same failure class as the Aug 10 "unmapped cards" cleanup — recurred because
+every new Precios card required a code deploy.
+
+**Fix (systemic — pricing cards are now the pack source of truth):**
+- DB: `tu_pricing_cards` + `total_classes` + `expiration_days` (migration
+  `20260908000000`, applied live). Backfilled the 12 mapped cards from the code
+  constants (identical values). JUST B LOVE → `JUST_B_LOVE` / 3 clases / 30 días.
+  New guard: `uq_active_pricing_card_per_pack_type` (one active card per type).
+- `src/lib/pack-resolver.ts`: `resolvePackDef()` — active DB card first, code-constant
+  fallback (legacy/def-only types e.g. ANNIVERSARY_5EXP still resolve; DB failure
+  degrades to old behavior). Swapped into all 7 consumers: admin/pack/create,
+  admin/pack, payments/create, admin/payments/verify, discounts/validate,
+  webhooks/wompi, webhooks/square.
+- payments/create NOTE-01 floor restructured: packDef price now IS the card price, so
+  the sub-floor guard falls back to the trusted code constant or rejects
+  (`invalid_price`) — a mis-typed 280-COP card still can't become a real charge.
+- Admin UIs (student + PACK tab, /admin/packs): dropdown + price auto-fill now fetch
+  `/api/admin/pricing` (fallback-first to constants). Renames in Precios now show in
+  the dropdown (e.g. "JUSTB RESTART", formerly displayed as "Anniversary Special").
+- /admin/precios: new "# Clases (-1 = ilimitado)" + "Vigencia (días)" fields (create +
+  edit); `pack_type` auto-generated from the label on create; active cards missing
+  classes show an amber "⚠ Falta # de clases" warning.
+
+**Note:** def-only promos with no active card (ANNIVERSARY_5EXP) no longer appear in
+the create dropdowns (they mirror Precios now) but still resolve for historical refs.
+Chatbot knowledge (`tu-knowledge.ts`) + StructuredData still hardcode packs — known gap.
+
 ## 2026-08-10 — ADVERSARIAL AUDIT ROUND 2 (fresh-session, 6 passes) — deployed 2158930 + jvsi46jx8
 
 Six cold hostile passes (A–F) with **live rolled-back DB probes**. Round 2 caught what

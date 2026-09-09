@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { z } from "zod";
-import { getPackDefinition, calculateExpiration } from "@/lib/constants/packs";
+import { calculateExpiration } from "@/lib/constants/packs";
+import { resolvePackDef } from "@/lib/pack-resolver";
 import { notifyNewMembership } from "@/lib/telegram";
 
 const CreatePackSchema = z.object({
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
   } = parsed.data;
 
   // 1. Validate pack type
-  const packDef = getPackDefinition(pack_type);
+  const packDef = await resolvePackDef(pack_type);
   if (!packDef) {
     return NextResponse.json(
       { error: `Unknown pack type: ${pack_type}` },

@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { getPackDefinition } from "@/lib/constants/packs";
+import { resolvePackDef } from "@/lib/pack-resolver";
 import { captureApiError } from "@/lib/sentry-helpers";
 import { systemLog } from "@/lib/system-log";
 
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Look up pack definition
-    const packDef = getPackDefinition(pack_type);
+    const packDef = await resolvePackDef(pack_type);
     if (!packDef) {
       return NextResponse.json(
         { error: "Pack no encontrado", errorCode: "invalid_pack" },

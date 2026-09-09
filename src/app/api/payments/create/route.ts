@@ -13,6 +13,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { getPackDefinition } from "@/lib/constants/packs";
+import { resolvePackDef } from "@/lib/pack-resolver";
 import { createSquareCheckout } from "@/lib/square";
 import { createPaymentLink } from "@/lib/wompi";
 import { notifyPaymentReceived, notifyPackPurchase, notifyDiscountUsed } from "@/lib/telegram";
@@ -388,8 +389,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
       );
     }
 
-    // Validate pack exists
-    const packDef = getPackDefinition(pack_type);
+    // Validate pack exists — DB pricing card first, code constant fallback
+    const packDef = await resolvePackDef(pack_type);
     if (!packDef) {
       return NextResponse.json(
         { data: null, error: "invalid_pack", message: `Pack type '${pack_type}' not found` },
@@ -409,25 +410,23 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePay
     const reference = generateReference(pack_type);
     const serviceDb = getServiceSupabase();
 
-    // NOTE-01: charge the admin-editable DB price (tu_pricing_cards) by pack_type so
-    // /admin/precios edits actually take effect. Fall back to the code constant when
-    // there's no active card. A safety floor blocks a mis-typed DB price (e.g. 280
-    // instead of 280000) from ever becoming a real charge.
+    // NOTE-01: packDef comes from the admin-editable DB card (resolvePackDef), so
+    // /admin/precios edits take effect on real charges. A safety floor blocks a
+    // mis-typed DB price (e.g. 280 instead of 280000) from ever becoming a real
+    // charge: fall back to the trusted code constant, or reject if none exists.
     const PRICE_FLOOR_COP = 10000;
     let basePriceCop = packDef.priceCop;
-    const { data: priceCard } = await serviceDb
-      .from("tu_pricing_cards")
-      .select("price_cop")
-      .eq("pack_type", pack_type)
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    if (typeof priceCard?.price_cop === "number") {
-      if (priceCard.price_cop >= PRICE_FLOOR_COP) {
-        basePriceCop = priceCard.price_cop;
+    if (basePriceCop < PRICE_FLOOR_COP) {
+      const trustedDef = getPackDefinition(pack_type);
+      if (trustedDef && trustedDef.priceCop >= PRICE_FLOOR_COP) {
+        console.error(`[payments/create] Price for ${pack_type} below floor (${basePriceCop} COP) — charging trusted constant ${trustedDef.priceCop}`);
+        basePriceCop = trustedDef.priceCop;
       } else {
-        console.error(`[payments/create] DB price for ${pack_type} below floor (${priceCard.price_cop} COP) — charging trusted constant ${packDef.priceCop}`);
+        console.error(`[payments/create] Price for ${pack_type} below floor (${basePriceCop} COP) with no trusted fallback — rejecting`);
+        return NextResponse.json(
+          { data: null, error: "invalid_price", message: "El precio de este pack esta mal configurado. Contacta al estudio. / This pack's price is misconfigured. Please contact the studio." },
+          { status: 400 },
+        );
       }
     }
 

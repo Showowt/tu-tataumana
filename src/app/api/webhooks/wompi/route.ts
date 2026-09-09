@@ -14,7 +14,8 @@ import {
   type WompiWebhookEvent,
 } from "@/lib/wompi";
 import { notifyPaymentReceived, notifyNewMembership } from "@/lib/telegram";
-import { getPackDefinition, calculateExpiration } from "@/lib/constants/packs";
+import { calculateExpiration } from "@/lib/constants/packs";
+import { resolvePackDef } from "@/lib/pack-resolver";
 import { ADMIN_EMAILS } from "@/lib/constants/business-rules";
 import { createClient } from "@supabase/supabase-js";
 import { captureApiError } from "@/lib/sentry-helpers";
@@ -164,7 +165,7 @@ async function handleApprovedPayment(
 
   // 3. Create pack if pack type is identifiable (with duplicate prevention)
   if (packType) {
-    const packDef = getPackDefinition(packType);
+    const packDef = await resolvePackDef(packType);
     if (packDef) {
       // Prevent duplicate pack creation on webhook replay
       const { data: existingPack } = await supabase

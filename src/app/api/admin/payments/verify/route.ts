@@ -10,7 +10,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { verifyAdmin } from "@/lib/admin-auth";
-import { getPackDefinition, calculateExpiration } from "@/lib/constants/packs";
+import { calculateExpiration } from "@/lib/constants/packs";
+import { resolvePackDef } from "@/lib/pack-resolver";
 import { notifyNewMembership, notifyPaymentReceived } from "@/lib/telegram";
 import { ADMIN_EMAILS } from "@/lib/constants/business-rules";
 
@@ -204,7 +205,7 @@ export async function POST(request: NextRequest) {
   const gatewaySettled = ["wompi", "square"].includes(String(transaction.payment_method || "").toLowerCase());
 
   if (packType && studentId && !gatewaySettled) {
-    const packDef = getPackDefinition(packType);
+    const packDef = await resolvePackDef(packType);
 
     if (packDef) {
       // Prevent duplicate pack creation

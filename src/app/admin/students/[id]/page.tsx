@@ -3,10 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  PACK_DEFINITIONS,
-  type PackDefinition,
-} from "@/lib/constants/packs";
+import { PACK_DEFINITIONS } from "@/lib/constants/packs";
 
 /* ---------- Types ---------- */
 
@@ -80,6 +77,39 @@ const PAYMENT_METHODS = [
 type PaymentMethodValue = (typeof PAYMENT_METHODS)[number]["value"];
 type DiscountType = "percentage" | "fixed" | "comp";
 
+/* Pack options come from tu_pricing_cards (admin-editable in /admin/precios);
+   the code constants are only the fallback if the fetch fails. */
+interface PackOption {
+  pack_type: string;
+  name: string;
+  total_classes: number;
+  expiration_days: number;
+  price_cop: number;
+  price_usd: number;
+}
+
+interface PricingCardRow {
+  label: string;
+  label_es: string | null;
+  pack_type: string | null;
+  price_cop: number;
+  price_usd: number;
+  total_classes: number | null;
+  expiration_days: number | null;
+  is_active: boolean | null;
+}
+
+const FALLBACK_PACK_OPTIONS: PackOption[] = PACK_DEFINITIONS.filter(
+  (p) => p.isActive,
+).map((p) => ({
+  pack_type: p.type,
+  name: p.name.es,
+  total_classes: p.totalClasses,
+  expiration_days: p.expirationDays,
+  price_cop: p.priceCop,
+  price_usd: p.priceUsd,
+}));
+
 /* ---------- Component ---------- */
 
 export default function AdminStudentDetailPage() {
@@ -94,6 +124,7 @@ export default function AdminStudentDetailPage() {
   const [message, setMessage] = useState("");
 
   // Add Pack form state
+  const [packOptions, setPackOptions] = useState<PackOption[]>(FALLBACK_PACK_OPTIONS);
   const [packType, setPackType] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue>("cash");
   const [amountPaid, setAmountPaid] = useState<number>(0);
@@ -163,6 +194,39 @@ export default function AdminStudentDetailPage() {
     loadStudent();
   }, [loadStudent]);
 
+  /* ---------- Load pack options from pricing cards (DB source of truth) ---------- */
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/pricing");
+        if (!res.ok) return;
+        const json = await res.json();
+        const cards = ((json.data || []) as PricingCardRow[]).filter(
+          (c) => c.is_active && c.pack_type && typeof c.total_classes === "number",
+        );
+        if (!cancelled && cards.length > 0) {
+          setPackOptions(
+            cards.map((c) => ({
+              pack_type: c.pack_type as string,
+              name: c.label_es || c.label,
+              total_classes: c.total_classes as number,
+              expiration_days: c.expiration_days && c.expiration_days > 0 ? c.expiration_days : 30,
+              price_cop: c.price_cop,
+              price_usd: c.price_usd,
+            })),
+          );
+        }
+      } catch {
+        // Keep the code-constant fallback options
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   /* ---------- Auto-fill price when pack type changes ---------- */
 
   useEffect(() => {
@@ -170,11 +234,11 @@ export default function AdminStudentDetailPage() {
       setAmountPaid(0);
       return;
     }
-    const def = PACK_DEFINITIONS.find((p) => p.type === packType);
-    if (def) {
-      setAmountPaid(currency === "USD" ? def.priceUsd : def.priceCop);
+    const opt = packOptions.find((p) => p.pack_type === packType);
+    if (opt) {
+      setAmountPaid(currency === "USD" ? opt.price_usd : opt.price_cop);
     }
-  }, [packType, currency]);
+  }, [packType, currency, packOptions]);
 
   /* ---------- Handlers ---------- */
 
@@ -183,8 +247,8 @@ export default function AdminStudentDetailPage() {
     setTimeout(() => setMessage(""), 3000);
   }
 
-  function getSelectedPackDef(): PackDefinition | undefined {
-    return PACK_DEFINITIONS.find((p) => p.type === packType);
+  function getSelectedPackDef(): PackOption | undefined {
+    return packOptions.find((p) => p.pack_type === packType);
   }
 
   async function handleCreatePack(e: React.FormEvent) {
@@ -1243,13 +1307,13 @@ export default function AdminStudentDetailPage() {
                 className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
               >
                 <option value="">Seleccionar pack</option>
-                {PACK_DEFINITIONS.filter((p) => p.isActive).map((p) => (
-                  <option key={p.type} value={p.type}>
-                    {p.name.es} ---{" "}
-                    {p.totalClasses === -1
+                {packOptions.map((p) => (
+                  <option key={p.pack_type} value={p.pack_type}>
+                    {p.name} ---{" "}
+                    {p.total_classes === -1
                       ? "Ilimitado"
-                      : `${p.totalClasses} clases`}{" "}
-                    --- {formatMoney(p.priceCop, "COP")}
+                      : `${p.total_classes} clases`}{" "}
+                    --- {formatMoney(p.price_cop, "COP")}
                   </option>
                 ))}
               </select>
@@ -1329,15 +1393,15 @@ export default function AdminStudentDetailPage() {
                   Precio original:{" "}
                   {formatMoney(
                     currency === "USD"
-                      ? getSelectedPackDef()!.priceUsd
-                      : getSelectedPackDef()!.priceCop,
+                      ? getSelectedPackDef()!.price_usd
+                      : getSelectedPackDef()!.price_cop,
                     currency,
                   )}{" "}
                   | Clases:{" "}
-                  {getSelectedPackDef()!.totalClasses === -1
+                  {getSelectedPackDef()!.total_classes === -1
                     ? "Ilimitado"
-                    : getSelectedPackDef()!.totalClasses}{" "}
-                  | Expira en: {getSelectedPackDef()!.expirationDays} dias
+                    : getSelectedPackDef()!.total_classes}{" "}
+                  | Expira en: {getSelectedPackDef()!.expiration_days} dias
                 </p>
               </div>
             )}

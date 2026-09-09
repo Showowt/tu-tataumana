@@ -11,13 +11,26 @@ interface PricingCard {
   price_cop: number;
   price_usd: number;
   pack_type: string | null;
+  total_classes: number | null;
+  expiration_days: number | null;
   highlight: boolean;
   category: string;
   sort_order: number;
   is_active: boolean;
 }
 
-type EditField = "label" | "label_es" | "subtitle_en" | "subtitle_es" | "price_cop" | "price_usd" | "pack_type" | "sort_order" | "category";
+type EditField = "label" | "label_es" | "subtitle_en" | "subtitle_es" | "price_cop" | "price_usd" | "pack_type" | "total_classes" | "expiration_days" | "sort_order" | "category";
+
+/** Generate a pack_type code from the label (e.g. "Just B Love" → JUST_B_LOVE) */
+function slugifyPackType(label: string): string {
+  return label
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 50);
+}
 
 const CATEGORIES = [
   { value: "group", label: "Clase grupal" },
@@ -45,6 +58,8 @@ export default function AdminPricingPage() {
     price_cop: 0,
     price_usd: 0,
     pack_type: "",
+    total_classes: 0,
+    expiration_days: 0,
     category: "group",
     sort_order: 50,
   });
@@ -132,10 +147,18 @@ export default function AdminPricingPage() {
 
   async function createCard() {
     try {
+      // pack_type is what connects the card to pack creation/purchase — generate
+      // it from the label so a new card is sellable without manual wiring.
+      const payload = {
+        ...newCard,
+        pack_type: newCard.pack_type.trim() || slugifyPackType(newCard.label),
+        total_classes: newCard.total_classes === 0 ? undefined : newCard.total_classes,
+        expiration_days: newCard.expiration_days === 0 ? undefined : newCard.expiration_days,
+      };
       const res = await fetch("/api/admin/pricing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newCard),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const d = await res.json();
@@ -143,7 +166,7 @@ export default function AdminPricingPage() {
       } else {
         showMsg("Creado");
         setShowCreate(false);
-        setNewCard({ label: "", label_es: "", subtitle_en: "", subtitle_es: "", price_cop: 0, price_usd: 0, pack_type: "", category: "group", sort_order: 50 });
+        setNewCard({ label: "", label_es: "", subtitle_en: "", subtitle_es: "", price_cop: 0, price_usd: 0, pack_type: "", total_classes: 0, expiration_days: 0, category: "group", sort_order: 50 });
         await loadCards();
       }
     } catch {
@@ -151,7 +174,7 @@ export default function AdminPricingPage() {
     }
   }
 
-  function editField(field: EditField, value: string | number) {
+  function editField(field: EditField, value: string | number | null) {
     setEditData((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -190,6 +213,8 @@ export default function AdminPricingPage() {
             <input placeholder="Subtitulo (ES)" value={newCard.subtitle_es} onChange={(e) => setNewCard({ ...newCard, subtitle_es: e.target.value })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
             <input placeholder="Precio COP" type="number" value={newCard.price_cop === 0 ? "" : newCard.price_cop} onChange={(e) => setNewCard({ ...newCard, price_cop: e.target.value === "" ? 0 : parseInt(e.target.value) || 0 })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
             <input placeholder="Precio USD" type="number" value={newCard.price_usd === 0 ? "" : newCard.price_usd} onChange={(e) => setNewCard({ ...newCard, price_usd: e.target.value === "" ? 0 : parseInt(e.target.value) || 0 })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
+            <input placeholder="# Clases (-1 = ilimitado)" type="number" value={newCard.total_classes === 0 ? "" : newCard.total_classes} onChange={(e) => setNewCard({ ...newCard, total_classes: e.target.value === "" ? 0 : parseInt(e.target.value) || 0 })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
+            <input placeholder="Vigencia (dias)" type="number" value={newCard.expiration_days === 0 ? "" : newCard.expiration_days} onChange={(e) => setNewCard({ ...newCard, expiration_days: e.target.value === "" ? 0 : parseInt(e.target.value) || 0 })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm" />
             <select value={newCard.category} onChange={(e) => setNewCard({ ...newCard, category: e.target.value })} className="px-3 py-2 border border-[#2C2C2C]/10 text-sm">
               {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
@@ -226,6 +251,8 @@ export default function AdminPricingPage() {
                     <input value={editData.subtitle_es || ""} onChange={(e) => editField("subtitle_es", e.target.value)} placeholder="Subtitulo ES" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
                     <input type="number" value={editData.price_cop === 0 ? "" : (editData.price_cop ?? "")} onChange={(e) => editField("price_cop", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)} placeholder="COP" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
                     <input type="number" value={editData.price_usd === 0 ? "" : (editData.price_usd ?? "")} onChange={(e) => editField("price_usd", e.target.value === "" ? 0 : parseInt(e.target.value) || 0)} placeholder="USD" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
+                    <input type="number" value={editData.total_classes ?? ""} onChange={(e) => editField("total_classes", e.target.value === "" ? null : parseInt(e.target.value) || 0)} placeholder="# Clases (-1 = ilimitado)" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
+                    <input type="number" value={editData.expiration_days ?? ""} onChange={(e) => editField("expiration_days", e.target.value === "" ? null : parseInt(e.target.value) || 0)} placeholder="Vigencia (dias)" className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm" />
                     <select value={editData.category || "group"} onChange={(e) => editField("category", e.target.value)} className="px-2 py-1.5 border border-[#2C2C2C]/10 text-sm">
                       {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                     </select>
@@ -248,7 +275,18 @@ export default function AdminPricingPage() {
                     <p className="text-xs text-[#2C2C2C]/50 mt-0.5">
                       {formatCOP(card.price_cop)} COP / ${card.price_usd} USD
                       {card.subtitle_es && <span className="text-[#2C2C2C]/30"> · {card.subtitle_es}</span>}
+                      {typeof card.total_classes === "number" && (
+                        <span className="text-[#2C2C2C]/30">
+                          {" "}· {card.total_classes === -1 ? "Ilimitado" : `${card.total_classes} clases`}
+                          {card.expiration_days ? ` · ${card.expiration_days} dias` : ""}
+                        </span>
+                      )}
                     </p>
+                    {card.is_active && (!card.pack_type || typeof card.total_classes !== "number") && (
+                      <p className="text-[10px] text-amber-600 mt-0.5">
+                        ⚠ Falta # de clases — edita esta tarjeta y agrega las clases para poder venderla o asignarla como pack
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <button onClick={() => toggleHighlight(card)} className={`text-[9px] px-2 py-1 border transition-colors ${card.highlight ? "border-[#B87777] text-[#B87777]" : "border-[#2C2C2C]/10 text-[#2C2C2C]/20 hover:text-[#B87777]"}`} title="Destacar">

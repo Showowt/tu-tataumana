@@ -3,6 +3,33 @@
 import { useEffect, useState, useCallback } from "react";
 import { PACK_DEFINITIONS } from "@/lib/constants/packs";
 
+/* Pack options come from tu_pricing_cards (admin-editable in /admin/precios);
+   the code constants are only the fallback if the fetch fails. */
+interface PackOption {
+  pack_type: string;
+  name: string;
+  total_classes: number;
+  price_cop: number;
+}
+
+interface PricingCardRow {
+  label: string;
+  label_es: string | null;
+  pack_type: string | null;
+  price_cop: number;
+  total_classes: number | null;
+  is_active: boolean | null;
+}
+
+const FALLBACK_PACK_OPTIONS: PackOption[] = PACK_DEFINITIONS.filter(
+  (p) => p.isActive,
+).map((p) => ({
+  pack_type: p.type,
+  name: p.name.es,
+  total_classes: p.totalClasses,
+  price_cop: p.priceCop,
+}));
+
 interface PackStudent {
   id: string;
   full_name: string;
@@ -40,6 +67,7 @@ export default function AdminPacksPage() {
   const [message, setMessage] = useState("");
 
   // Create form
+  const [packOptions, setPackOptions] = useState<PackOption[]>(FALLBACK_PACK_OPTIONS);
   const [showCreate, setShowCreate] = useState(false);
   const [studentSearch, setStudentSearch] = useState("");
   const [searchResults, setSearchResults] = useState<StudentSearchResult[]>([]);
@@ -78,6 +106,36 @@ export default function AdminPacksPage() {
   useEffect(() => {
     loadPacks();
   }, [loadPacks]);
+
+  // Pack options from pricing cards (DB source of truth)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/pricing");
+        if (!res.ok) return;
+        const json = await res.json();
+        const cards = ((json.data || []) as PricingCardRow[]).filter(
+          (c) => c.is_active && c.pack_type && typeof c.total_classes === "number",
+        );
+        if (!cancelled && cards.length > 0) {
+          setPackOptions(
+            cards.map((c) => ({
+              pack_type: c.pack_type as string,
+              name: c.label_es || c.label,
+              total_classes: c.total_classes as number,
+              price_cop: c.price_cop,
+            })),
+          );
+        }
+      } catch {
+        // Keep the code-constant fallback options
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Student search for pack creation
   useEffect(() => {
@@ -327,13 +385,13 @@ export default function AdminPacksPage() {
             className="w-full px-3 py-2 border border-[#2C2C2C]/10 bg-white text-sm text-[#2C2C2C] focus:outline-none focus:border-[#C9A96E]"
           >
             <option value="">Tipo de pack</option>
-            {PACK_DEFINITIONS.filter((p) => p.isActive).map((p) => (
-              <option key={p.type} value={p.type}>
-                {p.name.es} —{" "}
-                {p.totalClasses === -1
+            {packOptions.map((p) => (
+              <option key={p.pack_type} value={p.pack_type}>
+                {p.name} —{" "}
+                {p.total_classes === -1
                   ? "Ilimitado"
-                  : `${p.totalClasses} clases`}{" "}
-                — {formatCOP(p.priceCop)}
+                  : `${p.total_classes} clases`}{" "}
+                — {formatCOP(p.price_cop)}
               </option>
             ))}
           </select>
