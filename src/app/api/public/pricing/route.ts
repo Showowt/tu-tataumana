@@ -26,7 +26,7 @@ export async function GET() {
 
   const { data: cards, error } = await supabase
     .from("tu_pricing_cards")
-    .select("id, label, label_es, subtitle_en, subtitle_es, price_cop, price_usd, pack_type, highlight, category, sort_order")
+    .select("id, label, label_es, subtitle_en, subtitle_es, price_cop, price_usd, pack_type, total_classes, expiration_days, highlight, category, sort_order")
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
 

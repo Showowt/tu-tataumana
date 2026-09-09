@@ -16,11 +16,68 @@ interface OwnedPack {
   payment_method: string | null;
 }
 
+/* Catalog comes from tu_pricing_cards via /api/public/pricing (admin-editable in
+   /admin/precios); the code constants are only the fallback if the fetch fails. */
+interface PublicPricingCard {
+  label: string;
+  label_es: string | null;
+  subtitle_en: string | null;
+  subtitle_es: string | null;
+  price_cop: number;
+  price_usd: number;
+  pack_type: string | null;
+  total_classes: number | null;
+  expiration_days: number | null;
+  category: string | null;
+  sort_order: number | null;
+}
+
+function cardToPackDef(c: PublicPricingCard): PackDefinition {
+  return {
+    type: c.pack_type as string,
+    name: { en: c.label, es: c.label_es || c.label },
+    description: { en: c.subtitle_en || "", es: c.subtitle_es || c.subtitle_en || "" },
+    totalClasses: c.total_classes as number,
+    priceCop: c.price_cop,
+    priceUsd: c.price_usd,
+    expirationDays: c.expiration_days && c.expiration_days > 0 ? c.expiration_days : 30,
+    isPromo: c.category === "promo",
+    isActive: true,
+    sortOrder: c.sort_order ?? 50,
+  };
+}
+
 export default function PacksPage() {
   const [ownedPacks, setOwnedPacks] = useState<OwnedPack[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPack, setSelectedPack] = useState<PackDefinition | null>(null);
   const [lang, setLang] = useState<"es" | "en">("es");
+  const [catalog, setCatalog] = useState<PackDefinition[]>([
+    ...getPromoPacks(),
+    ...getActivePacks(),
+  ]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/public/pricing");
+        if (!res.ok) return;
+        const json = await res.json();
+        const cards = ((json.cards || []) as PublicPricingCard[]).filter(
+          (c) => c.pack_type && typeof c.total_classes === "number",
+        );
+        if (!cancelled && cards.length > 0) {
+          setCatalog(cards.map(cardToPackDef));
+        }
+      } catch {
+        // Keep the code-constant fallback catalog
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -58,8 +115,8 @@ export default function PacksPage() {
   const activePacks = ownedPacks.filter((p) => p.status === "active");
   const pastPacks = ownedPacks.filter((p) => p.status !== "active");
 
-  const catalogPacks = getActivePacks();
-  const promoPacks = getPromoPacks();
+  const catalogPacks = catalog.filter((p) => !p.isPromo);
+  const promoPacks = catalog.filter((p) => p.isPromo);
 
   if (loading) {
     return (
