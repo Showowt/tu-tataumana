@@ -210,7 +210,9 @@ export default function AdminStudentDetailPage() {
           setPackOptions(
             cards.map((c) => ({
               pack_type: c.pack_type as string,
-              name: c.label_es || c.label,
+              // card.label is the name shown in the /admin/precios list — the
+              // dropdown must read identically or admins can't match them up
+              name: c.label,
               total_classes: c.total_classes as number,
               expiration_days: c.expiration_days && c.expiration_days > 0 ? c.expiration_days : 30,
               price_cop: c.price_cop,
