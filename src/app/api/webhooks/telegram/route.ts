@@ -303,7 +303,7 @@ Reglas:
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-5-5",
         max_tokens: 300,
         system: systemPrompt,
         messages: [{ role: "user", content: userMessage }],
@@ -403,7 +403,7 @@ Si no puedes determinar algun campo, usa valores razonables por defecto. El estu
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-5-5",
         max_tokens: 500,
         system: systemPrompt,
         messages: [{ role: "user", content: userContent }],

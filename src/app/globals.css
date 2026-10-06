@@ -11,7 +11,12 @@
   --font-body: 'Outfit', system-ui, sans-serif;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+/* Base reset — MUST live in @layer base so Tailwind v4 utilities (px-*, p-*, py-*)
+   can override it. Unlayered, this universal rule beats every layered utility and
+   silently zeroes all padding/margin site-wide. */
+@layer base {
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+}
 
 html {
   scroll-behavior: smooth;
