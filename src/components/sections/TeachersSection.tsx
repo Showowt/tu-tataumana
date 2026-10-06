@@ -29,6 +29,12 @@ function mapAPITeacher(t: { name: string; role_en: string; role_es: string; bio_
 
 export default function TeachersSection({ lang, L }: TeachersSectionProps) {
   const [teachers, setTeachers] = useState<Teacher[]>(FALLBACK_TEACHERS);
+  const [imgError, setImgError] = useState<Record<string, boolean>>({});
+
+  // Graceful fallback so a missing/404 teacher photo never renders a broken/blank box.
+  const FALLBACK_TEACHER_IMG = "/teachers-hero.jpg";
+  const srcFor = (tc: Teacher) => (imgError[tc.name] ? FALLBACK_TEACHER_IMG : tc.image);
+  const markErr = (name: string) => setImgError((p) => (p[name] ? p : { ...p, [name]: true }));
 
   useEffect(() => {
     fetch("/api/public/teachers")
@@ -60,13 +66,14 @@ export default function TeachersSection({ lang, L }: TeachersSectionProps) {
             <div className="w-full">
               <div className="relative aspect-[4/5] rounded-sm overflow-hidden">
                 <Image
-                  src={teachers[0].image}
+                  src={srcFor(teachers[0])}
                   alt={`${teachers[0].name} — ${teachers[0].role[lang]}`}
                   fill
                   className="object-cover"
                   style={{ objectPosition: "center 20%" }}
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   priority
+                  onError={() => markErr(teachers[0].name)}
                 />
               </div>
             </div>
@@ -119,12 +126,13 @@ export default function TeachersSection({ lang, L }: TeachersSectionProps) {
               {/* Photo */}
               <div className="relative aspect-[3/4] rounded-sm overflow-hidden mb-5">
                 <Image
-                  src={teacher.image}
+                  src={srcFor(teacher)}
                   alt={`${teacher.name} — ${teacher.role[lang]}`}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-700"
                   style={{ objectPosition: "center 30%" }}
                   sizes="(max-width: 768px) 100vw, 33vw"
+                  onError={() => markErr(teacher.name)}
                 />
                 {/* Subtle warm overlay at bottom */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#2C2C2C]/40 via-transparent to-transparent" />

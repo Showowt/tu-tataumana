@@ -46,21 +46,52 @@ function useScrollReveal() {
     // Enable CSS animations only when JS is ready
     el.classList.add("js-scroll-reveal");
 
+    const REVEAL_SELECTOR =
+      ".fade-in, .clip-reveal, .clip-reveal-left, .clip-reveal-up, .blur-in, .line-draw, .text-reveal, .stagger-reveal";
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add("visible");
+            observer.unobserve(entry.target);
           }
         });
       },
       { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
     );
 
-    const children = el.querySelectorAll(".fade-in, .clip-reveal, .clip-reveal-left, .clip-reveal-up, .blur-in, .line-draw, .text-reveal, .stagger-reveal");
-    children.forEach((child) => observer.observe(child));
+    // Elements present at mount — observe exactly as before (preserves entrance animations).
+    el.querySelectorAll(REVEAL_SELECTOR).forEach((child) => observer.observe(child));
 
-    return () => observer.disconnect();
+    // Reveal elements injected LATER by async data (teachers, retreats, events, etc.).
+    // The one-time query above can't see them, so without this they keep the
+    // `js-scroll-reveal` opacity:0 rule forever and the whole section looks blank.
+    const registerLate = (node: Element) => {
+      if (node.classList.contains("visible")) return;
+      // Already scrolled into/past view → reveal now; otherwise observe for on-scroll reveal.
+      if (node.getBoundingClientRect().top < window.innerHeight) {
+        node.classList.add("visible");
+      } else {
+        observer.observe(node);
+      }
+    };
+
+    const mutationObserver = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        m.addedNodes.forEach((added) => {
+          if (!(added instanceof Element)) return;
+          if (added.matches(REVEAL_SELECTOR)) registerLate(added);
+          added.querySelectorAll(REVEAL_SELECTOR).forEach(registerLate);
+        });
+      }
+    });
+    mutationObserver.observe(el, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      mutationObserver.disconnect();
+    };
   }, []);
 
   return ref;
