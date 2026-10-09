@@ -39,6 +39,48 @@ export default function ChatBot() {
   const [showHint, setShowHint] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sessionIdRef = useRef<string | null>(null);
+
+  // Stable per-visit session id so the saved transcript upserts as one conversation
+  const getSessionId = (): string => {
+    if (sessionIdRef.current) return sessionIdRef.current;
+    let sid: string | null = null;
+    try {
+      sid = sessionStorage.getItem("tu_chat_sid");
+    } catch {
+      /* storage unavailable (private mode) — fall through */
+    }
+    if (!sid) {
+      sid =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `sid-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      try {
+        sessionStorage.setItem("tu_chat_sid", sid);
+      } catch {
+        /* keep in-memory only */
+      }
+    }
+    sessionIdRef.current = sid;
+    return sid;
+  };
+
+  // Fire-and-forget transcript save — powers Admin > Chats for Tata
+  const saveSession = (allMessages: Message[]) => {
+    try {
+      fetch("/api/chat-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: getSessionId(),
+          messages: allMessages.slice(-60),
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      /* never interrupt the conversation over analytics */
+    }
+  };
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -93,15 +135,15 @@ export default function ChatBot() {
         content: data.message,
       };
       setMessages((prev) => [...prev, assistantMessage]);
+      saveSession([...messages, userMessage, assistantMessage]);
     } catch (error) {
       console.error("Chat error:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: `I apologize, I'm having trouble connecting right now. Please reach out to Tata directly via WhatsApp for immediate assistance: +57 316 633 3663`,
-        },
-      ]);
+      const fallbackMessage: Message = {
+        role: "assistant",
+        content: `I apologize, I'm having trouble connecting right now. Please reach out to Tata directly via WhatsApp for immediate assistance: +57 316 633 3663`,
+      };
+      setMessages((prev) => [...prev, fallbackMessage]);
+      saveSession([...messages, userMessage, fallbackMessage]);
     } finally {
       setIsLoading(false);
     }
