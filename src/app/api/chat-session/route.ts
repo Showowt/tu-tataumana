@@ -139,9 +139,9 @@ function calculateLeadScore(
     .join(" ");
 
   // High-intent signals (+15-25 each)
-  if (/\b(book|reserv|schedule|sign up|register|apartar|agendar|inscrib|cupo)\b/i.test(allText)) score += 25;
+  if (/\b(book(ing)?|reserv\w*|schedule|sign up|register|apart\w*|agend\w*|inscrib\w*|cupo)\b/i.test(allText)) score += 25;
   if (/\b(price|cost|how much|cuanto|cuánto|precio|vale)\b/i.test(allText)) score += 20;
-  if (/\b(tomorrow|today|this week|next week|mañana|hoy|esta semana)\b/i.test(allText)) score += 20;
+  if (/\b(tomorrow|today|this week|next week|mañana|manana|hoy|esta semana)\b/i.test(allText)) score += 20;
   if (/\b(private|session|one.on.one|personal|privada)\b/i.test(allText)) score += 15;
   if (/\b(retreat|ceremony|cacao|sound healing|reiki|retiro|ceremonia)\b/i.test(allText)) score += 15;
 
@@ -172,7 +172,7 @@ function determineIntent(
     .map((m) => m.content.toLowerCase())
     .join(" ");
 
-  if (/\b(book|reserv|sign up|i want to|quiero|apartar|agendar|inscrib|nos vemos|see you|i'll come|voy a ir)\b/i.test(allText))
+  if (/\b(book(ing)?|reserv\w*|sign up|i want to|quiero|apart\w*|agend\w*|inscrib\w*|nos vemos|see you|i'll come|voy a ir)\b/i.test(allText))
     return "ready_to_book";
   if (/\b(price|cost|how much|schedule|when|class|precio|cuanto|cuánto|horario|clase)\b/i.test(allText))
     return "interested";
