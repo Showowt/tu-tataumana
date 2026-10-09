@@ -42,6 +42,11 @@ interface PendingBooking {
   payment_method: string | null;
 }
 
+interface GroupedPending {
+  primary: PendingBooking;
+  ids: number[];
+}
+
 interface AbandonedLead {
   id: number;
   created_at: string;
@@ -162,16 +167,17 @@ export default function AdminChatsPage() {
     load();
   }, [load]);
 
-  async function handleArchive(id: number) {
-    setArchiving(id);
+  async function handleArchive(ids: number[]) {
+    setArchiving(ids[0]);
     try {
       const res = await fetch("/api/admin/chats", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ booking_id: id, action: "archive" }),
+        body: JSON.stringify({ booking_ids: ids, action: "archive" }),
       });
       if (res.ok) {
-        setPending((prev) => prev.filter((p) => p.id !== id));
+        const idSet = new Set(ids);
+        setPending((prev) => prev.filter((p) => !idSet.has(p.id)));
         showMessage("Reserva marcada como gestionada ✓");
       } else {
         const data = await res.json().catch(() => null);
@@ -183,9 +189,37 @@ export default function AdminChatsPage() {
     setArchiving(null);
   }
 
+  // Collapse resubmits: same person + same class date/time = one card.
+  // Newest row wins (a resubmit usually corrects the payment method);
+  // "Gestionada" archives every row in the group so the Telegram overlays
+  // (which key on status=new) clear too.
+  function groupPending(rows: PendingBooking[]): GroupedPending[] {
+    const groups = new Map<string, GroupedPending>();
+    for (const row of rows) {
+      const nk = (row.name || "")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+      const key = `${nk}|${row.class_date || ""}|${row.class_time || ""}`;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.ids.push(row.id); // rows arrive newest-first; first seen stays primary
+      } else {
+        groups.set(key, { primary: row, ids: [row.id] });
+      }
+    }
+    return Array.from(groups.values());
+  }
+
   const today = todayBogota();
-  const upcoming = pending.filter((p) => !p.class_date || p.class_date >= today);
-  const past = pending.filter((p) => p.class_date && p.class_date < today);
+  const upcoming = groupPending(
+    pending.filter((p) => !p.class_date || p.class_date >= today)
+  );
+  const past = groupPending(
+    pending.filter((p) => p.class_date && p.class_date < today)
+  );
 
   // Hide abandoned leads that already became a pending web reservation
   const pendingKeys = new Set(
@@ -276,12 +310,13 @@ export default function AdminChatsPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {upcoming.map((p) => (
+                {upcoming.map((g) => (
                   <PendingCard
-                    key={p.id}
-                    booking={p}
-                    archiving={archiving === p.id}
-                    onArchive={() => handleArchive(p.id)}
+                    key={g.ids[0]}
+                    booking={g.primary}
+                    count={g.ids.length}
+                    archiving={archiving === g.ids[0]}
+                    onArchive={() => handleArchive(g.ids)}
                   />
                 ))}
                 {past.length > 0 && (
@@ -294,13 +329,14 @@ export default function AdminChatsPage() {
                   </button>
                 )}
                 {showPast &&
-                  past.map((p) => (
+                  past.map((g) => (
                     <PendingCard
-                      key={p.id}
-                      booking={p}
+                      key={g.ids[0]}
+                      booking={g.primary}
+                      count={g.ids.length}
                       isPast
-                      archiving={archiving === p.id}
-                      onArchive={() => handleArchive(p.id)}
+                      archiving={archiving === g.ids[0]}
+                      onArchive={() => handleArchive(g.ids)}
                     />
                   ))}
               </div>
@@ -474,11 +510,13 @@ export default function AdminChatsPage() {
 
 function PendingCard({
   booking,
+  count = 1,
   isPast = false,
   archiving,
   onArchive,
 }: {
   booking: PendingBooking;
+  count?: number;
   isPast?: boolean;
   archiving: boolean;
   onArchive: () => void;
@@ -501,6 +539,11 @@ function PendingCard({
         <p className="text-sm text-[#2C2C2C]">
           {booking.name || "Sin nombre"}
           <span className="text-[#2C2C2C]/40"> · {className}</span>
+          {count > 1 && (
+            <span className="text-[9px] tracking-wider uppercase bg-[#2C2C2C]/5 text-[#2C2C2C]/40 px-1.5 py-0.5 ml-2">
+              ×{count} envios
+            </span>
+          )}
         </p>
         <p className="text-[10px] text-[#2C2C2C]/40 mt-0.5">
           {[

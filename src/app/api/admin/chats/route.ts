@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 }
 
 const PatchSchema = z.object({
-  booking_id: z.number().int().positive(),
+  booking_ids: z.array(z.number().int().positive()).min(1).max(50),
   action: z.literal("archive"),
 });
 
@@ -99,21 +99,20 @@ export async function PATCH(request: NextRequest) {
   const { data, error } = await admin.supabase
     .from("tu_bookings")
     .update({ status: "archived", updated_at: new Date().toISOString() })
-    .eq("id", parsed.data.booking_id)
+    .in("id", parsed.data.booking_ids)
     .eq("status", "new")
-    .select("id")
-    .maybeSingle();
+    .select("id");
 
   if (error) {
     console.error("[API/admin/chats] archive", error);
     return NextResponse.json({ error: "Failed to archive" }, { status: 500 });
   }
-  if (!data) {
+  if (!data || data.length === 0) {
     return NextResponse.json(
       { error: "Reserva no encontrada o ya gestionada / Not found or already handled" },
       { status: 404 }
     );
   }
 
-  return NextResponse.json({ data });
+  return NextResponse.json({ data, archived: data.length });
 }
