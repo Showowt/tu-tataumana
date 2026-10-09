@@ -303,7 +303,7 @@ export default function Home() {
       />
 
       {/* ━━━ Floating Elements ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <ChatBot />
+      <ChatBot lang={lang} />
       <WhatsAppButton />
     </main>
   );

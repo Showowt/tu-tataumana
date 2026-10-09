@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
+import type { Lang } from "@/lib/translations";
 
 const TULogoAliveNew = dynamic(() => import("@/components/TULogoAliveNew"), {
   ssr: false,
@@ -19,19 +20,53 @@ interface Message {
 
 const TATA_WHATSAPP = "+573166333663";
 
-const CONVERSATION_STARTERS = [
-  "I've never done yoga before",
-  "What's sound healing like?",
-  "Tell me about retreats",
-  "I'm visiting Cartagena soon",
-  "How much do sessions cost?",
-];
+const COPY = {
+  en: {
+    starters: [
+      "I've never done yoga before",
+      "What's sound healing like?",
+      "Tell me about retreats",
+      "I'm visiting Cartagena soon",
+      "How much do sessions cost?",
+    ],
+    hintStrong: "I'm here",
+    hintRest: " to help you",
+    welcome: "Hello, beautiful soul.",
+    welcomeSub: "I'm Tata. What brings you here today?",
+    startersLabel: "What brings you here?",
+    placeholder: "What's on your mind?",
+    thinking: "thinking...",
+    subtitle: "Your wellness guide",
+    error:
+      "I apologize, I'm having trouble connecting right now. Please reach out to Tata directly via WhatsApp for immediate assistance: +57 316 633 3663",
+  },
+  es: {
+    starters: [
+      "Nunca he hecho yoga",
+      "¿Cómo es el sound healing?",
+      "Cuéntame de los retiros",
+      "Estoy de visita en Cartagena",
+      "¿Cuánto cuestan las clases?",
+    ],
+    hintStrong: "Estoy aquí",
+    hintRest: " para ayudarte",
+    welcome: "Hola, alma bonita.",
+    welcomeSub: "Soy Tata. ¿Qué te trae por aquí hoy?",
+    startersLabel: "¿Qué te trae por aquí?",
+    placeholder: "¿Qué tienes en mente?",
+    thinking: "pensando...",
+    subtitle: "Tu guía de bienestar",
+    error:
+      "Lo siento, estoy teniendo problemas de conexión. Escríbele a Tata directamente por WhatsApp: +57 316 633 3663",
+  },
+} as const;
 
 /**
  * YOU ChatBot — AI Concierge for Tata Umaña's Wellness Practice
  * "YOU" = TU = Tata Umaña — the guide is YOU, speaking to YOU
  */
-export default function ChatBot() {
+export default function ChatBot({ lang = "en" }: { lang?: Lang }) {
+  const copy = COPY[lang] || COPY.en;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -140,7 +175,7 @@ export default function ChatBot() {
       console.error("Chat error:", error);
       const fallbackMessage: Message = {
         role: "assistant",
-        content: `I apologize, I'm having trouble connecting right now. Please reach out to Tata directly via WhatsApp for immediate assistance: +57 316 633 3663`,
+        content: copy.error,
       };
       setMessages((prev) => [...prev, fallbackMessage]);
       saveSession([...messages, userMessage, fallbackMessage]);
@@ -192,8 +227,8 @@ export default function ChatBot() {
             ${showHint ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"}
           `}
         >
-          <span className="text-rose-soft font-semibold">I'm here</span> to help
-          you
+          <span className="text-rose-soft font-semibold">{copy.hintStrong}</span>
+          {copy.hintRest}
           {/* Arrow */}
           <div className="absolute top-full right-6 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-charcoal" />
         </div>
@@ -254,7 +289,7 @@ export default function ChatBot() {
                 YOU
               </h3>
               <p className="font-body text-xs text-rose-soft/80">
-                Your wellness guide
+                {copy.subtitle}
               </p>
             </div>
           </div>
@@ -285,20 +320,20 @@ export default function ChatBot() {
             <div className="space-y-4">
               <div className="bg-charcoal/5 p-4">
                 <p className="font-display text-charcoal leading-relaxed">
-                  Hello, beautiful soul.
+                  {copy.welcome}
                 </p>
                 <p className="font-display text-charcoal/70 text-sm mt-3">
-                  I'm Tata. What brings you here today?
+                  {copy.welcomeSub}
                 </p>
               </div>
 
               {/* Conversation Starters */}
               <div className="space-y-2">
                 <p className="font-body text-xs text-charcoal/50 uppercase tracking-wide">
-                  What brings you here?
+                  {copy.startersLabel}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {CONVERSATION_STARTERS.map((starter, i) => (
+                  {copy.starters.map((starter, i) => (
                     <button
                       key={i}
                       onClick={() => handleStarterClick(starter)}
@@ -351,7 +386,7 @@ export default function ChatBot() {
                   <span className="w-2 h-2 bg-rose-soft rounded-full dot-sine" />
                 </div>
                 <span className="font-body text-xs text-charcoal/50">
-                  thinking...
+                  {copy.thinking}
                 </span>
               </div>
             </div>
@@ -371,7 +406,7 @@ export default function ChatBot() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="What's on your mind?"
+              placeholder={copy.placeholder}
               disabled={isLoading}
               className="
                 input-glow
