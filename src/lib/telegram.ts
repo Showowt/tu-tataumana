@@ -30,6 +30,19 @@ function packDisplayName(packType: string): string {
   return PACK_DISPLAY_NAMES[packType] || packType.replace(/_/g, " ");
 }
 
+// Spanish weekday names, indexed by UTC getUTCDay() (0 = Sunday .. 6 = Saturday)
+const WEEKDAYS_ES = ["DOMINGO", "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO"];
+
+// Returns the uppercase Spanish weekday for a "YYYY-MM-DD" date string.
+// Parses the parts explicitly and reads them in UTC so the day never drifts
+// with the server timezone (the whole point: stop people showing up a day off).
+function spanishWeekday(isoDate: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec((isoDate || "").trim());
+  if (!m) return "";
+  const date = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return WEEKDAYS_ES[date.getUTCDay()] || "";
+}
+
 export async function sendTelegramMessage(text: string): Promise<boolean> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const primaryChatId = process.env.TELEGRAM_CHAT_ID;
@@ -297,13 +310,14 @@ export async function notifyClassBooking(data: {
   creditsRemaining: number;
 }): Promise<void> {
   const creditsText = data.creditsRemaining === -1 ? "Ilimitado" : `${data.creditsRemaining}`;
+  const weekday = spanishWeekday(data.classDate);
   const msg = [
     "📋 <b>NUEVA RESERVA</b>",
     "",
     `<b>Alumno:</b> ${data.studentName}`,
     data.studentEmail ? `<b>Email:</b> ${data.studentEmail}` : "",
     `<b>Clase:</b> ${data.className}`,
-    `<b>Fecha:</b> ${data.classDate} · ${data.classTime}`,
+    `<b>Fecha:</b> ${data.classDate} · ${data.classTime}${weekday ? ` <b>${weekday}</b>` : ""}`,
     `<b>Profesor:</b> ${data.teacher}`,
     `<b>Pack:</b> ${packDisplayName(data.packType)} (${creditsText} creditos restantes)`,
   ].filter(Boolean).join("\n");
