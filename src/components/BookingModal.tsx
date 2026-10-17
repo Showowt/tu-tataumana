@@ -25,9 +25,23 @@ const BOOKING_RULES = [
 // Schedule loaded from database via API — no hardcoded data.
 // `byDay` is the recurring template (fallback); `dates` holds the ACTUAL
 // classes per date from generated sessions, so week-specific changes apply.
+/**
+ * One bookable class in the picker.
+ *
+ * `spotsLeft` is only known for dated sessions (inside coverage) — the
+ * recurring template has no enrolment behind it, so it stays undefined and the
+ * class is offered normally. It already accounts for unpaid web
+ * pre-registrations, so it matches what /api/bookings will enforce.
+ */
+interface ScheduleClass {
+  time: string;
+  name: string;
+  spotsLeft?: number;
+}
+
 interface ScheduleData {
-  byDay: Record<number, { time: string; name: string }[]>;
-  dates: Record<string, { time: string; name: string }[]>;
+  byDay: Record<number, ScheduleClass[]>;
+  dates: Record<string, ScheduleClass[]>;
   coverage: { from: string; to: string } | null;
 }
 
@@ -50,20 +64,26 @@ async function getScheduleData(): Promise<ScheduleData> {
   try {
     const res = await fetch("/api/public/schedule", { signal: AbortSignal.timeout(5000) });
     const data = await res.json();
-    const byDay: Record<number, { time: string; name: string }[]> = {};
+    const byDay: Record<number, ScheduleClass[]> = {};
     for (const day of data.schedule || []) {
       byDay[day.day_of_week] = (day.classes || []).map((c: { start_time: string; name: string }) => ({
         time: formatTime12(c.start_time),
         name: c.name,
       }));
     }
-    const dates: Record<string, { time: string; name: string }[]> = {};
+    const dates: Record<string, ScheduleClass[]> = {};
     for (const [dateStr, classes] of Object.entries(
-      (data.dates || {}) as Record<string, { start_time: string; name: string }[]>,
+      (data.dates || {}) as Record<
+        string,
+        { start_time: string; name: string; spots_left?: number }[]
+      >,
     )) {
       dates[dateStr] = classes.map((c) => ({
         time: formatTime12(c.start_time),
         name: c.name,
+        // Carried through so a packed class can be shown as full instead of
+        // being offered and then refused at submit.
+        spotsLeft: typeof c.spots_left === "number" ? c.spots_left : undefined,
       }));
     }
     const result: ScheduleData = { byDay, dates, coverage: data.coverage || null };
@@ -444,6 +464,15 @@ export default function BookingModal({
       const bookData = await bookRes.json();
       if (bookData.error && bookRes.status === 409) {
         alert(bookData.error);
+        // The class filled up between loading the picker and submitting.
+        // Drop the cached schedule and the chosen slot so the list reloads
+        // showing it as LLENA rather than inviting the same dead end again.
+        if (bookData.full) {
+          _cachedSchedule = null;
+          setSelectedTime("");
+          setService("");
+          setSchedule(await getScheduleData());
+        }
         setSubmitting(false);
         return;
       }
@@ -686,37 +715,69 @@ export default function BookingModal({
                         <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/40 tracking-wider pl-1">
                           {formatDateDisplay(date).toUpperCase()} — CLASSES
                         </p>
-                        {availableClasses.map((cls, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => {
-                              setService(cls.name);
-                              setSelectedTime(cls.time);
-                            }}
-                            className={`w-full text-left px-5 py-3.5 rounded-2xl border transition-all duration-200 ${
-                              service === cls.name && selectedTime === cls.time
-                                ? "border-rose/30 bg-rose/[0.04]"
-                                : "border-charcoal/5 bg-white hover:border-charcoal/10"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
-                                <span className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 tabular-nums w-[72px]">
-                                  {cls.time}
-                                </span>
-                                <span className="font-[family-name:var(--font-display)] text-base text-charcoal">
-                                  {cls.name}
-                                </span>
-                              </div>
-                              {service === cls.name && selectedTime === cls.time && (
-                                <div className="w-5 h-5 rounded-full bg-rose/20 flex items-center justify-center">
-                                  <div className="w-2 h-2 rounded-full bg-rose" />
+                        {availableClasses.map((cls, i) => {
+                          const isFull = cls.spotsLeft === 0;
+                          const isLastSpots =
+                            typeof cls.spotsLeft === "number" &&
+                            cls.spotsLeft > 0 &&
+                            cls.spotsLeft <= 2;
+                          const isSelected =
+                            service === cls.name && selectedTime === cls.time;
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              disabled={isFull}
+                              aria-disabled={isFull}
+                              onClick={() => {
+                                if (isFull) return;
+                                setService(cls.name);
+                                setSelectedTime(cls.time);
+                              }}
+                              className={`w-full text-left px-5 py-3.5 rounded-2xl border transition-all duration-200 ${
+                                isFull
+                                  ? "border-charcoal/5 bg-charcoal/[0.02] cursor-not-allowed opacity-60"
+                                  : isSelected
+                                    ? "border-rose/30 bg-rose/[0.04]"
+                                    : "border-charcoal/5 bg-white hover:border-charcoal/10"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-4 min-w-0">
+                                  <span className="font-[family-name:var(--font-body)] text-sm text-charcoal/40 tabular-nums w-[72px] shrink-0">
+                                    {cls.time}
+                                  </span>
+                                  <span
+                                    className={`font-[family-name:var(--font-display)] text-base truncate ${
+                                      isFull ? "text-charcoal/40" : "text-charcoal"
+                                    }`}
+                                  >
+                                    {cls.name}
+                                  </span>
                                 </div>
-                              )}
-                            </div>
-                          </button>
-                        ))}
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {isFull && (
+                                    <span className="font-[family-name:var(--font-body)] text-[10px] tracking-wider text-charcoal/40 border border-charcoal/10 rounded-full px-2.5 py-1">
+                                      LLENA · FULL
+                                    </span>
+                                  )}
+                                  {isLastSpots && (
+                                    <span className="font-[family-name:var(--font-body)] text-[10px] tracking-wider text-rose border border-rose/20 bg-rose/[0.04] rounded-full px-2.5 py-1">
+                                      {cls.spotsLeft === 1
+                                        ? "1 CUPO · 1 SPOT"
+                                        : `${cls.spotsLeft} CUPOS · SPOTS`}
+                                    </span>
+                                  )}
+                                  {isSelected && !isFull && (
+                                    <div className="w-5 h-5 rounded-full bg-rose/20 flex items-center justify-center">
+                                      <div className="w-2 h-2 rounded-full bg-rose" />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
 

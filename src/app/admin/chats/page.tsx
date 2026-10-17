@@ -40,6 +40,8 @@ interface PendingBooking {
   class_time: string | null;
   class_name: string | null;
   payment_method: string | null;
+  /** "new" = unpaid pre-registration · "waitlist" = asked for a full class */
+  status?: string | null;
 }
 
 interface GroupedPending {
@@ -522,23 +524,36 @@ function PendingCard({
   onArchive: () => void;
 }) {
   const className = booking.class_name || booking.service || "Clase";
+  const isWaitlist = booking.status === "waitlist";
+  const whenText = `${booking.class_date ? ` el ${fmtDate(booking.class_date)}` : ""}${booking.class_time ? ` a las ${fmtTime12(booking.class_time)}` : ""}`;
   const wa = booking.phone
     ? waLink(
         booking.phone,
-        `Hola${booking.name ? ` ${booking.name.split(" ")[0]}` : ""}! Soy Tata de TU. Vi tu reserva para ${className}${booking.class_date ? ` el ${fmtDate(booking.class_date)}` : ""}${booking.class_time ? ` a las ${fmtTime12(booking.class_time)}` : ""}. Para asegurar tu cupo solo falta confirmar el pago — ¿te ayudo?`
+        isWaitlist
+          ? `Hola${booking.name ? ` ${booking.name.split(" ")[0]}` : ""}! Soy Tata de TU. Vi que querias ${className}${whenText} y esa clase estaba llena. Te aviso apenas se libere un cupo — o te propongo otro horario si prefieres.`
+          : `Hola${booking.name ? ` ${booking.name.split(" ")[0]}` : ""}! Soy Tata de TU. Vi tu reserva para ${className}${whenText}. Para asegurar tu cupo solo falta confirmar el pago — ¿te ayudo?`
       )
     : null;
 
   return (
     <div
       className={`bg-white border p-4 flex items-center justify-between gap-3 flex-wrap ${
-        isPast ? "border-[#2C2C2C]/5 opacity-60" : "border-[#B87777]/25"
+        isPast
+          ? "border-[#2C2C2C]/5 opacity-60"
+          : isWaitlist
+            ? "border-[#2C2C2C]/15 bg-[#2C2C2C]/[0.02]"
+            : "border-[#B87777]/25"
       }`}
     >
       <div className="min-w-0">
         <p className="text-sm text-[#2C2C2C]">
           {booking.name || "Sin nombre"}
           <span className="text-[#2C2C2C]/40"> · {className}</span>
+          {isWaitlist && (
+            <span className="text-[9px] tracking-wider uppercase bg-[#2C2C2C]/8 text-[#2C2C2C]/55 px-1.5 py-0.5 ml-2">
+              ⏳ lista de espera
+            </span>
+          )}
           {count > 1 && (
             <span className="text-[9px] tracking-wider uppercase bg-[#2C2C2C]/5 text-[#2C2C2C]/40 px-1.5 py-0.5 ml-2">
               ×{count} envios
@@ -549,9 +564,11 @@ function PendingCard({
           {[
             booking.class_date && fmtDate(booking.class_date),
             booking.class_time && fmtTime12(booking.class_time),
-            booking.payment_method
-              ? `eligio ${PAYMENT_LABELS[booking.payment_method] || booking.payment_method}`
-              : "sin metodo de pago",
+            isWaitlist
+              ? "clase llena — sin cupo reservado"
+              : booking.payment_method
+                ? `eligio ${PAYMENT_LABELS[booking.payment_method] || booking.payment_method}`
+                : "sin metodo de pago",
             booking.phone,
           ]
             .filter(Boolean)

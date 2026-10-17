@@ -22,6 +22,17 @@ export const MAX_ACTIVE_BOOKINGS = 5;
 /** Default class capacity if not specified */
 export const DEFAULT_CLASS_CAPACITY = 12;
 
+/**
+ * How long an unpaid website pre-registration holds a provisional seat.
+ *
+ * Public form submissions land in tu_bookings as `new` and are confirmed by
+ * hand once the student pays (Admin > Chats "✓ Gestionada"). Counting them
+ * against capacity for this long is what stops the form from selling a mat
+ * that is already spoken for; the window expires on its own so an abandoned
+ * form never blocks a real student indefinitely.
+ */
+export const WEB_PREREGISTRATION_HOLD_HOURS = 24;
+
 /** Default class duration in minutes */
 export const DEFAULT_CLASS_DURATION = 60;
 

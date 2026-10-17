@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { WEB_PREREGISTRATION_HOLD_HOURS } from "@/lib/constants/business-rules";
+import { normalizeTime, nameKey, phoneKey } from "@/lib/web-pending-bookings";
 
 const DAY_NAMES: Record<number, { en: string; es: string; short: string }> = {
   0: { en: "Sunday", es: "Domingo", short: "SUN" },
@@ -103,7 +105,7 @@ export async function GET() {
     const today = bogotaToday();
     const rangeEnd = addDaysStr(today, DATED_RANGE_DAYS);
 
-    const [defsResult, sessionsResult] = await Promise.all([
+    const [defsResult, sessionsResult, pendingResult] = await Promise.all([
       supabase
         .from("tu_class_definitions")
         .select("id, name, name_es, description, description_es, day_of_week, start_time, teacher, style, capacity, duration_minutes, note, location, price_cop, price_usd")
@@ -123,6 +125,20 @@ export async function GET() {
         .lte("session_date", rangeEnd)
         .order("session_date")
         .order("start_time"),
+      // Unpaid website pre-registrations holding a provisional seat. The
+      // booking gate (tu_web_prereserve) counts these against capacity, so the
+      // spots_left shown here has to count them too — otherwise the site
+      // advertises a mat the form will then refuse.
+      supabase
+        .from("tu_bookings")
+        .select("class_date, class_time, phone, name")
+        .gte("class_date", today)
+        .lte("class_date", rangeEnd)
+        .eq("status", "new")
+        .gte(
+          "created_at",
+          new Date(Date.now() - WEB_PREREGISTRATION_HOLD_HOURS * 3600_000).toISOString(),
+        ),
     ]);
 
     if (defsResult.error) {
@@ -175,13 +191,38 @@ export async function GET() {
         style: string;
         capacity: number;
         enrolled: number;
+        /** Distinct people holding an unpaid web pre-registration for this slot */
+        pending: number;
         spots_left: number;
       }>
     > = {};
 
+    // ── Provisional seats held by unpaid web pre-registrations ──────────────
+    // Keyed "YYYY-MM-DD HH:MM" → set of distinct people, so one person's
+    // resubmits count once (matching how tu_web_prereserve counts them).
+    const pendingBySlot = new Map<string, Set<string>>();
+    for (const row of (pendingResult?.data || []) as Array<{
+      class_date: string | null;
+      class_time: string | null;
+      phone: string | null;
+      name: string | null;
+    }>) {
+      const time24 = normalizeTime(row.class_time);
+      if (!row.class_date || !time24) continue;
+      const person = phoneKey(row.phone) || nameKey(row.name || "");
+      if (!person) continue;
+      const slot = `${row.class_date} ${time24}`;
+      if (!pendingBySlot.has(slot)) pendingBySlot.set(slot, new Set());
+      pendingBySlot.get(slot)!.add(person);
+    }
+
     for (const s of allSessions) {
       if (s.status !== "scheduled" || !s.definition) continue;
       if (!dates[s.session_date]) dates[s.session_date] = [];
+      const time24 = normalizeTime(s.start_time);
+      const held = time24
+        ? pendingBySlot.get(`${s.session_date} ${time24}`)?.size || 0
+        : 0;
       dates[s.session_date].push({
         session_id: s.id,
         start_time: s.start_time,
@@ -194,7 +235,8 @@ export async function GET() {
         style: s.definition.style,
         capacity: s.capacity,
         enrolled: s.enrolled,
-        spots_left: Math.max(0, s.capacity - s.enrolled),
+        pending: held,
+        spots_left: Math.max(0, s.capacity - s.enrolled - held),
       });
     }
 

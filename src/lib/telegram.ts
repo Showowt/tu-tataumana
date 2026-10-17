@@ -138,17 +138,65 @@ export async function notifyNewBooking(booking: {
   preferred_date?: string;
   message?: string;
 }): Promise<void> {
+  // Fields come straight from a public form — escape them, or a name
+  // containing "<" makes Telegram reject the whole message as bad HTML and
+  // Tata silently stops hearing about that booking.
   const lines = [
     "<b>NEW BOOKING</b>",
     "",
-    `<b>Name:</b> ${booking.name}`,
-    `<b>Phone:</b> ${booking.phone}`,
-    booking.email ? `<b>Email:</b> ${booking.email}` : "",
-    `<b>Service:</b> ${booking.service}`,
-    booking.preferred_date ? `<b>Date:</b> ${booking.preferred_date}` : "",
-    booking.message ? `<b>Note:</b> ${booking.message}` : "",
+    `<b>Name:</b> ${escapeHtml(booking.name)}`,
+    `<b>Phone:</b> ${escapeHtml(booking.phone)}`,
+    booking.email ? `<b>Email:</b> ${escapeHtml(booking.email)}` : "",
+    `<b>Service:</b> ${escapeHtml(booking.service)}`,
+    booking.preferred_date ? `<b>Date:</b> ${escapeHtml(booking.preferred_date)}` : "",
+    booking.message ? `<b>Note:</b> ${escapeHtml(booking.message)}` : "",
     "",
     `<a href="https://wa.me/${booking.phone.replace(/[^0-9]/g, "")}">Message on WhatsApp</a>`,
+  ].filter(Boolean);
+
+  await sendTelegramMessage(lines.join("\n"));
+}
+
+/**
+ * A website visitor asked for a class that is already at capacity.
+ *
+ * Deliberately NOT labelled "NEW BOOKING": nobody holds a mat. Tata asked for
+ * this after the public form accepted people into a packed class and reported
+ * phantom "spots left" (2026-10-17). She keeps the demand signal and decides
+ * whether to open a spot.
+ */
+export async function notifyWaitlistRequest(req: {
+  name: string;
+  email?: string;
+  phone: string;
+  service: string;
+  preferred_date?: string;
+  capacity: number | null;
+  confirmed: number | null;
+}): Promise<void> {
+  const occupancy =
+    req.capacity !== null && req.confirmed !== null
+      ? `${req.confirmed}/${req.capacity}`
+      : "llena";
+
+  const waMessage = encodeURIComponent(
+    `Hola ${req.name.split(" ")[0] || ""}! Soy Tata. Vi que querías ${req.service}. ` +
+      `Esa clase está llena, pero te aviso apenas se libere un cupo. 🙏`,
+  );
+
+  const lines = [
+    "<b>⏳ LISTA DE ESPERA — clase llena</b>",
+    "",
+    `<b>Nombre:</b> ${escapeHtml(req.name)}`,
+    `<b>Teléfono:</b> ${escapeHtml(req.phone)}`,
+    req.email ? `<b>Email:</b> ${escapeHtml(req.email)}` : "",
+    `<b>Quería:</b> ${escapeHtml(req.service)}`,
+    req.preferred_date ? `<b>Fecha:</b> ${escapeHtml(req.preferred_date)}` : "",
+    `<b>Ocupación:</b> ${occupancy}`,
+    "",
+    "<i>No se reservó cupo. Está en lista de espera.</i>",
+    "",
+    `<a href="https://wa.me/${req.phone.replace(/[^0-9]/g, "")}?text=${waMessage}">Escribirle por WhatsApp</a>`,
   ].filter(Boolean);
 
   await sendTelegramMessage(lines.join("\n"));

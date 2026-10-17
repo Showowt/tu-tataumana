@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
-import { notifyNewBooking } from "@/lib/telegram";
-import { DEFAULT_CLASS_CAPACITY as CAPACITY } from "@/lib/constants/business-rules";
+import { notifyNewBooking, notifyWaitlistRequest } from "@/lib/telegram";
+import { WEB_PREREGISTRATION_HOLD_HOURS } from "@/lib/constants/business-rules";
 import { getAdminClient } from "@/lib/admin-auth";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+
+/** Shape returned by the tu_web_prereserve RPC. */
+interface PrereserveResult {
+  status: "created" | "duplicate" | "full";
+  booking_id: number;
+  session_id: string | null;
+  capacity: number | null;
+  confirmed: number | null;
+  pending: number | null;
+  spots_left: number | null;
+}
 
 export async function POST(request: Request) {
   try {
@@ -49,32 +60,89 @@ export async function POST(request: Request) {
       });
     }
 
-    // --- Capacity check (atomic reserve on tu_class_slots) ---
-    // Replaces the old read-modify-write, which let concurrent public bookings
-    // overbook the soft slot count (and duplicate slot rows silently disabled the
-    // check). tu_slot_reserve does an atomic insert-or-increment guarded by capacity,
-    // backed by UNIQUE(class_date, class_time); returns spots-left, or -1 if full.
-    let spotsLeft: number | null = null;
-    if (preferred_date && class_time) {
-      const dateObj = new Date(preferred_date + "T12:00:00");
-      const dayOfWeek = dateObj.getDay();
-      const { data: reserved, error: reserveErr } = await supabase.rpc("tu_slot_reserve", {
-        p_date: preferred_date,
-        p_time: class_time,
-        p_name: class_name || service,
-        p_dow: dayOfWeek,
-        p_capacity: CAPACITY,
+    // --- Capacity check + booking, as one atomic step ---
+    // This used to gate on tu_slot_reserve → tu_class_slots: a legacy table
+    // written only by this endpoint, with a hardcoded capacity, that has no
+    // relationship to the real schedule. A class could be packed in
+    // tu_class_sessions while this counter still reported "spots left" — which
+    // is exactly what Tata hit on 2026-10-17 (real session 14/15 against a
+    // 10-person room, slots table claiming 7 of 12 used).
+    //
+    // tu_web_prereserve resolves the REAL session for this date+time, locks it,
+    // counts confirmed seats plus outstanding web pre-registrations, and inserts
+    // only if there is room — so the check cannot race the write. A full class
+    // is recorded as a waitlist row, never as a seat.
+    const { data: rpcResult, error: reserveErr } = await supabase.rpc("tu_web_prereserve", {
+      p_name: name,
+      p_phone: phone,
+      p_email: email || null,
+      p_service: service,
+      p_date: preferred_date || null,
+      p_time: class_time || null,
+      p_class_name: class_name || null,
+      p_message: message || null,
+      p_hold_hours: WEB_PREREGISTRATION_HOLD_HOURS,
+    });
+
+    if (reserveErr || !rpcResult) {
+      console.error("[API/bookings] tu_web_prereserve failed:", reserveErr?.message);
+      return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
+    }
+
+    const reservation = rpcResult as PrereserveResult;
+    const spotsLeft = reservation.spots_left;
+
+    const bookingRow = {
+      id: reservation.booking_id,
+      name,
+      email: email || null,
+      phone,
+      service,
+      preferred_date: preferred_date || null,
+      class_date: preferred_date || null,
+      class_time: class_time || null,
+      class_name: class_name || null,
+      status: reservation.status === "full" ? "waitlist" : "new",
+    };
+
+    // A resubmit of the same form (same person, same class) returns the original
+    // row instead of holding a second seat and firing a second notification.
+    // The payment-method PATCH then lands on that row, so a corrected resubmit
+    // still updates what Tata sees.
+    if (reservation.status === "duplicate") {
+      return NextResponse.json({
+        data: { ...bookingRow, id: reservation.booking_id },
+        duplicate: true,
+        message: "Booking already registered",
       });
-      if (reserveErr) {
-        console.error("[Bookings] Slot reserve failed:", reserveErr.message);
-      } else if (reserved === -1) {
-        return NextResponse.json(
-          { error: "This class is full. Please choose another time or date.", spots_left: 0 },
-          { status: 409 },
-        );
-      } else if (typeof reserved === "number") {
-        spotsLeft = reserved;
+    }
+
+    if (reservation.status === "full") {
+      try {
+        await notifyWaitlistRequest({
+          name,
+          email,
+          phone,
+          service,
+          preferred_date,
+          capacity: reservation.capacity,
+          confirmed: reservation.confirmed,
+        });
+      } catch (e) {
+        console.error("[Bookings] Waitlist notification failed:", e);
       }
+
+      return NextResponse.json(
+        {
+          error:
+            "Esta clase ya está llena. Te anotamos en la lista de espera y Tata te escribe si se libera un cupo. / This class is full. We've added you to the waitlist and Tata will message you if a spot opens.",
+          full: true,
+          waitlisted: true,
+          spots_left: 0,
+          booking_id: reservation.booking_id,
+        },
+        { status: 409 },
+      );
     }
 
     // --- Check for active class pass ---
@@ -122,34 +190,13 @@ export async function POST(request: Request) {
       console.error("[Bookings] Pass check failed:", e);
     }
 
-    // --- Create booking ---
-    const { data, error } = await supabase
-      .from("tu_bookings")
-      .insert({
-        name,
-        email: email || null,
-        phone,
-        service,
-        preferred_date: preferred_date || null,
-        message: message || null,
-        source: "website",
-        status: "new",
-        class_date: preferred_date || null,
-        class_time: class_time || null,
-        class_name: class_name || null,
-      })
-      .select()
-      .single();
+    // The row was already written by tu_web_prereserve above — inserting here
+    // would hand out a second seat for the same person.
 
-    if (error) {
-      console.error("[API/bookings]", error);
-      return NextResponse.json(
-        { error: "Failed to create booking" },
-        { status: 500 }
-      );
-    }
-
-    // Notify Tata via Telegram with spots + pass info
+    // Notify Tata via Telegram with REAL spots + pass info.
+    // spotsLeft now counts confirmed seats and outstanding pre-registrations
+    // against the session's own capacity, so the number she reads is the number
+    // of mats actually free.
     try {
       const spotsMsg = spotsLeft !== null ? ` (${spotsLeft} spots left)` : "";
       await notifyNewBooking({
@@ -165,7 +212,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      data,
+      data: bookingRow,
       spots_left: spotsLeft,
       pass_used: passInfo ? true : false,
       message: "Booking created",

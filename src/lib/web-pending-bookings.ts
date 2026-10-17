@@ -40,6 +40,19 @@ export function normalizeTime(raw: string | null | undefined): string | null {
   return `${String(h).padStart(2, "0")}:${min}`;
 }
 
+/**
+ * Identity key for a free-text phone: the last 10 digits.
+ *
+ * The booking form takes whatever the visitor types, so one person arrives as
+ * "+57 300 111 2222", "573001112222" or "3001112222". Comparing raw digits
+ * treats those as three people — which is how a single resubmit turns into
+ * three held seats. Mirrors tu_phone_key() in the database; change both together.
+ */
+export function phoneKey(raw: string | null | undefined): string {
+  const digits = (raw || "").replace(/\D/g, "");
+  return digits.length >= 10 ? digits.slice(-10) : digits;
+}
+
 /** Accent-insensitive, case-insensitive name key for dedup */
 export function nameKey(name: string): string {
   return name

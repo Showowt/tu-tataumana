@@ -5,7 +5,9 @@ import { verifyAdmin } from "@/lib/admin-auth";
 /**
  * GET /api/admin/chats — everything Tata needs to see who is TRYING to come:
  *  - sessions: website chat transcripts (tu_chat_sessions), newest activity first
- *  - pending:  web reservations that never confirmed payment (tu_bookings status=new)
+ *  - pending:  web reservations that never confirmed payment (tu_bookings
+ *               status=new), plus waitlist requests for classes that were
+ *               already full (status=waitlist)
  *  - leads:    abandoned booking attempts with contact info (tu_leads)
  */
 export async function GET(request: NextRequest) {
@@ -36,7 +38,10 @@ export async function GET(request: NextRequest) {
         "id, created_at, name, email, phone, service, class_date, class_time, class_name, payment_method, status"
       )
       .eq("source", "website")
-      .eq("status", "new")
+      // "waitlist" = asked for a class that was already at capacity. No seat was
+      // held, but Tata still needs to see who wants in, so it shares this list
+      // and is tagged in the UI.
+      .in("status", ["new", "waitlist"])
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(200),
@@ -100,7 +105,7 @@ export async function PATCH(request: NextRequest) {
     .from("tu_bookings")
     .update({ status: "archived", updated_at: new Date().toISOString() })
     .in("id", parsed.data.booking_ids)
-    .eq("status", "new")
+    .in("status", ["new", "waitlist"])
     .select("id");
 
   if (error) {
