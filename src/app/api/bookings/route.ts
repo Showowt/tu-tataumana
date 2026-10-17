@@ -7,6 +7,8 @@ import { rateLimit, clientIp } from "@/lib/rate-limit";
 /** Shape returned by the tu_web_prereserve RPC. */
 interface PrereserveResult {
   status: "created" | "duplicate" | "full";
+  /** On "duplicate": the status of the row that already existed. */
+  existing_status?: "new" | "waitlist" | null;
   booking_id: number;
   session_id: string | null;
   capacity: number | null;
@@ -110,6 +112,23 @@ export async function POST(request: Request) {
     // The payment-method PATCH then lands on that row, so a corrected resubmit
     // still updates what Tata sees.
     if (reservation.status === "duplicate") {
+      // Resubmitting after being waitlisted must not read as "you're booked" —
+      // that would walk them into the payment step for a seat nobody holds.
+      if (reservation.existing_status === "waitlist") {
+        return NextResponse.json(
+          {
+            error:
+              "Esta clase ya está llena. Ya estás en la lista de espera y Tata te escribe si se libera un cupo. / This class is full. You're already on the waitlist and Tata will message you if a spot opens.",
+            full: true,
+            waitlisted: true,
+            duplicate: true,
+            spots_left: 0,
+            booking_id: reservation.booking_id,
+          },
+          { status: 409 },
+        );
+      }
+
       return NextResponse.json({
         data: { ...bookingRow, id: reservation.booking_id },
         duplicate: true,

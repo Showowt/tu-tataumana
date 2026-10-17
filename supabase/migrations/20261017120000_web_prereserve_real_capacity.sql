@@ -125,7 +125,8 @@ DECLARE
   v_time       time;
   v_phone      text;
   v_cutoff     timestamptz;
-  v_existing   bigint;
+  v_existing        bigint;
+  v_existing_status text;
   v_session_id uuid;
   v_capacity   int;
   v_confirmed  int;
@@ -146,8 +147,8 @@ BEGIN
   -- One person resubmitting the form (Gianmarco Scarpa hit it 3× in 6 minutes
   -- on 2026-10-17) must not consume three seats or fire three notifications.
   IF v_phone <> '' AND p_date IS NOT NULL AND v_time IS NOT NULL THEN
-    SELECT b.id
-      INTO v_existing
+    SELECT b.id, b.status
+      INTO v_existing, v_existing_status
       FROM tu_bookings b
      WHERE b.class_date = p_date
        AND b.status IN ('new', 'waitlist')
@@ -158,7 +159,13 @@ BEGIN
      LIMIT 1;
 
     IF v_existing IS NOT NULL THEN
-      RETURN jsonb_build_object('status', 'duplicate', 'booking_id', v_existing);
+      -- Report what the original row actually is. A person already on the
+      -- waitlist who resubmits must not be told "you're booked".
+      RETURN jsonb_build_object(
+        'status',          'duplicate',
+        'booking_id',      v_existing,
+        'existing_status', v_existing_status
+      );
     END IF;
   END IF;
 
