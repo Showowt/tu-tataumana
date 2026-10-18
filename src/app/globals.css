@@ -7,6 +7,12 @@
   --color-cream: #FAF8F5;
   --color-cream-warm: #F3EDE6;
   --color-gold: #C9A96E;
+  /* Ink-weight variants of the brand accents. #C9A96E / #B87777 only reach
+     ~2.1:1 and ~3.3:1 against cream, so small text in the light sections uses
+     these instead (4.7:1 and 4.6:1 against the deepest blush — WCAG AA).
+     Same hues, more pigment. */
+  --color-gold-deep: #7F6229;
+  --color-rose-deep: #8F5A5A;
   --font-display: 'Cormorant Garamond', Georgia, serif;
   --font-body: 'Outfit', system-ui, sans-serif;
 }
@@ -287,9 +293,9 @@ section {
 .schedule-video-frame {
   position: relative;
   box-shadow:
-    0 0 0 1px rgba(255,255,255,0.06),
-    0 40px 80px rgba(0,0,0,0.4),
-    0 0 120px rgba(184,119,119,0.06);
+    0 0 0 1px rgba(143,90,90,0.10),
+    0 30px 60px rgba(143,90,90,0.16),
+    0 0 120px rgba(184,119,119,0.10);
 }
 
 .schedule-day-card {
@@ -300,6 +306,7 @@ section {
 
 .schedule-day-card:hover {
   transform: translateY(-2px);
+  box-shadow: 0 18px 40px rgba(143,90,90,0.12);
 }
 
 .schedule-promo-card {
@@ -311,7 +318,21 @@ section {
 
 .schedule-promo-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 30px rgba(201,169,110,0.06);
+  box-shadow: 0 16px 34px rgba(143,90,90,0.12);
+}
+
+/* Schedule section — blush ground.
+   Melts out of the cream section above and into the white one below, so the
+   section reads as its own breath of colour without needing fade bands. */
+.schedule-light {
+  background: linear-gradient(
+    to bottom,
+    var(--color-cream) 0%,
+    #F8EDEA 16%,
+    #F6E7E3 48%,
+    #FAF1EE 82%,
+    #FFFFFF 100%
+  );
 }
 
 /* Reduce motion */
@@ -344,6 +365,24 @@ section {
   background-repeat: repeat;
   background-size: 256px 256px;
   mix-blend-mode: overlay;
+}
+
+/* Same printed texture for light sections. `overlay` blows out to white on a
+   pale ground; `multiply` keeps the grain visible as a soft tooth. */
+.grain-overlay-light {
+  position: relative;
+}
+.grain-overlay-light::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  mix-blend-mode: multiply;
 }
 
 /* 2. STAGGERED SCROLL REVEAL

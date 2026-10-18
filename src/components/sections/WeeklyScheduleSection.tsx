@@ -317,7 +317,7 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
   const packCards = pricingCards.filter((c) => c.category === "pack");
 
   return (
-    <section id="schedule" className="relative py-24 md:py-32 bg-charcoal overflow-clip grain-overlay">
+    <section id="schedule" className="relative py-24 md:py-32 schedule-light overflow-clip grain-overlay-light">
       {/* Background video */}
       <div className="absolute inset-0">
         <video
@@ -327,7 +327,7 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
           playsInline
           preload="auto"
           className="w-full h-full object-cover"
-          style={{ opacity: 0.15, filter: "brightness(0.8) saturate(1.2)", transform: "scale(1.25)", transformOrigin: "center 25%" }}
+          style={{ opacity: 0.2, filter: "brightness(1.35) saturate(0.7) contrast(0.8)", transform: "scale(1.25)", transformOrigin: "center 25%" }}
         >
           <source src="/schedule-video.mp4" type="video/mp4" />
         </video>
@@ -335,7 +335,7 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(44,44,44,0.85) 0%, rgba(44,44,44,0.7) 40%, rgba(44,44,44,0.85) 100%)",
+              "linear-gradient(to bottom, rgba(250,248,245,0.95) 0%, rgba(246,231,228,0.86) 40%, rgba(255,255,255,0.96) 100%)",
           }}
         />
       </div>
@@ -343,23 +343,23 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse, rgba(184,119,119,0.12) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse, rgba(212,165,165,0.38) 0%, transparent 70%)",
         }}
       />
       <div
         className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[400px] h-[200px] pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse, rgba(201,169,110,0.08) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse, rgba(201,169,110,0.2) 0%, transparent 70%)",
         }}
       />
 
       <div className="relative max-w-6xl mx-auto px-6 lg:px-8">
         <div className="text-center mb-16">
-          <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.4em] text-gold mb-4">
+          <p className="fade-in font-[family-name:var(--font-body)] text-xs tracking-[0.4em] text-gold-deep mb-4">
             {L(t.scheduleLabel) as string}
           </p>
           <h2
-            className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-white"
+            className="fade-in fade-in-delay-1 font-[family-name:var(--font-display)] text-charcoal"
             style={{
               fontSize: "clamp(2.5rem, 5vw, 4rem)",
               fontWeight: 300,
@@ -368,12 +368,12 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
           >
             {L(t.scheduleTitle1) as string}
             <br />
-            <span className="text-rose-soft italic">{L(t.scheduleTitle2) as string}</span>
+            <span className="text-rose italic">{L(t.scheduleTitle2) as string}</span>
           </h2>
-          <p className="fade-in fade-in-delay-2 font-[family-name:var(--font-body)] text-sm text-white/40 mt-6 max-w-md mx-auto">
+          <p className="fade-in fade-in-delay-2 font-[family-name:var(--font-body)] text-sm text-charcoal/70 mt-6 max-w-md mx-auto">
             {L(t.scheduleSub) as string}
           </p>
-          <p className="fade-in fade-in-delay-3 font-[family-name:var(--font-body)] text-[11px] text-gold/40 mt-3 italic">
+          <p className="fade-in fade-in-delay-3 font-[family-name:var(--font-body)] text-[11px] text-gold-deep mt-3 italic">
             {lang === "en"
               ? "Bilingual classes except Meditación Viaje Interior (solo en español)"
               : "Clases bilingües excepto Meditación Viaje Interior (solo en español)"}
@@ -429,26 +429,26 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
                 key={day.dayIndex}
                 className={`fade-in fade-in-delay-${Math.min(dayIdx + 1, 5)}`}
               >
-                <div className={`schedule-day-card rounded-2xl overflow-hidden border backdrop-blur-sm transition-all duration-500 ${isClosed ? "border-white/[0.04] bg-white/[0.02] opacity-50" : "border-white/[0.06] bg-white/[0.04] hover:border-rose/20"}`}>
-                  <div className="px-5 py-3 border-b border-white/[0.06] flex items-center gap-3">
-                    <span className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-gold w-10">
+                <div className={`schedule-day-card rounded-2xl overflow-hidden border transition-all duration-500 ${isClosed ? "border-charcoal/[0.07] bg-white/60 opacity-60" : "border-rose-soft/30 bg-white hover:border-rose/45"}`}>
+                  <div className="px-5 py-3 border-b border-rose-soft/25 bg-rose-soft/[0.12] flex items-center gap-3">
+                    <span className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.3em] text-gold-deep w-10">
                       {day.dayShort}
                     </span>
-                    <span className="font-[family-name:var(--font-display)] text-lg text-white/90">
+                    <span className="font-[family-name:var(--font-display)] text-lg text-charcoal">
                       {lang === "en" ? day.day : day.dayEs}
                     </span>
-                    <span className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.15em] text-white/25">
+                    <span className="font-[family-name:var(--font-body)] text-[10px] tracking-[0.15em] text-charcoal/70">
                       {formatDateShort(nextDate, lang)}
                     </span>
                     {isClosed && (
-                      <span className="ml-auto font-[family-name:var(--font-body)] text-[9px] tracking-[0.2em] text-rose/60 bg-rose/10 px-3 py-1 rounded-full">
+                      <span className="ml-auto font-[family-name:var(--font-body)] text-[9px] tracking-[0.2em] text-rose-deep bg-rose-soft/25 px-3 py-1 rounded-full">
                         {lang === "en" ? "CLOSED" : "CERRADO"}
                       </span>
                     )}
                   </div>
-                  <div className="divide-y divide-white/[0.04]">
+                  <div className="divide-y divide-charcoal/[0.06]">
                     {day.classes.length === 0 && !isClosed && (
-                      <p className="px-5 py-4 font-[family-name:var(--font-body)] text-sm text-white/25 italic">
+                      <p className="px-5 py-4 font-[family-name:var(--font-body)] text-sm text-charcoal/70 italic">
                         {lang === "en" ? "No classes this day" : "Sin clases este día"}
                       </p>
                     )}
@@ -465,10 +465,10 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
                               cls.time
                             )
                           }
-                          className={`w-full px-5 py-4 flex items-start gap-4 group transition-all duration-300 text-left ${!bookable ? "cursor-not-allowed" : "hover:bg-white/[0.04]"}`}
+                          className={`w-full px-5 py-4 flex items-start gap-4 group transition-all duration-300 text-left ${!bookable ? "cursor-not-allowed" : "hover:bg-rose-soft/[0.12]"}`}
                         >
                           {/* Time */}
-                          <span className={`font-[family-name:var(--font-body)] text-sm w-[76px] tabular-nums shrink-0 pt-0.5 ${!bookable ? "text-white/15" : "text-gold/50"}`}>
+                          <span className={`font-[family-name:var(--font-body)] text-sm w-[76px] tabular-nums shrink-0 pt-0.5 ${!bookable ? "text-charcoal/45" : "text-rose-deep"}`}>
                             {cls.time}
                           </span>
 
@@ -476,19 +476,19 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
                           <span className="flex-1 min-w-0">
                             {/* Row 1: Class name + teacher */}
                             <span className="flex flex-wrap items-baseline gap-x-2">
-                              <span className={`font-[family-name:var(--font-display)] text-[15px] md:text-base transition-colors duration-300 ${!bookable ? "text-white/25" : "text-white/80 group-hover:text-rose-soft"}`}>
+                              <span className={`font-[family-name:var(--font-display)] text-[15px] md:text-base transition-colors duration-300 ${!bookable ? "text-charcoal/55" : "text-charcoal group-hover:text-rose-deep"}`}>
                                 {lang === "es" && cls.nameEs ? cls.nameEs : cls.name}
                               </span>
-                              {cls.note && <span className={`text-[11px] ${!bookable ? "text-white/10" : "text-gold/50"}`}>{cls.note}</span>}
+                              {cls.note && <span className={`text-[11px] ${!bookable ? "text-charcoal/40" : "text-gold-deep"}`}>{cls.note}</span>}
                               {cls.teacher && (
-                                <span className={`font-[family-name:var(--font-display)] italic text-[13px] ${!bookable ? "text-white/10" : "text-white/25"}`}>
+                                <span className={`font-[family-name:var(--font-display)] italic text-[13px] ${!bookable ? "text-charcoal/35" : "text-charcoal/70"}`}>
                                   con {cls.teacher}
                                 </span>
                               )}
                             </span>
                             {/* Row 2: Description */}
                             {cls.desc && (
-                              <span className={`block mt-1 font-[family-name:var(--font-body)] text-[11px] md:text-[12px] leading-relaxed ${!bookable ? "text-white/8" : "text-white/25"}`}>
+                              <span className={`block mt-1 font-[family-name:var(--font-body)] text-[11px] md:text-[12px] leading-relaxed ${!bookable ? "text-charcoal/35" : "text-charcoal/70"}`}>
                                 {cls.desc[lang]}
                               </span>
                             )}
@@ -497,7 +497,7 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
                           {/* Arrow */}
                           {bookable && (
                             <svg
-                              className="w-3.5 h-3.5 shrink-0 mt-1 text-white/0 group-hover:text-gold/60 transition-all duration-300 group-hover:translate-x-0.5"
+                              className="w-3.5 h-3.5 shrink-0 mt-1 text-charcoal/0 group-hover:text-rose-deep/70 transition-all duration-300 group-hover:translate-x-0.5"
                               fill="none"
                               viewBox="0 0 24 24"
                               strokeWidth={1.5}
@@ -525,23 +525,23 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
               onClick={() => openBooking(lang === "es" && card.label_es ? card.label_es : card.label)}
               className={`btn-tactile schedule-promo-card rounded-2xl border p-4 sm:p-5 text-center transition-all duration-500 cursor-pointer ${
                 card.highlight
-                  ? "border-rose-soft/30 bg-rose-soft/10 hover:border-rose-soft/50 hover:bg-rose-soft/15"
-                  : "border-gold/10 bg-white/[0.03] hover:border-gold/30 hover:bg-white/[0.06]"
+                  ? "border-rose/40 bg-rose-soft/20 hover:border-rose/60 hover:bg-rose-soft/30"
+                  : "border-rose-soft/30 bg-white hover:border-gold-deep/40 hover:bg-rose-soft/[0.10]"
               }`}
             >
               <p className={`font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] mb-2 ${
-                card.highlight ? "text-rose-soft" : "text-gold/70"
+                card.highlight ? "text-rose-deep" : "text-gold-deep"
               }`}>
                 {lang === "es" && card.label_es ? card.label_es : card.label}
               </p>
-              <p className="font-[family-name:var(--font-display)] text-xl sm:text-2xl text-white">
+              <p className="font-[family-name:var(--font-display)] text-xl sm:text-2xl text-charcoal">
                 {formatCOP(card.price_cop)}
               </p>
-              <p className="font-[family-name:var(--font-body)] text-[10px] sm:text-xs text-white/30 mt-1">
+              <p className="font-[family-name:var(--font-body)] text-[10px] sm:text-xs text-charcoal/70 mt-1">
                 COP &middot; ${card.price_usd} USD &middot; {lang === "es" ? (card.subtitle_es || card.subtitle_en || "") : (card.subtitle_en || "")}
               </p>
               <p className={`font-[family-name:var(--font-body)] text-[9px] tracking-[0.15em] mt-3 transition-colors ${
-                card.highlight ? "text-rose-soft/70 hover:text-rose-soft" : "text-gold/50 hover:text-gold"
+                card.highlight ? "text-rose-deep hover:text-rose" : "text-gold-deep hover:text-rose-deep"
               }`}>
                 {lang === "en" ? "BOOK NOW" : "RESERVAR"}
               </p>
@@ -557,18 +557,18 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
             <button
               key={card.id}
               onClick={() => openBooking(card.label)}
-              className="btn-tactile schedule-promo-card rounded-2xl border border-gold/10 bg-white/[0.03] p-4 sm:p-5 text-center hover:border-gold/30 hover:bg-white/[0.06] transition-all duration-500 cursor-pointer"
+              className="btn-tactile schedule-promo-card rounded-2xl border border-rose-soft/30 bg-white p-4 sm:p-5 text-center hover:border-gold-deep/40 hover:bg-rose-soft/[0.10] transition-all duration-500 cursor-pointer"
             >
-              <p className="font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] text-gold/70 mb-2">
+              <p className="font-[family-name:var(--font-body)] text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] text-gold-deep mb-2">
                 {lang === "es" && card.label_es ? card.label_es : card.label}
               </p>
-              <p className="font-[family-name:var(--font-display)] text-xl sm:text-2xl text-white">
+              <p className="font-[family-name:var(--font-display)] text-xl sm:text-2xl text-charcoal">
                 {formatCOP(card.price_cop)}
               </p>
-              <p className="font-[family-name:var(--font-body)] text-[10px] sm:text-xs text-white/30 mt-1">
+              <p className="font-[family-name:var(--font-body)] text-[10px] sm:text-xs text-charcoal/70 mt-1">
                 COP &middot; ${card.price_usd} USD &middot; {lang === "es" ? (card.subtitle_es || card.subtitle_en || "") : (card.subtitle_en || "")}
               </p>
-              <p className="font-[family-name:var(--font-body)] text-[9px] tracking-[0.15em] text-gold/50 mt-3 hover:text-gold transition-colors">
+              <p className="font-[family-name:var(--font-body)] text-[9px] tracking-[0.15em] text-gold-deep mt-3 hover:text-rose-deep transition-colors">
                 {lang === "en" ? "BOOK NOW" : "RESERVAR"}
               </p>
             </button>
@@ -577,21 +577,21 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
         )}
 
         {/* Booking rules — prominent gold card */}
-        <div className="fade-in mt-12 rounded-3xl border-2 border-gold/30 bg-gradient-to-br from-gold/[0.08] to-white/[0.03] p-8 sm:p-10 relative overflow-hidden">
+        <div className="fade-in mt-12 rounded-3xl border-2 border-gold-deep/25 bg-gradient-to-br from-white to-rose-soft/20 p-8 sm:p-10 relative overflow-hidden">
           {/* Decorative corner glow */}
           <div
             className="absolute top-0 right-0 w-[200px] h-[200px] pointer-events-none"
-            style={{ background: "radial-gradient(ellipse at top right, rgba(201,169,110,0.15) 0%, transparent 70%)" }}
+            style={{ background: "radial-gradient(ellipse at top right, rgba(201,169,110,0.22) 0%, transparent 70%)" }}
           />
 
           <div className="relative">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center">
-                <svg className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <div className="w-8 h-8 rounded-full bg-gold-deep/15 flex items-center justify-center">
+                <svg className="w-4 h-4 text-gold-deep" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                 </svg>
               </div>
-              <p className="font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-gold font-medium">
+              <p className="font-[family-name:var(--font-body)] text-xs tracking-[0.3em] text-gold-deep font-medium">
                 {L(t.bookingRules) as string}
               </p>
             </div>
@@ -599,18 +599,18 @@ export default function WeeklyScheduleSection({ lang, L, openBooking, closedDate
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-4">
               {(L(t.rules) as string[]).map((rule) => (
                 <div key={rule} className="flex items-start gap-3">
-                  <svg className="w-4 h-4 text-gold/50 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <svg className="w-4 h-4 text-rose-deep/80 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                   </svg>
-                  <p className="font-[family-name:var(--font-body)] text-sm text-white/50 leading-relaxed">
+                  <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/70 leading-relaxed">
                     {rule}
                   </p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-6 pt-5 border-t border-gold/10">
-              <p className="font-[family-name:var(--font-body)] text-xs text-gold/40 italic text-center">
+            <div className="mt-6 pt-5 border-t border-gold-deep/15">
+              <p className="font-[family-name:var(--font-body)] text-xs text-charcoal/70 italic text-center">
                 {lang === "en"
                   ? "You will be asked to confirm these rules when booking"
                   : "Se te pedirá confirmar estas reglas al reservar"}

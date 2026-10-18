@@ -227,18 +227,12 @@ export default function Home() {
 
       <ServicesSection lang={lang} L={L} openBooking={openBooking} />
 
-      {/* Warm gradient into dark schedule */}
-      <div className="section-fade-to-dark" />
-
       <WeeklyScheduleSection
         lang={lang}
         L={L}
         openBooking={openBooking}
         closedDates={closedDates}
       />
-
-      {/* Warm gradient out of dark schedule */}
-      <div className="section-fade-from-dark" />
 
       <TeachersSection lang={lang} L={L} />
 
