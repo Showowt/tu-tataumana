@@ -84,10 +84,13 @@ export async function GET(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     if (supabaseUrl) {
       try {
+        // apikey header required — without it GoTrue answers 401 even when
+        // healthy. Any HTTP response means "reachable"; only 5xx is degraded.
         const probe = await fetch(`${supabaseUrl}/auth/v1/health`, {
+          headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "" },
           signal: AbortSignal.timeout(8000),
         });
-        if (!probe.ok) {
+        if (probe.status >= 500) {
           rootCause = `Supabase is degraded (auth health HTTP ${probe.status}). Check https://status.supabase.com`;
         }
       } catch {

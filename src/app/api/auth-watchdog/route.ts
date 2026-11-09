@@ -40,10 +40,14 @@ export async function GET(request: NextRequest) {
   // simply stops resolving, so every check below would fail with
   // "TypeError: fetch failed" and produce misleading alerts (Nov 9 incident).
   try {
+    // apikey header required — without it GoTrue answers 401 even when
+    // perfectly healthy. Any HTTP response at all means "reachable";
+    // only 5xx is a real degradation.
     const health = await fetch(`${supabaseUrl}/auth/v1/health`, {
+      headers: { apikey: serviceKey },
       signal: AbortSignal.timeout(8000),
     });
-    if (!health.ok) {
+    if (health.status >= 500) {
       await sendTelegramMessage(
         [
           "⚠️ <b>AUTH WATCHDOG — SUPABASE DEGRADED</b>",
