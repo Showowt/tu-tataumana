@@ -35,6 +35,44 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Not configured" }, { status: 500 });
   }
 
+  // 0. Reachability pre-flight — an unreachable project must NEVER be reported
+  // as data loss. A paused project (org billing) keeps all its data; its DNS
+  // simply stops resolving, so every check below would fail with
+  // "TypeError: fetch failed" and produce misleading alerts (Nov 9 incident).
+  try {
+    const health = await fetch(`${supabaseUrl}/auth/v1/health`, {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!health.ok) {
+      await sendTelegramMessage(
+        [
+          "⚠️ <b>AUTH WATCHDOG — SUPABASE DEGRADED</b>",
+          "",
+          `Auth health endpoint returned HTTP ${health.status}.`,
+          "Data is NOT lost — the service is unhealthy, not empty.",
+          "Check https://status.supabase.com and the Supabase dashboard.",
+        ].join("\n"),
+      );
+      return NextResponse.json({ status: "degraded", http: health.status });
+    }
+  } catch {
+    await sendTelegramMessage(
+      [
+        "⚠️ <b>AUTH WATCHDOG — SUPABASE UNREACHABLE</b>",
+        "",
+        "The Supabase project does not respond at all (DNS/connection failed).",
+        "This is NOT data loss — a paused project keeps all its data.",
+        "",
+        "Most common cause: the project was PAUSED — org billing (an unpaid",
+        "invoice pauses EVERY project in the org) or free-tier inactivity.",
+        "",
+        "Check: https://supabase.com/dashboard/org/maycububjygkvczvojkw/billing",
+        "then restore the project. Also: https://status.supabase.com",
+      ].join("\n"),
+    );
+    return NextResponse.json({ status: "unreachable" });
+  }
+
   const supabase = createClient(supabaseUrl, serviceKey);
   const issues: string[] = [];
   const fixes: string[] = [];
@@ -116,10 +154,13 @@ export async function GET(request: NextRequest) {
     issues.push(`Signup probe crashed: ${err}`);
   }
 
-  // 4. Check user count sanity
+  // 4. Check user count sanity.
+  // CRITICAL: only claim emptiness when the call SUCCEEDED — auth-js returns
+  // { data: { users: [] }, error } on failure, so an unchecked error here
+  // turns any network blip into a false "possible data loss" alert.
   try {
-    const { data: users } = await supabase.auth.admin.listUsers({ perPage: 1 });
-    if (users && users.users.length === 0) {
+    const { data: users, error: countErr } = await supabase.auth.admin.listUsers({ perPage: 1 });
+    if (!countErr && users && users.users.length === 0) {
       issues.push("auth.users appears empty — possible data loss");
     }
   } catch {

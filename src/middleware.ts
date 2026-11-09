@@ -3,6 +3,25 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { ADMIN_EMAILS } from "@/lib/constants/business-rules";
 
+// Supabase being unreachable (paused project, outage) must NEVER hang the
+// middleware into a 504 MIDDLEWARE_INVOCATION_TIMEOUT — auth-js retries
+// network failures with backoff, so every call below is double-bounded:
+// a per-request fetch abort plus a race on the whole operation.
+const AUTH_FETCH_TIMEOUT_MS = 3500;
+const AUTH_OPERATION_TIMEOUT_MS = 5000;
+
+const TIMED_OUT = Symbol("timed_out");
+
+function withTimeout<T>(p: PromiseLike<T>, ms: number): Promise<T | typeof TIMED_OUT> {
+  return Promise.race([
+    Promise.resolve(p),
+    new Promise<typeof TIMED_OUT>((resolve) => setTimeout(() => resolve(TIMED_OUT), ms)),
+  ]);
+}
+
+const timeoutFetch: typeof fetch = (input, init) =>
+  fetch(input, { ...init, signal: AbortSignal.timeout(AUTH_FETCH_TIMEOUT_MS) });
+
 /**
  * Check if email has admin access — hardcoded list + database check.
  */
@@ -18,16 +37,19 @@ async function checkAdminAccess(email: string): Promise<boolean> {
   if (!url || !key) return false;
 
   try {
-    const supabase = createClient(url, key);
-    const { data } = await supabase
-      .from("tu_admin_users")
-      .select("id")
-      .eq("email", normalized)
-      .eq("is_active", true)
-      .limit(1)
-      .maybeSingle();
-
-    return !!data;
+    const supabase = createClient(url, key, { global: { fetch: timeoutFetch } });
+    const result = await withTimeout(
+      supabase
+        .from("tu_admin_users")
+        .select("id")
+        .eq("email", normalized)
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle(),
+      AUTH_OPERATION_TIMEOUT_MS,
+    );
+    if (result === TIMED_OUT) return false;
+    return !!result.data;
   } catch {
     return false;
   }
@@ -51,6 +73,7 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      global: { fetch: timeoutFetch },
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -68,10 +91,34 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // Refresh session — MUST call getUser() to refresh expired tokens
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Refresh session — MUST call getUser() to refresh expired tokens.
+  // Bounded: if Supabase is unreachable (paused project, outage), fail FAST
+  // and treat the visitor as signed out instead of hanging into a 504 —
+  // protected pages fall through to the /login redirect below, and
+  // /api/admin returns an explicit 503.
+  let user: import("@supabase/supabase-js").User | null = null;
+  let authUnavailable = false;
+  try {
+    const result = await withTimeout(supabase.auth.getUser(), AUTH_OPERATION_TIMEOUT_MS);
+    if (result === TIMED_OUT) {
+      authUnavailable = true;
+    } else {
+      user = result.data.user;
+      // "Auth session missing" = normal signed-out; network-class errors = outage
+      if (result.error && /fetch|network|abort|timeout/i.test(result.error.message ?? "")) {
+        authUnavailable = true;
+      }
+    }
+  } catch {
+    authUnavailable = true;
+  }
+
+  if (authUnavailable && request.nextUrl.pathname.startsWith("/api/admin")) {
+    return NextResponse.json(
+      { error: "Service temporarily unavailable — auth backend unreachable" },
+      { status: 503, headers: { "Retry-After": "60" } },
+    );
+  }
 
   // Protected routes: redirect to login if not authenticated
   const isProtectedPage =

@@ -72,14 +72,33 @@ export async function GET(request: NextRequest) {
   const failed = results.filter((r) => !r.passed).length;
   const totalMs = results.reduce((s, r) => s + r.ms, 0);
 
-  // On failure: alert
+  // On failure: alert — and name the ROOT CAUSE, not just the symptom.
+  // When Supabase is unreachable (paused project / org billing), every
+  // DB-backed endpoint 500s; without this probe the alert is a mystery
+  // and the on-call wastes an hour chasing the wrong layer (Nov 9 incident).
   if (failed > 0) {
     const failedTests = results.filter((r) => !r.passed);
     const failedNames = failedTests.map((r) => `${r.name} (HTTP ${r.status})`).join("\n  ");
 
+    let rootCause = "";
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (supabaseUrl) {
+      try {
+        const probe = await fetch(`${supabaseUrl}/auth/v1/health`, {
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!probe.ok) {
+          rootCause = `Supabase is degraded (auth health HTTP ${probe.status}). Check https://status.supabase.com`;
+        }
+      } catch {
+        rootCause =
+          "Supabase is UNREACHABLE — the project is likely PAUSED (org billing: an unpaid invoice pauses every project in the org). Data is intact. Fix: https://supabase.com/dashboard/org/maycububjygkvczvojkw/billing → settle/upgrade → restore project.";
+      }
+    }
+
     try {
       await sendTelegramMessage(
-        `🚨 <b>SMOKE TEST FAILED</b>\n\n<b>${failed}/${results.length}</b> tests failed:\n  ${failedNames}\n\n<b>URL:</b> ${BASE_URL}\n<b>Total time:</b> ${totalMs}ms`,
+        `🚨 <b>SMOKE TEST FAILED</b>\n\n<b>${failed}/${results.length}</b> tests failed:\n  ${failedNames}\n\n<b>URL:</b> ${BASE_URL}\n<b>Total time:</b> ${totalMs}ms${rootCause ? `\n\n⚠️ <b>Root cause:</b> ${rootCause}` : ""}`,
       );
     } catch {}
 
