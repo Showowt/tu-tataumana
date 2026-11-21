@@ -548,7 +548,8 @@ async function handlePromoAdd(
     `${priceStr}\n` +
     `Boton: "${eventData.cta_text_es}"\n` +
     (imageUrl ? `Flyer: subido\n` : `Flyer: no se pudo subir\n`) +
-    `\nYa esta visible en tataumana.com`
+    `\nYa esta visible en tataumana.com\n\n` +
+    `<i>Para quitarlo despues: escribe «cancelar evento ${data.title_es}»</i>`
   );
 }
 
@@ -1114,7 +1115,8 @@ async function handleCreateEventText(
     `${priceStr}\n` +
     `${eventData.capacity} cupos\n` +
     `${data.location}\n` +
-    (data.description ? `\n${data.description}` : "")
+    (data.description ? `\n${data.description}` : "") +
+    `\n\n<i>Para quitarlo despues: escribe «cancelar evento ${data.title_es}»</i>`
   );
 }
 
@@ -1168,7 +1170,8 @@ async function handleCreateEventFromPhoto(
     `${priceStr}\n` +
     `${eventData.capacity} cupos\n` +
     `${data.location}\n` +
-    (data.description ? `\n${data.description}` : "")
+    (data.description ? `\n${data.description}` : "") +
+    `\n\n<i>Para quitarlo despues: escribe «cancelar evento ${data.title_es}»</i>`
   );
 }
 

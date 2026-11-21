@@ -3,6 +3,8 @@
  * Runs daily at 11 PM Colombia (4 AM UTC).
  * - Marks all past "scheduled" sessions as "completed"
  * - Records attendance for still-confirmed bookings on those sessions
+ * - Marks all past "upcoming" events as "completed" so they drop off the
+ *   homepage and stop cluttering the admin Eventos list
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -98,21 +100,40 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  if (completedCount > 0) {
+  // 3. Complete all past "upcoming" events. They are one-off dated promos, so
+  // once the date passes they should leave the homepage (the public /api/events
+  // query already filters event_date >= today, but flipping the status also
+  // clears them out of the admin "Próximos" list). Cancelled events are left
+  // untouched.
+  const { data: completedEvents, error: eventErr } = await supabase
+    .from("tu_events")
+    .update({ status: "completed", is_active: false, updated_at: new Date().toISOString() })
+    .eq("status", "upcoming")
+    .lt("event_date", today)
+    .select("id");
+
+  if (eventErr) {
+    console.error("[cron/complete-sessions] event completion failed:", eventErr.message);
+  }
+
+  const completedEventsCount = completedEvents?.length || 0;
+
+  if (completedCount > 0 || completedEventsCount > 0) {
     try {
       await sendTelegramMessage(
-        `🔄 <b>CRON: Sesiones completadas</b>\n\n<b>Sesiones cerradas:</b> ${completedCount}\n<b>Asistencias registradas:</b> ${attendedCount}`,
+        `🔄 <b>CRON: Sesiones completadas</b>\n\n<b>Sesiones cerradas:</b> ${completedCount}\n<b>Asistencias registradas:</b> ${attendedCount}\n<b>Eventos cerrados:</b> ${completedEventsCount}`,
       );
     } catch {}
   }
 
   console.log(
-    `[cron/complete-sessions] Completed: ${completedCount}, Attended: ${attendedCount}`,
+    `[cron/complete-sessions] Completed: ${completedCount}, Attended: ${attendedCount}, Events: ${completedEventsCount}`,
   );
 
   return NextResponse.json({
     completed: completedCount,
     attended: attendedCount,
+    events_completed: completedEventsCount,
     date: today,
   });
 }

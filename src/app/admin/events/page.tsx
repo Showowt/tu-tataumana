@@ -272,7 +272,7 @@ export default function AdminEventsPage() {
   // ------------------------------------------------------------------
 
   async function handleCancel(eventId: string) {
-    if (!confirm("Cancelar este evento?")) return;
+    if (!confirm("¿Quitar este evento de la página? Dejará de aparecer en tataumana.com. Podrás reactivarlo después desde la pestaña Cancelados.")) return;
     setActionLoading(eventId);
     try {
       const res = await fetch("/api/admin/events", {
@@ -749,6 +749,15 @@ export default function AdminEventsPage() {
                     {/* Actions */}
                     {!isCancelled && !isCompleted && (
                       <div className="flex flex-col gap-1.5 items-end">
+                        {!isPast && (
+                          <button
+                            onClick={() => handleCancel(ev.id)}
+                            disabled={actionLoading === ev.id}
+                            className="text-[9px] tracking-[0.1em] uppercase px-3 py-1.5 bg-[#B87777] text-white hover:bg-[#2C2C2C] transition-colors disabled:opacity-40"
+                          >
+                            {actionLoading === ev.id ? "..." : "Quitar de la página"}
+                          </button>
+                        )}
                         <button
                           onClick={() => openEditModal(ev)}
                           disabled={actionLoading === ev.id}
@@ -756,15 +765,6 @@ export default function AdminEventsPage() {
                         >
                           editar
                         </button>
-                        {!isPast && (
-                          <button
-                            onClick={() => handleCancel(ev.id)}
-                            disabled={actionLoading === ev.id}
-                            className="text-[9px] text-red-300 hover:text-red-500 transition-colors disabled:opacity-30"
-                          >
-                            {actionLoading === ev.id ? "..." : "cancelar"}
-                          </button>
-                        )}
                       </div>
                     )}
 
